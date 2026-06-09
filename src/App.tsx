@@ -5,6 +5,7 @@
 import { useStore } from './store';
 import { Home }         from './components/Home';
 import { HowItWorks }   from './components/HowItWorks';
+import { SourcePath }   from './components/SourcePath';
 import { FileTypes }    from './components/FileTypes';
 import { Scanning }     from './components/Scanning';
 import { Dashboard }    from './components/Dashboard';
@@ -18,6 +19,7 @@ import './styles/global.css';
 const SCREEN_STEP: Record<string, number | null> = {
   home:         null,
   how_it_works: null,
+  source_path:  null,
   file_types:   1,
   scanning:     2,
   dashboard:    3,
@@ -30,6 +32,7 @@ const SCREEN_STEP: Record<string, number | null> = {
 const SCREEN_LABEL: Record<string, string> = {
   home:         'Domů',
   how_it_works: 'Jak to funguje',
+  source_path:  'Zdroj skenování',
   file_types:   'Typy souborů',
   scanning:     'Prohlížení…',
   dashboard:    'Přehled',
@@ -83,6 +86,7 @@ export default function App() {
       <main className="screen-container">
         {screen === 'home'         && <Home />}
         {screen === 'how_it_works' && <HowItWorks />}
+        {screen === 'source_path'  && <SourcePath />}
         {screen === 'file_types'   && <FileTypes />}
         {screen === 'scanning'     && <Scanning />}
         {screen === 'dashboard'    && <Dashboard />}

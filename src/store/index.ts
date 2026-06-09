@@ -15,6 +15,7 @@ import {
 export type Screen =
   | 'home'
   | 'how_it_works'
+  | 'source_path'
   | 'file_types'
   | 'scanning'
   | 'dashboard'
@@ -33,6 +34,8 @@ interface FileITState {
   setScreen: (s: Screen) => void;
 
   // ── Scan config ───────────────────────────────────────────────────────────
+  lastSourcePath: string;
+  setLastSourcePath: (path: string) => void;
   scanRoots: string[];
   setScanRoots: (roots: string[]) => void;
   selectedCategories: string[];
@@ -97,6 +100,8 @@ export const useStore = create<FileITState>((set) => ({
   setScreen: (screen) => set({ screen }),
 
   // ── Scan config ───────────────────────────────────────────────────────────
+  lastSourcePath: '',
+  setLastSourcePath: (path) => set({ lastSourcePath: path }),
   scanRoots: [],
   setScanRoots: (roots) => set({ scanRoots: roots }),
   selectedCategories: ['pdf', 'word', 'excel', 'image'],

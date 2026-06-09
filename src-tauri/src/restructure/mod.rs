@@ -247,20 +247,17 @@ fn move_file(src: &Path, dst: &Path) -> Result<String> {
 }
 
 /// Sanitise a string for use as a folder name on Windows.
-/// Removes characters forbidden in NTFS paths, control characters, and extra whitespace.
+/// Removes characters forbidden in NTFS paths and control characters (\n, \r, \t, etc.).
 fn sanitise_folder_name(name: &str) -> String {
     let forbidden: &[char] = &['<', '>', ':', '"', '/', '\\', '|', '?', '*'];
     let sanitised: String = name
         .chars()
-        .filter(|c| !c.is_control() && !c.is_whitespace())  // Strip control chars AND whitespace
+        .filter(|c| !c.is_control())  // Strip control characters (\n, \r, \t, etc.)
         .map(|c| if forbidden.contains(&c) { '_' } else { c })
         .collect();
 
-    // Ensure single spaces between words (collapse multiple spaces)
-    let collapsed = sanitised.split_whitespace().collect::<Vec<_>>().join(" ");
-
     // Trim trailing dots and spaces (Windows disallows them)
-    let trimmed = collapsed.trim_end_matches(|c| c == '.' || c == ' ');
+    let trimmed = sanitised.trim_end_matches(|c| c == '.' || c == ' ');
 
     // Limit folder name length to 80 chars
     if trimmed.len() > 80 {

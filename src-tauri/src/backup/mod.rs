@@ -50,9 +50,7 @@ pub fn create_backup(
     let mut zip = ZipWriter::new(zip_file);
     let options = FileOptions::<()>::default()
         .compression_method(zip::CompressionMethod::Deflated)
-        .unix_permissions(0o644)
-        .large_file(false)
-        .ext_attr(0);
+        .unix_permissions(0o644);
 
     // Write manifest.json first — it's the recovery tool
     let manifest_json = serde_json::to_string_pretty(manifest)
