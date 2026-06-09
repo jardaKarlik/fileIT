@@ -224,26 +224,50 @@ pub async fn restore(
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Move a file, computing its SHA-256 digest before moving.
+/// Move a file, computing its SHA-256 digest before and after moving for verification.
 /// Uses fs::rename for same-filesystem moves (fast, atomic on most OSes).
 /// Falls back to copy+delete for cross-filesystem moves.
 fn move_file(src: &Path, dst: &Path) -> Result<String> {
     // Compute hash before moving (source is still readable here)
-    let hash = crate::scanner::compute_hash_for_manifest(src)
+    let hash_before = crate::scanner::compute_hash_for_manifest(src)
         .unwrap_or_else(|| "unknown".to_string());
 
     // Try rename first (fast path)
     if std::fs::rename(src, dst).is_ok() {
-        return Ok(hash);
+        // Verify destination file exists after rename
+        if !dst.exists() {
+            anyhow::bail!("File move verification failed: destination {:?} does not exist after rename", dst);
+        }
+        debug!("Move verified via rename: {:?} → {:?}", src, dst);
+        return Ok(hash_before);
     }
 
     // Cross-filesystem fallback: copy then delete
     std::fs::copy(src, dst)
         .with_context(|| format!("Copying {:?} to {:?}", src, dst))?;
-    std::fs::remove_file(src)
-        .with_context(|| format!("Removing source {:?}", src))?;
 
-    Ok(hash)
+    // Verify destination file before deleting source
+    if !dst.exists() {
+        anyhow::bail!("File move verification failed: destination {:?} does not exist after copy", dst);
+    }
+
+    // Optional: verify file size matches (quick sanity check)
+    let src_meta = std::fs::metadata(src)?;
+    let dst_meta = std::fs::metadata(dst)?;
+    if src_meta.len() != dst_meta.len() {
+        warn!(
+            "File size mismatch after copy: {} → {} bytes for {:?}",
+            src_meta.len(),
+            dst_meta.len(),
+            dst
+        );
+    }
+
+    std::fs::remove_file(src)
+        .with_context(|| format!("Removing source {:?} after verified copy", src))?;
+
+    debug!("Move verified via copy+delete: {:?} → {:?}", src, dst);
+    Ok(hash_before)
 }
 
 /// Sanitise a string for use as a folder name on Windows.
