@@ -1,0 +1,122 @@
+MANUAL CLICKUP UPDATES NEEDED
+=====================================
+
+UPDATE EACH TASK AS FOLLOWS:
+
+1. PHASE 0: Source Path Selection (Testing Infrastructure)
+   ✅ Status: MOVE TO "IN PROGRESS" COLUMN
+
+   Add to description/comments:
+   ---
+   ✅ IMPLEMENTATION COMPLETE
+
+   Completed:
+   - Created SourcePath component (src/components/SourcePath/index.tsx)
+   - Folder browser with Procházet button
+   - Updated routing in App.tsx
+   - Updated store (src/store/index.ts)
+   - Added styling (src/components/SourcePath/SourcePath.css)
+
+   Git commit: e00185a
+   Ready for: Testing with actual scan data
+   ---
+
+
+2. PHASE 1: Backup Robustness (Critical)
+   ✅ Status: MOVE TO "IN PROGRESS" COLUMN
+
+   Add to description/comments:
+   ---
+   🔨 IMPLEMENTATION IN PROGRESS
+
+   Completed:
+   ✅ ZIP Integrity Validation (Phase 1.1)
+      - validate_backup_zip() function added
+      - Manifest.json validation
+      - File: src-tauri/src/backup/mod.rs
+
+   ✅ File Move Verification (Phase 1.2)
+      - Enhanced move_file() function
+      - Destination verification after move
+      - File size validation after copy
+      - File: src-tauri/src/restructure/mod.rs
+
+   ✅ Backup Size Estimation (Phase 1.3)
+      - estimate_backup_size() function
+      - 1.1x ZIP overhead calculation
+      - File: src-tauri/src/backup/mod.rs
+
+   Git commits: 493fbfc, f9e534e
+   Next: Integration testing, stress test with 5k+ files
+   ---
+
+
+3. Timeline x-axis chart bug
+   "timeline on scan result screen shows last year only. it should be [by] year and not month"
+
+   ✅ Status: MOVE TO "IN PROGRESS" COLUMN
+
+   Add to description/comments:
+   ---
+   🤖 SUB-AGENT WORKING
+   Agent ID: a87f70af7b9d6e846
+
+   What needs fixing:
+   - Chart x-axis shows MONTHS (Jan, Feb, Mar...)
+   - Should show YEARS (2024, 2025, 2026...)
+
+   Files being checked:
+   - src/components/Dashboard/index.tsx
+   - src/components/Scanning/index.tsx
+
+   Task: Change date grouping from MONTH to YEAR
+   ---
+
+
+4. Backup not working bug
+   "zaloha nefunguje - fix needed. whole process check too"
+
+   ✅ Status: MOVE TO "IN PROGRESS" COLUMN
+
+   Add to description/comments:
+   ---
+   🤖 SUB-AGENT WORKING
+   Agent ID: a4519be18a0b4c38d
+
+   Investigation:
+   - Reviewing recent backup/mod.rs changes
+   - Checking validate_backup_zip() compatibility
+   - Verifying estimate_backup_size() integration
+   - Testing backup creation flow
+
+   Files: src-tauri/src/backup/mod.rs, commands/mod.rs
+   ---
+
+
+5. Default path bug
+   "for LOCAL ONLY the default path should on C:\ReOrganized and not to cloud location"
+
+   ✅ Status: MOVE TO "IN PROGRESS" COLUMN
+
+   Add to description/comments:
+   ---
+   🤖 SUB-AGENT WORKING
+   Agent ID: a3bf5d00d39fc584b
+
+   What needs fixing:
+   - LOCAL-ONLY mode should default to C:\ReOrganized
+   - Currently defaults to cloud location
+
+   Files: src-tauri/src/commands/mod.rs, cm_registry.rs, src/store/index.ts
+
+   Expected fix: Conditional path selection based on mode
+   ---
+
+
+AUTOMATION NOTE
+=====================================
+These updates are documented in:
+- C:\_dev\fileIT\fileit\CLICKUP_UPDATES.md (detailed)
+- C:\_dev\fileIT\fileit\MANUAL_CLICKUP_UPDATES.txt (this file)
+
+Next: Await build completion → Sub-agent results → Final commits
