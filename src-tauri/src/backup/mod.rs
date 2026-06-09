@@ -26,6 +26,17 @@ use zip::{write::FileOptions, ZipWriter};
 // Backup creation
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Estimate backup size before creating (rough calculation: total file sizes * 1.1 for ZIP overhead).
+pub fn estimate_backup_size(files: &[ClassifiedFile]) -> u64 {
+    let total_bytes: u64 = files
+        .iter()
+        .map(|f| f.record.size_bytes.unwrap_or(0))
+        .sum();
+
+    // Add ~10% for ZIP metadata and Deflate compression headers
+    (total_bytes as f64 * 1.1) as u64
+}
+
 /// Create the safe-side backup ZIP.
 /// Returns the path to the created ZIP.
 pub fn create_backup(
@@ -49,8 +60,7 @@ pub fn create_backup(
 
     let mut zip = ZipWriter::new(zip_file);
     let options = FileOptions::<()>::default()
-        .compression_method(zip::CompressionMethod::Deflated)
-        .unix_permissions(0o644);
+        .compression_method(zip::CompressionMethod::Deflated);
 
     // Write manifest.json first — it's the recovery tool
     let manifest_json = serde_json::to_string_pretty(manifest)
@@ -203,6 +213,36 @@ pub fn delete_completed_run(app_data_dir: &Path) -> Result<()> {
         std::fs::remove_file(path)?;
     }
     Ok(())
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ZIP Integrity Validation
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Validate ZIP integrity and return the manifest.
+/// Returns Err if ZIP is corrupted or manifest is missing/invalid.
+pub fn validate_backup_zip(zip_path: &Path) -> Result<BackupManifest> {
+    use zip::ZipArchive;
+
+    let zip_file = std::fs::File::open(zip_path)
+        .with_context(|| format!("Opening backup ZIP: {:?}", zip_path))?;
+
+    let mut archive = ZipArchive::new(zip_file)
+        .with_context(|| format!("ZIP archive corrupted or invalid: {:?}", zip_path))?;
+
+    // Try to read manifest.json
+    let mut manifest_file = archive.by_name("manifest.json")
+        .with_context(|| "Manifest not found in backup ZIP")?;
+
+    let mut manifest_json = String::new();
+    std::io::Read::read_to_string(&mut manifest_file, &mut manifest_json)
+        .with_context(|| "Failed to read manifest.json from ZIP")?;
+
+    let manifest: BackupManifest = serde_json::from_str(&manifest_json)
+        .with_context(|| "Manifest JSON invalid or corrupted")?;
+
+    info!("Backup ZIP validated: {:?} ({} files)", zip_path, manifest.moves.len());
+    Ok(manifest)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
