@@ -1,0 +1,73 @@
+/* src/components/Confirmation/Confirmation.css */
+.conf-wrap { padding: 52px 56px; max-width: 860px; margin: 0 auto; position: relative; }
+
+.conf-head-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.conf-check-icon { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--pink), var(--coral)); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; box-shadow: 0 8px 24px rgba(255,20,147,0.3); flex-shrink: 0; }
+.conf-eyebrow   { font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--pink); text-transform: uppercase; margin-bottom: 2px; }
+.conf-timestamp { font-size: 12px; color: var(--ink3); }
+
+.conf-title { font-family: var(--font-display); font-size: 42px; font-weight: 700; color: var(--ink); letter-spacing: -1.5px; line-height: 1.05; margin: 0 0 14px; max-width: 680px; }
+.conf-title em { font-style: italic; font-weight: 400; color: var(--coral); }
+.conf-sub { font-size: 14px; color: var(--ink2); line-height: 1.55; margin: 0 0 32px; max-width: 580px; }
+
+.conf-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+.conf-stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; }
+.conf-stat-card.amber { border-color: rgba(186,117,23,0.3); }
+.conf-stat-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: var(--ink3); text-transform: uppercase; margin-bottom: 8px; }
+.conf-stat-val { font-family: var(--font-display); font-size: 34px; font-weight: 800; letter-spacing: -1.5px; line-height: 1; margin-bottom: 4px; }
+.conf-stat-val.c1 { color: var(--indigo); }
+.conf-stat-val.c2 { color: var(--pink); }
+.conf-stat-val.c4 { color: #BA7517; }
+.conf-stat-sub  { font-size: 11px; color: var(--ink2); }
+.conf-stat-path { font-family: var(--font-mono); font-size: 10px; color: var(--indigo); margin-top: 6px; word-break: break-all; }
+
+.conf-verify { background: linear-gradient(135deg, #F5EBFF, white); border: 1px solid rgba(75,0,130,0.15); border-radius: var(--radius-lg); padding: 22px 24px; margin-bottom: 20px; }
+.conf-verify-head { display: flex; align-items: flex-start; gap: 13px; margin-bottom: 16px; }
+.conf-verify-icon { width: 34px; height: 34px; border-radius: 9px; background: white; border: 1.5px solid rgba(75,0,130,0.2); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.conf-verify-title { font-family: var(--font-display); font-size: 17px; font-weight: 700; color: var(--ink); letter-spacing: -0.3px; margin-bottom: 3px; }
+.conf-verify-sub   { font-size: 12px; color: var(--ink2); }
+
+.conf-steps { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.conf-step  { display: flex; align-items: flex-start; gap: 11px; }
+.conf-step-num { width: 20px; height: 20px; border-radius: 50%; background: var(--indigo); color: white; font-size: 10px; font-family: var(--font-display); font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.conf-step-num.pink { background: var(--pink); }
+.conf-step-text { font-size: 12.5px; color: var(--ink2); line-height: 1.55; }
+.conf-path { font-family: var(--font-mono); font-size: 10.5px; color: var(--indigo); background: rgba(75,0,130,0.08); padding: 1.5px 5px; border-radius: 3px; }
+.conf-amber { color: #BA7517; font-weight: 600; }
+
+.conf-open-folder { background: white; color: var(--indigo); border: 1.5px solid var(--indigo); border-radius: 10px; padding: 9px 16px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: all 0.15s; }
+.conf-open-folder:hover { background: var(--indigo); color: white; }
+
+.conf-backup-strip { background: rgba(75,0,130,0.04); border: 1px dashed rgba(75,0,130,0.2); border-radius: 10px; padding: 11px 15px; display: flex; align-items: flex-start; gap: 10px; font-size: 11px; color: var(--ink2); line-height: 1.55; margin-bottom: 24px; }
+.conf-backup-filename { font-family: var(--font-mono); font-size: 10.5px; color: var(--indigo); background: rgba(75,0,130,0.08); padding: 1px 5px; border-radius: 3px; }
+
+.conf-decisions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 22px; }
+.conf-decision { border-radius: var(--radius-lg); padding: 20px 22px; cursor: pointer; }
+.conf-decision.confirm { background: linear-gradient(135deg, #FFE4F3, #FFE8DC); border: 2px solid var(--pink); }
+.conf-decision.restore { background: white; border: 1.5px solid var(--border); }
+.conf-decision-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.conf-decision-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; color: white; }
+.conf-decision-icon.ok   { background: linear-gradient(135deg, var(--pink), var(--coral)); }
+.conf-decision-icon.undo { background: var(--bg); border: 1.5px solid var(--border2); color: var(--ink2); }
+.conf-decision-title { font-family: var(--font-display); font-size: 17px; font-weight: 700; color: var(--ink); letter-spacing: -0.3px; }
+.conf-decision-desc { font-size: 12px; color: var(--ink2); line-height: 1.55; margin: 0 0 14px; }
+.conf-decision-btn { border: none; border-radius: 10px; padding: 10px 18px; font-size: 12.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; width: 100%; justify-content: center; transition: all 0.2s; }
+.conf-decision-btn.ok   { background: linear-gradient(135deg, var(--pink), var(--coral)); color: white; box-shadow: 0 5px 16px rgba(255,20,147,0.3); }
+.conf-decision-btn.ok:hover { box-shadow: 0 8px 22px rgba(255,20,147,0.4); transform: translateY(-1px); }
+.conf-decision-btn.undo { background: white; color: var(--ink); border: 1.5px solid var(--border2); }
+.conf-decision-btn.undo:hover { border-color: var(--ink2); }
+
+.conf-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 18px; border-top: 1px solid var(--border); font-size: 11px; color: var(--ink3); line-height: 1.55; }
+.conf-persist { display: flex; align-items: center; gap: 6px; }
+.conf-home-link { cursor: pointer; font-size: 11px; color: var(--ink3); transition: color 0.15s; }
+.conf-home-link:hover { color: var(--indigo); }
+
+/* Restore modal specific */
+.restore-modal { text-align: center; }
+.restore-modal-icon  { font-size: 32px; margin-bottom: 12px; }
+.restore-modal-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--ink); letter-spacing: -0.5px; margin-bottom: 10px; }
+.restore-modal-sub   { font-size: 13px; color: var(--ink2); line-height: 1.6; margin-bottom: 22px; }
+.restore-modal-actions { display: flex; gap: 10px; }
+.restore-btn-confirm { flex: 1; background: var(--indigo); color: white; border: none; border-radius: 10px; padding: 12px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.restore-btn-confirm:hover:not(:disabled) { background: var(--indigo-deep); }
+.restore-btn-confirm:disabled { opacity: 0.6; cursor: not-allowed; }

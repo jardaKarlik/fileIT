@@ -1,0 +1,275 @@
+{
+  "version": "1.0.0",
+  "description": "FileIT institution keyword dictionary — Czech financial advisory domain",
+  "last_updated": "2026-04-20",
+  "institutions": [
+    {
+      "canonical_name": "Česká spořitelna",
+      "category": "bank",
+      "aliases": ["Česká spořitelna", "Ceska sporitelna", "ČS a.s.", "Erste Group"],
+      "keywords": ["česká spořitelna", "ceska sporitelna", "erste", "cs.cz", "servis 24"],
+      "document_types": ["BankStatement", "BankLetter", "Contract", "PaymentDemand"],
+      "weight": 1.0
+    },
+    {
+      "canonical_name": "ČSOB",
+      "category": "bank",
+      "aliases": ["ČSOB", "Československá obchodní banka", "KBC"],
+      "keywords": ["čsob", "csob", "československá obchodní banka", "ceskoslovenska obchodni banka", "kbc", "csob.cz"],
+      "document_types": ["BankStatement", "BankLetter", "Contract", "PaymentDemand"],
+      "weight": 1.0
+    },
+    {
+      "canonical_name": "Komerční banka",
+      "category": "bank",
+      "aliases": ["Komerční banka", "KB", "Komercni banka", "Société Générale"],
+      "keywords": ["komerční banka", "komercni banka", "kb.cz", "société générale", "mojebanka"],
+      "document_types": ["BankStatement", "BankLetter", "Contract", "PaymentDemand"],
+      "weight": 1.0
+    },
+    {
+      "canonical_name": "Raiffeisenbank",
+      "category": "bank",
+      "aliases": ["Raiffeisenbank", "RB", "Raiffeisen"],
+      "keywords": ["raiffeisenbank", "raiffeisen", "rb.cz", "rfb.cz"],
+      "document_types": ["BankStatement", "BankLetter", "Contract", "PaymentDemand"],
+      "weight": 1.0
+    },
+    {
+      "canonical_name": "mBank",
+      "category": "bank",
+      "aliases": ["mBank", "mbank"],
+      "keywords": ["mbank", "mbank.cz", "bre bank"],
+      "document_types": ["BankStatement", "BankLetter", "Contract"],
+      "weight": 0.9
+    },
+    {
+      "canonical_name": "Moneta Money Bank",
+      "category": "bank",
+      "aliases": ["Moneta", "Moneta Money Bank", "GE Money"],
+      "keywords": ["moneta", "moneta money", "ge money", "moneta.cz"],
+      "document_types": ["BankStatement", "BankLetter", "Contract", "PaymentDemand"],
+      "weight": 0.9
+    },
+    {
+      "canonical_name": "UniCredit Bank",
+      "category": "bank",
+      "aliases": ["UniCredit", "UniCredit Bank", "HVB"],
+      "keywords": ["unicredit", "unicreditbank", "unicredit.cz", "hvb"],
+      "document_types": ["BankStatement", "BankLetter", "Contract"],
+      "weight": 0.9
+    },
+    {
+      "canonical_name": "Fio banka",
+      "category": "bank",
+      "aliases": ["Fio", "Fio banka"],
+      "keywords": ["fio banka", "fio.cz", "fio bank"],
+      "document_types": ["BankStatement", "BankLetter", "Contract"],
+      "weight": 0.8
+    },
+    {
+      "canonical_name": "Air Bank",
+      "category": "bank",
+      "aliases": ["Air Bank"],
+      "keywords": ["air bank", "airbank", "airbank.cz"],
+      "document_types": ["BankStatement", "BankLetter", "Contract"],
+      "weight": 0.8
+    },
+    {
+      "canonical_name": "Kooperativa",
+      "category": "insurance",
+      "aliases": ["Kooperativa", "Kooperativa pojišťovna", "Vienna Insurance Group"],
+      "keywords": ["kooperativa", "kooperativa pojišťovna", "kooperativa.cz", "vienna insurance"],
+      "document_types": ["InsuranceContract", "Contract", "Invoice", "AdminDecision"],
+      "weight": 1.0
+    },
+    {
+      "canonical_name": "Allianz",
+      "category": "insurance",
+      "aliases": ["Allianz", "Allianz pojišťovna"],
+      "keywords": ["allianz", "allianz.cz", "allianz pojišťovna"],
+      "document_types": ["InsuranceContract", "Contract", "Invoice"],
+      "weight": 1.0
+    },
+    {
+      "canonical_name": "Generali",
+      "category": "insurance",
+      "aliases": ["Generali", "Generali Česká pojišťovna", "ČP"],
+      "keywords": ["generali", "česká pojišťovna", "ceska pojistovna", "generali.cz", "cp.cz"],
+      "document_types": ["InsuranceContract", "Contract", "Invoice", "AdminDecision"],
+      "weight": 1.0
+    },
+    {
+      "canonical_name": "ČPP",
+      "category": "insurance",
+      "aliases": ["ČPP", "Česká podnikatelská pojišťovna"],
+      "keywords": ["česká podnikatelská pojišťovna", "cpp.cz", "čpp"],
+      "document_types": ["InsuranceContract", "Contract", "Invoice"],
+      "weight": 0.9
+    },
+    {
+      "canonical_name": "UNIQA",
+      "category": "insurance",
+      "aliases": ["UNIQA", "Uniqa pojišťovna"],
+      "keywords": ["uniqa", "uniqa.cz"],
+      "document_types": ["InsuranceContract", "Contract", "Invoice"],
+      "weight": 0.9
+    },
+    {
+      "canonical_name": "Pojišťovna České spořitelny",
+      "category": "insurance",
+      "aliases": ["PČS", "Pojišťovna ČS", "Pojišťovna České spořitelny"],
+      "keywords": ["pojišťovna české spořitelny", "pcs.cz", "pojistovna ceske sporitelny"],
+      "document_types": ["InsuranceContract", "Contract"],
+      "weight": 0.8
+    },
+    {
+      "canonical_name": "Finanční úřad",
+      "category": "government",
+      "aliases": ["Finanční úřad", "FÚ", "Finanční správa"],
+      "keywords": ["finanční úřad", "financni urad", "finanční správa", "daňové přiznání", "danove priznani", "daňový doplatek", "dph", "daň z příjmů", "oddělení"],
+      "document_types": ["TaxReturn", "PaymentDemand", "AdminDecision", "LegalLetter"],
+      "weight": 1.0
+    },
+    {
+      "canonical_name": "ČSSZ",
+      "category": "government",
+      "aliases": ["ČSSZ", "OSSZ", "Správa sociálního zabezpečení", "SSZ"],
+      "keywords": ["čssz", "cssz", "ossz", "správa sociálního zabezpečení", "sprava socialniho zabezpeceni", "sociální pojištění", "nemocenské", "důchodové pojištění"],
+      "document_types": ["PaymentDemand", "AdminDecision", "LegalLetter"],
+      "weight": 1.0
+    },
+    {
+      "canonical_name": "Katastr nemovitostí",
+      "category": "government",
+      "aliases": ["Katastr", "ČÚZK", "Katastrální úřad"],
+      "keywords": ["katastr nemovitostí", "katastrální úřad", "cuzk", "čúzk", "list vlastnictví", "výpis z katastru"],
+      "document_types": ["AdminDecision", "LegalLetter", "Contract"],
+      "weight": 0.8
+    },
+    {
+      "canonical_name": "Živnostenský úřad",
+      "category": "government",
+      "aliases": ["Živnostenský úřad", "živnostenský rejstřík"],
+      "keywords": ["živnostenský úřad", "zivnostensky urad", "živnostenský list", "živnostenské oprávnění"],
+      "document_types": ["AdminDecision", "LegalLetter"],
+      "weight": 0.7
+    },
+    {
+      "canonical_name": "ČEZ",
+      "category": "utility",
+      "aliases": ["ČEZ", "CEZ", "ČEZ Prodej", "ČEZ Distribuce"],
+      "keywords": ["čez", "cez prodej", "cez distribuce", "cez.cz", "vyúčtování elektřiny", "odebrané množství", "odečet"],
+      "document_types": ["UtilityBill", "Contract", "Invoice"],
+      "weight": 1.0
+    },
+    {
+      "canonical_name": "E.ON",
+      "category": "utility",
+      "aliases": ["E.ON", "EON", "E.ON Energie", "E.ON Distribuce"],
+      "keywords": ["e.on", "eon energie", "eon.cz", "vyúčtování plynu", "vyúčtování elektřiny"],
+      "document_types": ["UtilityBill", "Contract", "Invoice"],
+      "weight": 1.0
+    },
+    {
+      "canonical_name": "innogy",
+      "category": "utility",
+      "aliases": ["innogy", "RWE", "innogy Energie"],
+      "keywords": ["innogy", "rwe", "innogy energie", "innogy.cz", "vyúčtování plynu"],
+      "document_types": ["UtilityBill", "Contract", "Invoice"],
+      "weight": 0.9
+    },
+    {
+      "canonical_name": "PRE",
+      "category": "utility",
+      "aliases": ["PRE", "Pražská energetika"],
+      "keywords": ["pražská energetika", "prazska energetika", "pre.cz", "pre distribuce"],
+      "document_types": ["UtilityBill", "Contract", "Invoice"],
+      "weight": 0.8
+    },
+    {
+      "canonical_name": "Pražská plynárenská",
+      "category": "utility",
+      "aliases": ["Pražská plynárenská", "PP"],
+      "keywords": ["pražská plynárenská", "prazska plynarenska", "pp.cz"],
+      "document_types": ["UtilityBill", "Contract", "Invoice"],
+      "weight": 0.7
+    },
+    {
+      "canonical_name": "T-Mobile",
+      "category": "telco",
+      "aliases": ["T-Mobile", "Deutsche Telekom"],
+      "keywords": ["t-mobile", "tmobile", "t-mobile.cz", "deutsche telekom"],
+      "document_types": ["Invoice", "Contract"],
+      "weight": 0.9
+    },
+    {
+      "canonical_name": "O2",
+      "category": "telco",
+      "aliases": ["O2", "Telefónica", "O2 Czech Republic"],
+      "keywords": ["o2", "o2.cz", "telefónica", "telefonica"],
+      "document_types": ["Invoice", "Contract"],
+      "weight": 0.9
+    },
+    {
+      "canonical_name": "Vodafone",
+      "category": "telco",
+      "aliases": ["Vodafone"],
+      "keywords": ["vodafone", "vodafone.cz"],
+      "document_types": ["Invoice", "Contract"],
+      "weight": 0.9
+    }
+  ],
+  "document_type_triggers": {
+    "Contract": [
+      "smlouva", "smluvní", "smluvní strany", "uzavírají", "sjednávají", "pojistná smlouva",
+      "nájemní smlouva", "kupní smlouva", "mandátní smlouva", "darovací smlouva",
+      "číslo smlouvy", "platnost smlouvy", "předmět smlouvy"
+    ],
+    "BankStatement": [
+      "výpis z účtu", "výpis účtu", "bankovní výpis", "přehled transakcí",
+      "zůstatek účtu", "pohyby na účtu", "kredit", "debet", "datum valuty",
+      "číslo účtu", "iban"
+    ],
+    "BankLetter": [
+      "vážený kliente", "vážená klientko", "sdělujeme vám", "informujeme vás",
+      "upozorňujeme", "v souladu s", "bankovní tajemství"
+    ],
+    "Invoice": [
+      "faktura", "daňový doklad", "faktura č.", "variabilní symbol",
+      "datum splatnosti", "celkem k úhradě", "základ daně", "dph", "fakturujeme"
+    ],
+    "PaymentDemand": [
+      "platební výměr", "výzva k úhradě", "penále", "upomínka", "dlužná částka",
+      "nedoplatek", "přeplatek", "výzva k zaplacení", "pohledávka"
+    ],
+    "TaxReturn": [
+      "daňové přiznání", "přiznání k dani", "daň z příjmů", "daňový základ",
+      "dpfo", "dppo", "dph přiznání", "mfin", "ministerstvo financí"
+    ],
+    "UtilityBill": [
+      "vyúčtování", "spotřeba", "odečet", "odebrané množství", "kwh",
+      "gj", "m3", "záloha", "přeplatek", "nedoplatek", "tarifní skupina"
+    ],
+    "InsuranceContract": [
+      "pojistná smlouva", "pojistník", "pojištěný", "pojistné plnění",
+      "pojistná událost", "pojistné krytí", "pojistné", "spoluúčast",
+      "pojistná doba", "číslo pojistné smlouvy"
+    ],
+    "AdminDecision": [
+      "rozhodnutí", "výzva", "sdělení", "oznámení", "potvrzení", "vydáno",
+      "č.j.", "sp.zn.", "správní řízení", "právní moc", "nabytí právní moci"
+    ],
+    "Identity": [
+      "občanský průkaz", "pas", "cestovní pas", "průkaz totožnosti",
+      "rodný list", "oddací list", "diplom", "osvědčení"
+    ],
+    "LegalLetter": [
+      "soud", "soudu", "advokát", "právní zástupce", "žaloba", "žalobce",
+      "žalovaný", "rozsudek", "usnesení", "odvolání", "exekuce"
+    ]
+  },
+  "rodne_cislo_pattern": "\\b(\\d{2})(0[1-9]|1[0-2]|5[1-9]|6[0-2])(0[1-9]|[12]\\d|3[01])(\\d{3,4})\\b",
+  "ico_pattern": "\\b(IČO|IČ)[:\\s]*([0-9]{8})\\b",
+  "dic_pattern": "\\b(DIČ)[:\\s]*(CZ[0-9]{8,10})\\b"
+}

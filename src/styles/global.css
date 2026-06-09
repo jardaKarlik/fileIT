@@ -1,0 +1,227 @@
+/* src/styles/global.css
+   FileIT — Neon Twilight design system
+   Ported from fileit_prototype_v2.html with full CSS custom properties */
+
+/* Fonts loaded locally via @fontsource packages in main.tsx — no CDN required */
+
+/* ── Reset ──────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Design tokens ──────────────────────────────────────────────────────── */
+:root {
+  --indigo:           #4B0082;
+  --indigo-deep:      #2E0052;
+  --indigo-light:     #6B2AA2;
+  --pink:             #FF1493;
+  --pink-soft:        #FF4FB0;
+  --pink-pale:        #FFE4F3;
+  --coral:            #FE865B;
+  --coral-soft:       #FF9E78;
+  --coral-pale:       #FFE8DC;
+  --ink:              #1A0F2E;
+  --ink2:             #4A3D5E;
+  --ink3:             #8A7B9E;
+  --bg:               #FAFAFC;
+  --bg-warm:          #FFF8F5;
+  --border:           #E8E4F0;
+  --border2:          #D4CEE0;
+  --white:            #FFFFFF;
+
+  --gradient-hero:    linear-gradient(165deg, #4B0082 0%, #6B1B8F 22%, #C01580 52%, #FF1493 72%, #FE865B 100%);
+
+  --shadow-soft:      0 2px 12px rgba(75, 0, 130, 0.08);
+  --shadow-pop:       0 8px 32px rgba(75, 0, 130, 0.18);
+  --shadow-lift:      0 12px 48px rgba(255, 20, 147, 0.20);
+
+  --font-display:     'Fraunces', Georgia, serif;
+  --font-ui:          'Inter', system-ui, sans-serif;
+  --font-mono:        'JetBrains Mono', ui-monospace, Menlo, monospace;
+
+  --radius-sm:        8px;
+  --radius-md:        12px;
+  --radius-lg:        14px;
+  --radius-xl:        18px;
+  --radius-pill:      999px;
+}
+
+/* ── Base ───────────────────────────────────────────────────────────────── */
+html, body { height: 100%; }
+body {
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+#root { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ── Typography ─────────────────────────────────────────────────────────── */
+.font-display { font-family: var(--font-display); font-optical-sizing: auto; }
+.font-mono    { font-family: var(--font-mono); }
+
+/* ── Scrollbar (Windows) ────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ink3); }
+
+/* ── Navigation bar ─────────────────────────────────────────────────────── */
+.topnav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 28px;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.topnav.home-mode .nav-steps { visibility: hidden; }
+
+.logo { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.logo-mark {
+  width: 32px; height: 32px;
+  background: var(--gradient-hero);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(255, 20, 147, 0.3);
+}
+.logo-text {
+  font-family: var(--font-display);
+  font-size: 21px; font-weight: 700;
+  color: var(--ink); letter-spacing: -0.5px;
+}
+.logo-text span {
+  background: linear-gradient(135deg, var(--pink), var(--coral));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.nav-steps { display: flex; gap: 4px; align-items: center; }
+.nav-step {
+  width: 26px; height: 3px; border-radius: 2px;
+  background: var(--border2); transition: all 0.3s;
+}
+.nav-step.active { background: var(--pink); width: 38px; }
+.nav-step.done   { background: var(--indigo-light); }
+
+.nav-label { font-size: 11px; color: var(--ink3); font-weight: 500; width: 130px; text-align: right; }
+
+/* ── Screen container ───────────────────────────────────────────────────── */
+.screen-container { flex: 1; overflow-y: auto; }
+
+/* ── Section scaffold ───────────────────────────────────────────────────── */
+.section-wrap { padding: 40px 48px; max-width: 920px; margin: 0 auto; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn-primary {
+  background: var(--white); color: var(--indigo);
+  border: none; border-radius: var(--radius-pill);
+  padding: 14px 28px; font-family: var(--font-ui); font-size: 14px; font-weight: 600;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  box-shadow: var(--shadow-lift); transition: all 0.2s;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 40px rgba(255,20,147,0.3); }
+
+.btn-secondary {
+  background: transparent; color: rgba(255,255,255,0.92);
+  border: 1.5px solid rgba(255,255,255,0.35);
+  border-radius: var(--radius-pill); padding: 12px 22px;
+  font-family: var(--font-ui); font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-secondary:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.65); }
+
+.btn-ghost {
+  background: transparent; color: var(--ink2);
+  border: 1px solid var(--border2); border-radius: var(--radius-md);
+  padding: 10px 18px; font-family: var(--font-ui); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-ghost:hover { border-color: var(--indigo); color: var(--indigo); }
+
+.btn-run {
+  background: linear-gradient(135deg, var(--pink), var(--coral));
+  color: white; border: none; border-radius: var(--radius-md);
+  padding: 13px 24px; font-family: var(--font-ui); font-size: 13px; font-weight: 600;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  box-shadow: 0 6px 20px rgba(255, 20, 147, 0.35); transition: all 0.2s;
+}
+.btn-run:hover { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(255,20,147,0.45); }
+
+.btn-indigo {
+  background: var(--indigo); color: white; border: none;
+  border-radius: var(--radius-md); padding: 11px 20px;
+  font-family: var(--font-ui); font-size: 12.5px; font-weight: 600;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  box-shadow: 0 4px 14px rgba(75,0,130,0.25); transition: all 0.2s;
+}
+.btn-indigo:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(75,0,130,0.35); }
+
+/* ── Section eyebrow ────────────────────────────────────────────────────── */
+.eyebrow {
+  font-size: 10px; font-weight: 700; letter-spacing: 2px;
+  color: var(--pink); text-transform: uppercase;
+}
+
+/* ── Info note ──────────────────────────────────────────────────────────── */
+.info-note {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: linear-gradient(90deg, rgba(75,0,130,0.04), rgba(255,20,147,0.04));
+  border: 1px solid rgba(75,0,130,0.12);
+  border-radius: var(--radius-md); padding: 12px 14px;
+  font-size: 12px; color: var(--ink2); line-height: 1.55;
+}
+
+/* ── Collision warning ──────────────────────────────────────────────────── */
+.collision-warn {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: #FFF3E0; border: 1px solid #F5A623;
+  border-radius: var(--radius-md); padding: 10px 14px;
+  font-size: 11.5px; color: #7A4A00; line-height: 1.55;
+  margin-bottom: 20px;
+}
+
+/* ── Toast ───────────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(120px);
+  background: var(--ink); color: white;
+  border-radius: var(--radius-pill); padding: 12px 24px;
+  font-size: 13px; font-weight: 500;
+  transition: transform 0.3s; z-index: 300;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 8px 32px rgba(75,0,130,0.3);
+  pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pink); }
+
+/* ── Modal overlay ───────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(26, 15, 46, 0.65);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; padding: 24px;
+  animation: fadeIn 0.2s ease;
+}
+.modal-card {
+  background: white; border-radius: var(--radius-xl);
+  padding: 32px 36px 28px; max-width: 480px; width: 100%;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.4);
+  animation: slideUp 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* ── Corner plates ───────────────────────────────────────────────────────── */
+.corner-tr, .corner-bl {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 9px; color: rgba(26,15,46,0.4); letter-spacing: 1.5px;
+  pointer-events: none;
+}
+.corner-tr { top: 20px; right: 24px; }
+.corner-bl { bottom: 20px; left: 24px; }

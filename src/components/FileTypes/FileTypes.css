@@ -1,0 +1,22 @@
+/* src/components/FileTypes/FileTypes.css */
+.ft-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--pink); text-transform: uppercase; margin-bottom: 8px; }
+.ft-title { font-family: var(--font-display); font-size: 32px; font-weight: 700; color: var(--ink); letter-spacing: -1px; margin: 0 0 8px; }
+.ft-sub   { font-size: 14px; color: var(--ink2); line-height: 1.55; margin: 0 0 28px; max-width: 620px; }
+
+.ft-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+.ft-card { border: 1.5px solid var(--border); background: white; border-radius: var(--radius-lg); padding: 16px; cursor: pointer; position: relative; transition: all 0.15s; }
+.ft-card:hover { border-color: var(--pink-soft); transform: translateY(-1px); }
+.ft-card.selected { border: 2px solid var(--pink); background: linear-gradient(135deg, #FFF, #FFE4F3); }
+.ft-card.selected::after { content: '✓'; position: absolute; top: 10px; right: 12px; width: 18px; height: 18px; background: var(--pink); border-radius: 50%; color: white; font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.ft-icon { font-size: 22px; margin-bottom: 8px; }
+.ft-name { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.ft-desc { font-size: 11px; color: var(--ink2); line-height: 1.45; margin-bottom: 8px; }
+.ft-badge { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-pill); text-transform: uppercase; letter-spacing: 0.5px; }
+.ft-badge.core  { background: var(--pink-pale); color: var(--pink); }
+.ft-badge.extra { background: var(--coral-pale); color: var(--coral); }
+
+.ft-extra-label { font-size: 11px; font-weight: 600; color: var(--ink2); margin-bottom: 10px; }
+.ft-extra-row   { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.ft-extra-chip  { border: 1px solid var(--border); border-radius: var(--radius-pill); padding: 5px 12px; font-size: 11px; color: var(--ink2); cursor: pointer; transition: all 0.15s; }
+.ft-extra-chip:hover { border-color: var(--pink); color: var(--pink); }
+.ft-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }

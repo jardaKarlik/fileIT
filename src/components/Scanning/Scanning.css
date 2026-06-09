@@ -1,0 +1,27 @@
+/* src/components/Scanning/Scanning.css */
+.scan-wrap { padding: 48px 56px; max-width: 640px; margin: 0 auto; text-align: center; }
+.scan-anim { position: relative; width: 72px; height: 72px; margin: 0 auto 22px; }
+.scan-ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid transparent; border-top-color: var(--pink); animation: spin 1.2s linear infinite; }
+.scan-ring.done { animation: none; border-top-color: transparent; border-color: rgba(59,109,17,0.4); }
+.scan-ring:nth-child(2) { inset: 8px; border-top-color: var(--indigo); animation-duration: 1.8s; animation-direction: reverse; }
+.scan-ring:nth-child(2).done { animation: none; border-top-color: transparent; }
+.scan-ring:nth-child(3) { inset: 16px; border-top-color: var(--coral); animation-duration: 2.4s; }
+.scan-ring:nth-child(3).done { animation: none; border-top-color: transparent; }
+.scan-inner { position: absolute; inset: 22px; background: linear-gradient(135deg, var(--indigo), var(--pink)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; transition: background 0.4s; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.scan-title { font-family: var(--font-display); font-size: 28px; font-weight: 700; color: var(--ink); letter-spacing: -0.8px; margin: 0 0 8px; }
+.scan-sub   { font-size: 13px; color: var(--ink2); line-height: 1.55; margin-bottom: 22px; }
+.scan-bar   { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+.scan-fill  { height: 100%; background: linear-gradient(90deg, var(--indigo), var(--pink), var(--coral)); border-radius: 3px; transition: width 0.4s ease; }
+.scan-status { font-size: 11px; color: var(--ink3); margin-bottom: 16px; }
+
+.scan-log { background: #1A0F2E; border-radius: var(--radius-lg); padding: 14px 16px; height: 220px; overflow-y: auto; text-align: left; font-family: var(--font-mono); font-size: 11px; line-height: 1.7; margin-bottom: 16px; }
+.scan-log-line       { color: rgba(255,255,255,0.6); }
+.scan-log-line.hit   { color: var(--pink-soft); }
+.scan-log-line.found { color: var(--coral-soft); }
+.scan-log-line.done  { color: #8AE99C; font-weight: 600; }
+
+.scan-cloud-detect { background: linear-gradient(135deg, var(--indigo), var(--indigo-light)); border-radius: var(--radius-md); padding: 10px 14px; text-align: left; margin-bottom: 20px; }
+.scan-cloud-label { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.8); margin-bottom: 4px; }
+.scan-cloud-text  { font-size: 11px; color: rgba(255,255,255,0.85); line-height: 1.5; }

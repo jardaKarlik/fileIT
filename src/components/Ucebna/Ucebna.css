@@ -1,0 +1,440 @@
+/* src/components/Ucebna/Ucebna.css */
+
+.ucebna {
+  padding: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.ucebna-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.ucebna-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary, #1a1a2e);
+  margin: 0 0 4px;
+}
+
+.ucebna-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary, #6b7280);
+  margin: 0;
+}
+
+.ucebna-counter {
+  text-align: right;
+}
+
+.counter-total {
+  display: block;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent, #4B0082);
+  line-height: 1;
+}
+
+.counter-label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-secondary, #6b7280);
+  margin-top: 2px;
+}
+
+.counter-today {
+  display: inline-block;
+  margin-top: 4px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+/* ── Rescan banner ───────────────────────────────────────────────────────── */
+.ucebna-rescan-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f3f0ff;
+  border: 1px solid #c4b5fd;
+  border-radius: 8px;
+  padding: 10px 16px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: #4B0082;
+}
+
+.btn-rescan {
+  margin-left: auto;
+  background: #4B0082;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-rescan:hover { background: #3a006b; }
+
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+.ucebna-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.ucebna-cards {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+/* ── Pattern card ────────────────────────────────────────────────────────── */
+.pattern-card {
+  background: white;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.pattern-card:hover:not(.taught) {
+  box-shadow: 0 4px 16px rgba(75, 0, 130, 0.12);
+  border-color: #a78bfa;
+}
+
+.pattern-card.active {
+  border-color: #4B0082;
+  box-shadow: 0 4px 16px rgba(75, 0, 130, 0.2);
+}
+
+.pattern-card.taught {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Schematic thumbnail */
+.pattern-thumb {
+  background: #f8f7ff;
+  padding: 10px;
+}
+
+.thumb-header {
+  height: 22px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.thumb-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.thumb-line {
+  height: 6px;
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+/* Card body */
+.pattern-body {
+  padding: 10px 12px 12px;
+}
+
+.pattern-file-count {
+  font-size: 11px;
+  color: var(--text-secondary, #6b7280);
+  margin-bottom: 8px;
+}
+
+.pattern-signals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.signal-pill {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.signal-strong { background: #dcfce7; color: #166534; }
+.signal-medium { background: #fef3c7; color: #92400e; }
+.signal-weak   { background: #f3f4f6; color: #6b7280; }
+
+.pattern-colors {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.color-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.btn-teach {
+  width: 100%;
+  background: #4B0082;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 2px;
+}
+
+.btn-teach:hover { background: #3a006b; }
+
+.pattern-taught-badge {
+  text-align: center;
+  font-size: 12px;
+  color: #2e7d32;
+  font-weight: 600;
+  padding: 6px 0;
+}
+
+/* ── Teach panel ─────────────────────────────────────────────────────────── */
+.teach-panel {
+  width: 320px;
+  flex-shrink: 0;
+  background: white;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  position: sticky;
+  top: 24px;
+}
+
+.teach-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.teach-panel-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.btn-close:hover { background: #f3f4f6; color: #374151; }
+
+.teach-hint {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0 0 12px;
+}
+
+.privacy-note {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #166534;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.teach-section { margin-bottom: 16px; }
+
+.teach-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.institution-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.inst-btn {
+  background: #f9fafb;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 7px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.1s, background 0.1s;
+}
+
+.inst-btn:hover { border-color: #a78bfa; background: #faf5ff; }
+.inst-btn.selected { border-color: #4B0082; background: #f3f0ff; color: #4B0082; font-weight: 600; }
+.inst-btn-other { color: #6b7280; }
+
+.custom-inst-input {
+  width: 100%;
+  border: 1.5px solid #4B0082;
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 13px;
+  margin-top: 8px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.doctype-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.doctype-btn {
+  background: #f9fafb;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.1s, background 0.1s;
+}
+
+.doctype-btn:hover { border-color: #a78bfa; background: #faf5ff; }
+.doctype-btn.selected { border-color: #4B0082; background: #f3f0ff; color: #4B0082; font-weight: 600; }
+
+.teach-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn-skip {
+  flex: 1;
+  background: white;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 9px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.btn-skip:hover { background: #f9fafb; }
+
+.btn-confirm {
+  flex: 2;
+  background: #4B0082;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-confirm:hover:not(:disabled) { background: #3a006b; }
+.btn-confirm:disabled { background: #c4b5fd; cursor: not-allowed; }
+
+/* ── CM upload section ───────────────────────────────────────────────────── */
+.ucebna-upload {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-top: 20px;
+}
+
+.upload-count {
+  font-size: 13px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.btn-upload {
+  background: #1d4ed8;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-upload:hover:not(:disabled) { background: #1e40af; }
+.btn-upload:disabled { background: #93c5fd; cursor: not-allowed; }
+
+.upload-msg {
+  font-size: 12px;
+  color: #2e7d32;
+}
+
+/* ── Loading / empty states ─────────────────────────────────────────────── */
+.ucebna-loading,
+.ucebna-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.ucebna-empty-icon {
+  font-size: 48px;
+  color: #2e7d32;
+  margin-bottom: 16px;
+}
+
+.ucebna-empty h2 {
+  color: #1a1a2e;
+  font-size: 18px;
+  margin: 0 0 8px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #4B0082;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }

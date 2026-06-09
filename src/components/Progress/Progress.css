@@ -1,0 +1,41 @@
+/* src/components/Progress/Progress.css */
+.progress-wrap {
+  padding: 48px 56px;
+  max-width: 740px;
+  margin: 0 auto;
+}
+.progress-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--pink); text-transform: uppercase; margin-bottom: 8px; }
+.progress-title { font-family: var(--font-display); font-size: 32px; font-weight: 700; color: var(--ink); letter-spacing: -1px; margin: 0 0 10px; }
+.progress-sub   { font-size: 13px; color: var(--ink2); line-height: 1.55; margin-bottom: 28px; }
+
+.progress-big-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
+.progress-big-fill { height: 100%; background: linear-gradient(90deg, var(--indigo), var(--pink), var(--coral)); border-radius: 3px; transition: width 0.3s ease; }
+
+.progress-status-row { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--ink3); margin-bottom: 20px; }
+.progress-status-text { color: var(--ink2); font-weight: 500; }
+
+.progress-log-pane {
+  background: #1A0F2E;
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  height: 320px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.7;
+}
+.progress-log-line       { color: rgba(255,255,255,0.65); }
+.progress-log-line.cmd   { color: rgba(255,255,255,0.45); }
+.progress-log-line.found { color: #FE865B; }
+.progress-log-line.hit   { color: var(--pink-soft); }
+.progress-log-line.done  { color: #8AE99C; font-weight: 600; }
+
+.progress-cursor {
+  display: inline-block;
+  width: 7px; height: 14px;
+  background: rgba(255,255,255,0.5);
+  animation: blink 1s step-end infinite;
+  vertical-align: middle;
+  margin-left: 3px;
+}
+@keyframes blink { 0%,100%{ opacity: 1; } 50%{ opacity: 0; } }

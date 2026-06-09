@@ -1,0 +1,77 @@
+{
+  "version": "2026-05-06",
+  "fingerprints": [
+    {
+      "institution": "Raiffeisenbank CZ",
+      "ico": "49240901",
+      "signals": {
+        "pdf_producer_contains": ["Scriptura XSL-FO"],
+        "pdf_creator_contains": [],
+        "filename_patterns": ["(?i)^RB_", "(?i)raiffeisen"],
+        "color_buckets": [],
+        "logo_phash": null,
+        "page_count_range": [1, 6],
+        "size_bucket": "S"
+      },
+      "category": "bank_statement",
+      "confidence_boost": 0.45,
+      "skip_extraction": false,
+      "contributed_by": 1,
+      "last_updated": "2026-05-06"
+    },
+    {
+      "institution": "ČSOB",
+      "ico": "00001350",
+      "signals": {
+        "pdf_producer_contains": ["Acrobat Distiller 17"],
+        "pdf_creator_contains": ["LiveCycle Designer"],
+        "filename_patterns": [],
+        "color_buckets": ["H220-240/S70+", "H45-55/S85+"],
+        "logo_phash": null,
+        "page_count_range": [1, 4],
+        "size_bucket": null
+      },
+      "category": "bank_confirmation",
+      "confidence_boost": 0.45,
+      "skip_extraction": false,
+      "contributed_by": 1,
+      "last_updated": "2026-05-06"
+    },
+    {
+      "institution": "ČPP",
+      "ico": "47116617",
+      "signals": {
+        "pdf_producer_contains": ["Elephant Orchestra", "ABCpdf"],
+        "pdf_creator_contains": [],
+        "filename_patterns": ["(?i)^cpp_", "(?i)ceska.pojistovna"],
+        "color_buckets": [],
+        "logo_phash": null,
+        "page_count_range": null,
+        "size_bucket": null
+      },
+      "category": "insurance_contract",
+      "confidence_boost": 0.45,
+      "skip_extraction": false,
+      "contributed_by": 1,
+      "last_updated": "2026-05-06"
+    },
+    {
+      "institution": "Finanční úřad / EPO",
+      "ico": null,
+      "signals": {
+        "pdf_producer_contains": ["OpenPDF"],
+        "pdf_creator_contains": [],
+        "filename_patterns": ["(?i)^DPHDP", "(?i)^DPFO", "(?i)^EPO_"],
+        "color_buckets": [],
+        "logo_phash": null,
+        "page_count_range": [1, 2],
+        "size_bucket": null
+      },
+      "category": "tax_form",
+      "confidence_boost": 0.45,
+      "skip_extraction": true,
+      "contributed_by": 1,
+      "last_updated": "2026-05-06"
+    }
+  ]
+}

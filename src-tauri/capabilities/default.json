@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "identifier": "default",
+  "description": "Default permissions for FileIT",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "fs:default",
+    "fs:read-all",
+    "fs:write-all",
+    "fs:allow-mkdir",
+    "fs:allow-remove",
+    "fs:allow-rename",
+    "fs:allow-stat",
+    "fs:allow-exists",
+    "fs:allow-read-dir",
+    "fs:allow-read-file",
+    "fs:allow-read-text-file",
+    "fs:allow-write-file",
+    "fs:allow-write-text-file",
+    "fs:scope-home-recursive",
+    "fs:scope-document-recursive",
+    "fs:scope-desktop-recursive",
+    "fs:scope-download-recursive",
+    "shell:default",
+    "shell:allow-open",
+    "log:default",
+    "log:allow-log"
+  ]
+}
