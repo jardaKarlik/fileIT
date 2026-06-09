@@ -9,6 +9,7 @@ mod classifier;
 mod cm_registry;
 mod commands;
 mod metadata_reader;
+mod ocr;
 mod restructure;
 mod scanner;
 mod types;
