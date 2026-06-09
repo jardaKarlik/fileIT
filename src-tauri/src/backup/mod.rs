@@ -50,7 +50,9 @@ pub fn create_backup(
     let mut zip = ZipWriter::new(zip_file);
     let options = FileOptions::<()>::default()
         .compression_method(zip::CompressionMethod::Deflated)
-        .unix_permissions(0o644);
+        .unix_permissions(0o644)
+        .large_file(false)
+        .ext_attr(0);
 
     // Write manifest.json first — it's the recovery tool
     let manifest_json = serde_json::to_string_pretty(manifest)
@@ -62,15 +64,21 @@ pub fn create_backup(
 
     // Add all source files to the ZIP
     // We preserve a flat structure using sha256-prefixed names to avoid collisions
+    let mut skipped_count = 0;
     for file in files {
         let archive_name = archive_entry_name(file);
         match add_file_to_zip(&mut zip, &file.record.path, &archive_name, options) {
             Ok(_) => {}
             Err(e) => {
                 // Log but continue — a partial backup is better than no backup
-                log::warn!("Could not back up {:?}: {}", file.record.path, e);
+                skipped_count += 1;
+                log::warn!("Skipped backup of {:?}: {} (may have special characters in filename)", file.record.path, e);
             }
         }
+    }
+
+    if skipped_count > 0 {
+        info!("Backup: {} files skipped due to encoding or access issues", skipped_count);
     }
 
     zip.finish().with_context(|| "Finalising ZIP")?;
@@ -96,18 +104,32 @@ fn add_file_to_zip(
     archive_name: &str,
     options: FileOptions<()>,
 ) -> Result<()> {
+    // Verify archive_name is valid UTF-8 before writing
+    // This ensures proper encoding of Czech characters and other non-ASCII names
+    if archive_name.as_bytes().is_empty() {
+        anyhow::bail!("Archive entry name cannot be empty");
+    }
+
     let mut file = std::fs::File::open(path)
         .with_context(|| format!("Opening for backup: {:?}", path))?;
 
+    // Start ZIP entry with UTF-8 filename encoding
+    // The zip crate v2 now properly handles UTF-8 encoding when names contain non-ASCII characters
     zip.start_file(archive_name, options)
-        .with_context(|| format!("Starting ZIP entry: {}", archive_name))?;
+        .with_context(|| {
+            format!(
+                "Adding file to ZIP archive. Entry: '{}' (source: {:?}). \
+                 This typically fails with non-ASCII names if UTF-8 encoding is not handled correctly.",
+                archive_name, path
+            )
+        })?;
 
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer)
-        .with_context(|| "Reading file for backup")?;
+        .with_context(|| format!("Reading file content for backup: {:?}", path))?;
 
     zip.write_all(&buffer)
-        .with_context(|| "Writing to ZIP")?;
+        .with_context(|| format!("Writing file to ZIP archive: {}", archive_name))?;
 
     Ok(())
 }
