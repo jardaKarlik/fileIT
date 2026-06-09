@@ -17,14 +17,14 @@ name = "fileit"
 path = "src/main.rs"
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2.6", features = [] }
 
 [dependencies]
 # Tauri core
-tauri = { version = "2", features = [] }
-tauri-plugin-dialog = "2"
-tauri-plugin-fs = "2"
-tauri-plugin-shell = "2"
+tauri = { version = "2.6", features = [] }
+tauri-plugin-dialog = "2.6"
+tauri-plugin-fs = "2.4"
+tauri-plugin-shell = "2.1"
 
 # Async runtime
 tokio = { version = "1", features = ["full"] }
