@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FileIT — Full Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#FAF7F2;--cream2:#F3EDE2;--warm-mid:#E8DDD0;
+  --sage:#7A9E7E;--sage-light:#A8C5AA;--sage-pale:#EAF2EB;
+  --blush:#D4818A;--blush-light:#E8ACB3;--blush-pale:#FAEAEC;
+  --gold:#C4973A;--gold-pale:#FBF3E3;
+  --ink:#2C2418;--ink2:#5C5040;--ink3:#8C7E6E;
+  --border:#E0D8CC;--border2:#D4CABC;
+  --shadow:0 2px 16px rgba(44,36,24,0.08);
+  --shadow2:0 8px 40px rgba(44,36,24,0.12);
+  --r:16px;--r2:24px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;overflow-x:hidden}
+#app{width:100%;min-height:600px;position:relative}
+
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--sage),var(--sage-light));border-radius:10px;display:flex;align-items:center;justify-content:center}
+.logo-mark svg{width:18px;height:18px}
+.logo-text{font-family:'DM Serif Display',serif;font-size:20px;color:var(--ink);letter-spacing:-0.3px}
+.logo-text span{color:var(--sage)}
+.nav-steps{display:flex;gap:4px;align-items:center}
+.nav-step{width:28px;height:4px;border-radius:2px;background:var(--border);transition:all .4s}
+.nav-step.active{background:var(--sage);width:40px}
+.nav-step.done{background:var(--sage-light)}
+
+.screen{display:none;animation:fadeSlide .4s ease}
+.screen.active{display:block}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* WELCOME */
+.welcome-wrap{display:grid;grid-template-columns:1fr 1fr;min-height:560px}
+.welcome-left{padding:48px 40px;display:flex;flex-direction:column;justify-content:center;gap:28px}
+.welcome-eyebrow{font-size:12px;font-weight:500;letter-spacing:1.5px;color:var(--sage);text-transform:uppercase}
+.welcome-title{font-family:'DM Serif Display',serif;font-size:42px;line-height:1.1;color:var(--ink);letter-spacing:-1px}
+.welcome-title em{color:var(--sage);font-style:italic}
+.welcome-sub{font-size:15px;color:var(--ink2);line-height:1.7;font-weight:300;max-width:400px}
+.welcome-actions{display:flex;flex-direction:column;gap:12px;max-width:340px}
+.btn-primary{background:var(--sage);color:white;border:none;border-radius:50px;padding:14px 28px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;justify-content:center}
+.btn-primary:hover{background:#6B8E6F;transform:translateY(-1px);box-shadow:0 6px 20px rgba(122,158,126,0.35)}
+.btn-secondary{background:transparent;color:var(--ink2);border:1px solid var(--border2);border-radius:50px;padding:13px 28px;font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;transition:all .2s}
+.btn-secondary:hover{border-color:var(--sage);color:var(--sage)}
+.welcome-badges{display:flex;gap:8px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:5px;background:white;border:1px solid var(--border);border-radius:50px;padding:5px 12px;font-size:11px;color:var(--ink2)}
+.badge-dot{width:6px;height:6px;border-radius:50%}
+.badge-dot.green{background:var(--sage)}
+.badge-dot.blush{background:var(--blush)}
+.badge-dot.gold{background:var(--gold)}
+.welcome-right{background:var(--cream2);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:32px}
+.folder-scene{position:relative;width:280px;height:320px}
+.folder-card{position:absolute;background:white;border-radius:var(--r);box-shadow:var(--shadow2);padding:16px;border:1px solid var(--border)}
+.fc1{width:200px;top:0;left:40px;transform:rotate(-4deg);z-index:1}
+.fc2{width:220px;top:60px;left:20px;transform:rotate(1.5deg);z-index:2}
+.fc3{width:210px;top:130px;left:35px;transform:rotate(-2deg);z-index:3;background:var(--sage-pale);border-color:var(--sage-light)}
+.folder-icon{width:32px;height:24px;margin-bottom:8px}
+.folder-label{font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px}
+.folder-meta{font-size:10px;color:var(--ink3)}
+
+/* FILE TYPES */
+.section-wrap{padding:36px 40px;max-width:860px;margin:0 auto}
+.section-header{margin-bottom:28px}
+.section-title{font-family:'DM Serif Display',serif;font-size:28px;color:var(--ink);margin-bottom:8px}
+.section-sub{font-size:14px;color:var(--ink2);line-height:1.6;font-weight:300;max-width:600px}
+.file-types-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.ft-card{background:white;border:2px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.ft-card:hover{border-color:var(--sage-light);box-shadow:var(--shadow)}
+.ft-card.selected{border-color:var(--sage);background:var(--sage-pale)}
+.ft-card.selected::after{content:'✓';position:absolute;top:10px;right:12px;width:20px;height:20px;background:var(--sage);border-radius:50%;color:white;font-size:11px;display:flex;align-items:center;justify-content:center;line-height:20px;text-align:center}
+.ft-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:18px}
+.ft-name{font-size:13px;font-weight:500;color:var(--ink);margin-bottom:2px}
+.ft-desc{font-size:11px;color:var(--ink3);line-height:1.4}
+.ft-badge{display:inline-block;font-size:10px;font-weight:500;padding:2px 8px;border-radius:50px;margin-top:6px}
+.ft-badge.core{background:var(--sage-pale);color:var(--sage)}
+.ft-badge.extra{background:var(--gold-pale);color:var(--gold)}
+.section-divider{height:1px;background:var(--border);margin:24px 0}
+.extra-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
+.extra-chip{display:flex;align-items:center;gap:6px;background:white;border:1px solid var(--border);border-radius:50px;padding:6px 14px;font-size:12px;cursor:pointer;transition:all .2s}
+.extra-chip:hover{border-color:var(--gold);color:var(--gold)}
+.extra-chip.on{background:var(--gold-pale);border-color:var(--gold);color:var(--gold)}
+.row-actions{display:flex;align-items:center;justify-content:space-between}
+.info-note{display:flex;align-items:flex-start;gap:10px;background:var(--blush-pale);border-radius:var(--r);padding:14px 18px;border:1px solid var(--blush-light);max-width:600px}
+.info-note-text{font-size:12px;color:var(--ink2);line-height:1.5}
+
+/* SCANNING */
+.scan-wrap{padding:48px 40px;max-width:700px;margin:0 auto;text-align:center}
+.scan-anim{width:120px;height:120px;margin:0 auto 32px;position:relative}
+.scan-ring{position:absolute;border-radius:50%;border:2px solid var(--sage-light);animation:pulse 2s ease-in-out infinite}
+.scan-ring:nth-child(1){inset:0;animation-delay:0s}
+.scan-ring:nth-child(2){inset:12px;animation-delay:.4s;border-color:var(--sage)}
+.scan-ring:nth-child(3){inset:24px;background:var(--sage-pale);border-color:var(--sage);display:flex;align-items:center;justify-content:center}
+@keyframes pulse{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:1;transform:scale(1.03)}}
+.scan-inner{width:72px;height:72px;border-radius:50%;background:var(--sage);display:flex;align-items:center;justify-content:center;position:absolute;top:24px;left:24px}
+.scan-title{font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:8px}
+.scan-subtitle{font-size:14px;color:var(--ink2);margin-bottom:32px}
+.scan-log{background:white;border:1px solid var(--border);border-radius:var(--r);padding:16px;text-align:left;margin-bottom:24px;max-height:160px;overflow:hidden}
+.scan-log-line{font-size:11px;font-family:monospace;color:var(--ink3);padding:2px 0;display:flex;align-items:center;gap:8px}
+.scan-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.scan-dot.green{background:var(--sage)}
+.scan-dot.gray{background:var(--border2)}
+.progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:8px}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--sage-light),var(--sage));border-radius:3px;transition:width .3s;animation:pgrow 4s ease forwards}
+@keyframes pgrow{0%{width:0%}30%{width:45%}60%{width:72%}85%{width:88%}100%{width:95%}}
+.progress-note{font-size:11px;color:var(--ink3)}
+
+/* DASHBOARD */
+.dash-wrap{padding:24px 32px;max-width:1000px;margin:0 auto}
+.dash-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.dash-title{font-family:'DM Serif Display',serif;font-size:24px;color:var(--ink)}
+.dash-subtitle{font-size:13px;color:var(--ink2);margin-top:2px}
+.cloud-banner{background:var(--sage-pale);border:1px solid var(--sage-light);border-radius:var(--r);padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px}
+.cloud-banner-text{flex:1;font-size:13px;color:var(--ink2)}
+.cloud-banner-text strong{color:var(--sage);font-weight:500}
+.btn-sm{background:var(--sage);color:white;border:none;border-radius:50px;padding:8px 18px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:white;border:1px solid var(--border);border-radius:var(--r);padding:16px 18px}
+.stat-label{font-size:11px;color:var(--ink3);margin-bottom:6px;font-weight:500;letter-spacing:.5px;text-transform:uppercase}
+.stat-value{font-size:26px;font-weight:300;color:var(--ink);font-family:'DM Serif Display',serif;letter-spacing:-0.5px}
+.stat-sub{font-size:11px;color:var(--sage);margin-top:3px}
+.charts-row{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
+.charts-row2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px}
+.chart-card{background:white;border:1px solid var(--border);border-radius:var(--r);padding:18px}
+.chart-title{font-size:12px;font-weight:500;color:var(--ink2);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.chart-tag{font-size:10px;background:var(--sage-pale);color:var(--sage);padding:2px 8px;border-radius:50px}
+.treemap{position:relative;height:140px;border-radius:8px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px}
+.tm-cell{display:flex;flex-direction:column;justify-content:flex-end;padding:8px;border-radius:4px;cursor:pointer;transition:filter .2s;position:relative;overflow:hidden}
+.tm-cell:hover{filter:brightness(0.94)}
+.tm-label{font-size:10px;font-weight:500;color:rgba(255,255,255,0.9);line-height:1.2}
+.tm-val{font-size:16px;font-weight:300;color:white}
+.wordcloud{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;padding:8px 0}
+.wc-word{border-radius:4px;padding:2px 4px;cursor:pointer;transition:opacity .2s;font-weight:400;color:var(--ink2)}
+.wc-word:hover{opacity:0.7}
+.activity-bars{display:flex;align-items:flex-end;gap:3px;height:90px}
+.act-bar{flex:1;border-radius:3px 3px 0 0;min-height:4px;cursor:pointer;transition:opacity .2s;position:relative}
+.act-bar:hover{opacity:0.8}
+.act-month{font-size:9px;color:var(--ink3);text-align:center;margin-top:4px}
+.cust-list{display:flex;flex-direction:column;gap:6px;max-height:160px;overflow:hidden}
+.cust-row{display:flex;align-items:center;gap:10px}
+.cust-bar-wrap{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.cust-bar{height:100%;border-radius:3px;background:var(--blush-light)}
+.cust-name{font-size:11px;color:var(--ink2);min-width:90px}
+.cust-count{font-size:11px;color:var(--ink3);min-width:24px;text-align:right}
+
+/* CLEANUP */
+.cleanup-wrap{padding:36px 40px;max-width:760px;margin:0 auto}
+.option-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:28px}
+.opt-card{background:white;border:2px solid var(--border);border-radius:var(--r2);padding:22px 18px;cursor:pointer;transition:all .2s;text-align:center}
+.opt-card:hover{border-color:var(--sage-light);transform:translateY(-2px);box-shadow:var(--shadow)}
+.opt-card.selected{border-color:var(--sage);background:var(--sage-pale)}
+.opt-icon{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px}
+.opt-title{font-family:'DM Serif Display',serif;font-size:16px;color:var(--ink);margin-bottom:6px}
+.opt-desc{font-size:11px;color:var(--ink2);line-height:1.5}
+.sort-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}
+.sort-opt{background:white;border:1.5px solid var(--border);border-radius:var(--r);padding:14px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .2s}
+.sort-opt:hover{border-color:var(--sage-light)}
+.sort-opt.on{border-color:var(--sage);background:var(--sage-pale)}
+.sort-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.sort-label{font-size:13px;font-weight:500;color:var(--ink)}
+.sort-sub{font-size:11px;color:var(--ink3);margin-top:1px}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--ink);color:white;border-radius:50px;padding:12px 24px;font-size:13px;transition:transform .3s;z-index:100;display:flex;align-items:center;gap:8px}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div id="app">
+<nav class="topnav">
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 14V8C3 7.4 3.4 7 4 7H6V5C6 4.4 6.4 4 7 4H11C11.6 4 12 4.4 12 5V7H14C14.6 7 15 7.4 15 8V14C15 14.6 14.6 15 14 15H4C3.4 15 3 14.6 3 14Z" fill="white" fill-opacity="0.9"/>
+        <path d="M7 10H11M9 8V12" stroke="#7A9E7E" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="logo-text">File<span>IT</span></span>
+  </div>
+  <div class="nav-steps">
+    <div class="nav-step done" id="ns0"></div>
+    <div class="nav-step active" id="ns1"></div>
+    <div class="nav-step" id="ns2"></div>
+    <div class="nav-step" id="ns3"></div>
+    <div class="nav-step" id="ns4"></div>
+  </div>
+  <div style="width:120px;text-align:right">
+    <span style="font-size:12px;color:var(--ink3)" id="screen-label">Welcome</span>
+  </div>
+</nav>
+
+<!-- SCREEN 1: WELCOME -->
+<div class="screen active" id="s-welcome">
+  <div class="welcome-wrap">
+    <div class="welcome-left">
+      <div class="welcome-eyebrow">Your personal organizer</div>
+      <h1 class="welcome-title">Let's tidy your <em>digital life</em>, together.</h1>
+      <p class="welcome-sub">FileIT gently scans your documents, understands what's inside them, and organizes everything — your way. No IT skills needed, ever.</p>
+      <div class="welcome-badges">
+        <div class="badge"><div class="badge-dot green"></div>Privacy first</div>
+        <div class="badge"><div class="badge-dot blush"></div>GDPR aware</div>
+        <div class="badge"><div class="badge-dot gold"></div>Works offline</div>
+      </div>
+      <div class="welcome-actions">
+        <button class="btn-primary" onclick="goTo('s-filetypes',1)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+          Start organizing
+        </button>
+        <button class="btn-secondary" onclick="goTo('s-dashboard',3)">Preview the dashboard →</button>
+      </div>
+    </div>
+    <div class="welcome-right">
+      <div class="folder-scene">
+        <div class="folder-card fc1">
+          <svg class="folder-icon" viewBox="0 0 32 24"><path d="M2 6C2 4.9 2.9 4 4 4H12L15 7H28C29.1 7 30 7.9 30 9V20C30 21.1 29.1 22 28 22H4C2.9 22 2 21.1 2 20V6Z" fill="#E8DDD0" stroke="#C4BAAC" stroke-width="1.2"/></svg>
+          <div class="folder-label" style="color:var(--ink3)">Unfiled documents</div>
+          <div class="folder-meta">47 mixed files · various dates</div>
+        </div>
+        <div class="folder-card fc2">
+          <svg class="folder-icon" viewBox="0 0 32 24"><path d="M2 6C2 4.9 2.9 4 4 4H12L15 7H28C29.1 7 30 7.9 30 9V20C30 21.1 29.1 22 28 22H4C2.9 22 2 21.1 2 20V6Z" fill="#E0ECE1" stroke="#A8C5AA" stroke-width="1.2"/></svg>
+          <div class="folder-label" style="color:var(--sage)">✓ Organized by FileIT</div>
+          <div class="folder-meta">Sorted by client · backed up</div>
+        </div>
+        <div class="folder-card fc3">
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <div style="width:28px;height:34px;background:var(--blush-pale);border-radius:4px;border:1px solid var(--blush-light)"></div>
+            <div style="width:28px;height:34px;background:var(--gold-pale);border-radius:4px;border:1px solid #E8D4A0"></div>
+            <div style="width:28px;height:34px;background:#EEF0F8;border-radius:4px;border:1px solid #CDD0E0"></div>
+          </div>
+          <div class="folder-meta" style="font-size:10px">contracts · invoices · IDs · scans</div>
+        </div>
+        <div style="position:absolute;top:-10px;right:-10px;background:white;border:1px solid var(--border);border-radius:12px;padding:10px 14px;box-shadow:var(--shadow)">
+          <div style="font-size:10px;color:var(--ink3)">Files found</div>
+          <div style="font-size:22px;font-weight:300;font-family:'DM Serif Display',serif;color:var(--sage)">284</div>
+        </div>
+        <div style="position:absolute;bottom:-5px;right:-5px;background:white;border:1px solid var(--border);border-radius:12px;padding:8px 12px;box-shadow:var(--shadow)">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="width:6px;height:6px;border-radius:50%;background:var(--gold)"></div>
+            <div style="font-size:10px;color:var(--ink3)">OneDrive detected</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2: FILE TYPES -->
+<div class="screen" id="s-filetypes">
+  <div class="section-wrap">
+    <div class="section-header">
+      <h2 class="section-title">What files should we look at?</h2>
+      <p class="section-sub">FileIT focuses on your important documents — legal papers, contracts, bank letters, and customer files. These are pre-selected for you. You can add more below.</p>
+    </div>
+    <div class="file-types-grid">
+      <div class="ft-card selected" onclick="toggleFT(this)">
+        <div class="ft-icon" style="background:#FAEAEC">📄</div>
+        <div class="ft-name">PDF Documents</div>
+        <div class="ft-desc">Contracts, agreements, official letters, scanned papers</div>
+        <span class="ft-badge core">Core</span>
+      </div>
+      <div class="ft-card selected" onclick="toggleFT(this)">
+        <div class="ft-icon" style="background:#EEF0F8">📝</div>
+        <div class="ft-name">Word Documents</div>
+        <div class="ft-desc">Templates, reports, correspondence, agreements</div>
+        <span class="ft-badge core">Core</span>
+      </div>
+      <div class="ft-card selected" onclick="toggleFT(this)">
+        <div class="ft-icon" style="background:#EAF2EB">📊</div>
+        <div class="ft-name">Excel / Spreadsheets</div>
+        <div class="ft-desc">Financial data, customer lists, budgets, invoices</div>
+        <span class="ft-badge core">Core</span>
+      </div>
+      <div class="ft-card selected" onclick="toggleFT(this)">
+        <div class="ft-icon" style="background:#FBF3E3">🖼</div>
+        <div class="ft-name">Images (JPG, BMP)</div>
+        <div class="ft-desc">Scanned IDs, document photos, signed papers</div>
+        <span class="ft-badge core">Core</span>
+      </div>
+      <div class="ft-card" onclick="toggleFT(this)">
+        <div class="ft-icon" style="background:#F3EDE2">📧</div>
+        <div class="ft-name">Email Exports</div>
+        <div class="ft-desc">.msg and .eml files saved from inbox</div>
+        <span class="ft-badge extra">Optional</span>
+      </div>
+      <div class="ft-card" onclick="toggleFT(this)">
+        <div class="ft-icon" style="background:#F0EBF6">🗒</div>
+        <div class="ft-name">Text &amp; Notes</div>
+        <div class="ft-desc">Plain text files, notes, quick memos</div>
+        <span class="ft-badge extra">Optional</span>
+      </div>
+    </div>
+    <div class="section-divider"></div>
+    <div style="font-size:12px;font-weight:500;color:var(--ink2);margin-bottom:12px">Add more types</div>
+    <div class="extra-row">
+      <div class="extra-chip" onclick="this.classList.toggle('on')">+ ZIP archives</div>
+      <div class="extra-chip" onclick="this.classList.toggle('on')">+ PowerPoint</div>
+      <div class="extra-chip" onclick="this.classList.toggle('on')">+ XML / JSON</div>
+      <div class="extra-chip" onclick="this.classList.toggle('on')">+ Audio memos</div>
+      <div class="extra-chip" onclick="this.classList.toggle('on')">+ CSV data</div>
+    </div>
+    <div class="info-note" style="margin-bottom:24px">
+      <span style="font-size:18px">🔒</span>
+      <div class="info-note-text">FileIT <strong>never</strong> uploads your files anywhere. Content analysis runs entirely on your computer. We look inside documents only to help you organize them — your data stays yours.</div>
+    </div>
+    <div class="row-actions">
+      <button class="btn-secondary" onclick="goTo('s-welcome',0)">← Back</button>
+      <button class="btn-primary" onclick="goTo('s-scanning',2)">Start scanning →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 3: SCANNING -->
+<div class="screen" id="s-scanning">
+  <div class="scan-wrap">
+    <div class="scan-anim">
+      <div class="scan-ring"></div>
+      <div class="scan-ring"></div>
+      <div class="scan-ring"></div>
+      <div class="scan-inner">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M6 22L14 8L22 22H6Z" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/><path d="M14 15V18" stroke="white" stroke-width="2" stroke-linecap="round"/><circle cx="14" cy="20" r="1" fill="white"/></svg>
+      </div>
+    </div>
+    <h2 class="scan-title">Gently looking through your files…</h2>
+    <p class="scan-subtitle">FileIT is scanning your selected drives and peeking inside documents to understand what they are. This may take a few minutes.</p>
+    <div class="progress-bar"><div class="progress-fill" id="prog-bar"></div></div>
+    <div class="progress-note" id="prog-note">Scanning C:\Users\Anna\Documents …</div>
+    <div class="scan-log" id="scan-log" style="margin-top:16px">
+      <div class="scan-log-line"><div class="scan-dot green"></div>Indexing Documents folder — 124 files found</div>
+      <div class="scan-log-line"><div class="scan-dot green"></div>Reading content: Lease_Agreement_2023.pdf ✓</div>
+      <div class="scan-log-line"><div class="scan-dot green"></div>Customer identified: Novák, Pavel · 3 files</div>
+      <div class="scan-log-line"><div class="scan-dot gray"></div>Scanning Desktop folder…</div>
+      <div class="scan-log-line"><div class="scan-dot gray"></div>Checking Downloads…</div>
+    </div>
+    <div style="background:var(--sage-pale);border:1px solid var(--sage-light);border-radius:var(--r);padding:14px 18px;text-align:left;margin-bottom:24px">
+      <div style="font-size:12px;font-weight:500;color:var(--sage);margin-bottom:6px">☁️ Cloud storage detected</div>
+      <div style="font-size:12px;color:var(--ink2)">OneDrive is installed and running. After the scan, you'll have the option to compare and sync your files with it.</div>
+    </div>
+    <button class="btn-primary" onclick="goTo('s-dashboard',3)" style="margin:0 auto">See the results →</button>
+  </div>
+</div>
+
+<!-- SCREEN 4: DASHBOARD -->
+<div class="screen" id="s-dashboard">
+  <div class="dash-wrap">
+    <div class="dash-header">
+      <div>
+        <div class="dash-title">Your File Overview</div>
+        <div class="dash-subtitle">Scanned 284 files across 3 drives · April 17, 2026</div>
+      </div>
+      <button class="btn-primary" onclick="goTo('s-cleanup',4)" style="gap:6px">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 12L5 9M7 3L11 7L7 11M3 7H11" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Clean up now
+      </button>
+    </div>
+    <div class="cloud-banner">
+      <span style="font-size:20px">☁️</span>
+      <div class="cloud-banner-text"><strong>OneDrive is connected.</strong> We found 68 matching files in your cloud. Would you like to see a side-by-side comparison?</div>
+      <button class="btn-sm" onclick="showToast('Opening cloud sync view…')">View sync map</button>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Total files</div>
+        <div class="stat-value">284</div>
+        <div class="stat-sub">across 3 drives</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total size</div>
+        <div class="stat-value">2.4 GB</div>
+        <div class="stat-sub">~180MB avg per month</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Customers found</div>
+        <div class="stat-value">38</div>
+        <div class="stat-sub">from file contents</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Duplicates</div>
+        <div class="stat-value" style="color:var(--blush)">24</div>
+        <div class="stat-sub">can be removed safely</div>
+      </div>
+    </div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">File activity over time <span class="chart-tag">by creation date</span></div>
+        <div class="activity-bars" id="act-bars"></div>
+        <div style="display:flex;gap:0;margin-top:2px" id="act-labels"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Files by institution</div>
+        <div class="treemap">
+          <div class="tm-cell" style="background:#7A9E7E;grid-column:1;grid-row:1/3" onclick="showToast('Bank: 84 files')">
+            <div class="tm-val">84</div><div class="tm-label">Banking</div>
+          </div>
+          <div class="tm-cell" style="background:#C4973A;grid-column:2;grid-row:1" onclick="showToast('Legal: 62 files')">
+            <div class="tm-val">62</div><div class="tm-label">Legal</div>
+          </div>
+          <div class="tm-cell" style="background:#D4818A;grid-column:2;grid-row:2" onclick="showToast('Insurance: 48 files')">
+            <div class="tm-val">48</div><div class="tm-label">Insurance</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:2px;background:#7A9E7E"></div><span style="font-size:10px;color:var(--ink3)">Other: 90 files</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="charts-row2">
+      <div class="chart-card">
+        <div class="chart-title">Key topics in your files</div>
+        <div class="wordcloud" id="wcloud"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Files per customer</div>
+        <div class="cust-list" id="cust-list"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">File types</div>
+        <div id="donut-wrap" style="position:relative;height:90px;display:flex;align-items:center;justify-content:center">
+          <svg width="90" height="90" viewBox="0 0 90 90">
+            <circle cx="45" cy="45" r="32" fill="none" stroke="var(--border)" stroke-width="14"/>
+            <circle cx="45" cy="45" r="32" fill="none" stroke="#7A9E7E" stroke-width="14" stroke-dasharray="80 121" stroke-dashoffset="-10" stroke-linecap="round"/>
+            <circle cx="45" cy="45" r="32" fill="none" stroke="#C4973A" stroke-width="14" stroke-dasharray="46 155" stroke-dashoffset="-90" stroke-linecap="round"/>
+            <circle cx="45" cy="45" r="32" fill="none" stroke="#D4818A" stroke-width="14" stroke-dasharray="30 171" stroke-dashoffset="-136" stroke-linecap="round"/>
+            <text x="45" y="49" text-anchor="middle" style="font-size:13px;font-weight:500;fill:var(--ink);font-family:'DM Sans',sans-serif">284</text>
+          </svg>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;margin-top:6px">
+          <div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:2px;background:#7A9E7E"></div><span style="font-size:10px;color:var(--ink3)">PDF — 126 files</span></div>
+          <div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:2px;background:#C4973A"></div><span style="font-size:10px;color:var(--ink3)">Word — 82 files</span></div>
+          <div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:2px;background:#D4818A"></div><span style="font-size:10px;color:var(--ink3)">Images — 54 files</span></div>
+          <div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:2px;background:var(--border)"></div><span style="font-size:10px;color:var(--ink3)">Other — 22 files</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end">
+      <button class="btn-primary" onclick="goTo('s-cleanup',4)">Choose how to organize →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 5: CLEANUP -->
+<div class="screen" id="s-cleanup">
+  <div class="cleanup-wrap">
+    <div class="section-header">
+      <h2 class="section-title">How shall we organize?</h2>
+      <p class="section-sub">Choose where your files will live after the cleanup, and how you'd like them sorted. You're always in control.</p>
+    </div>
+    <div class="option-cards">
+      <div class="opt-card selected" onclick="selectOpt(this)">
+        <div class="opt-icon" style="background:#EAF2EB">💻</div>
+        <div class="opt-title">Local only</div>
+        <div class="opt-desc">Organize files on this computer only. Nothing leaves your drive.</div>
+      </div>
+      <div class="opt-card" onclick="selectOpt(this)">
+        <div class="opt-icon" style="background:#F3EDE2">☁️</div>
+        <div class="opt-title">Local + Cloud backup</div>
+        <div class="opt-desc">Organize locally and send a backup copy to OneDrive or Google Drive.</div>
+      </div>
+      <div class="opt-card" onclick="selectOpt(this)">
+        <div class="opt-icon" style="background:#FAEAEC">🔄</div>
+        <div class="opt-title">Cloud to cloud</div>
+        <div class="opt-desc">Move and organize files between two cloud storage services.</div>
+      </div>
+    </div>
+    <div style="font-size:13px;font-weight:500;color:var(--ink2);margin-bottom:12px">Sort your files by…</div>
+    <div class="sort-grid">
+      <div class="sort-opt on" onclick="this.classList.toggle('on')">
+        <div class="sort-icon" style="background:#EAF2EB">👤</div>
+        <div><div class="sort-label">Customer name</div><div class="sort-sub">Group all files per person</div></div>
+      </div>
+      <div class="sort-opt on" onclick="this.classList.toggle('on')">
+        <div class="sort-icon" style="background:#FBF3E3">📅</div>
+        <div><div class="sort-label">Month &amp; year</div><div class="sort-sub">Timeline-based folders</div></div>
+      </div>
+      <div class="sort-opt" onclick="this.classList.toggle('on')">
+        <div class="sort-icon" style="background:#FAEAEC">🏦</div>
+        <div><div class="sort-label">Issuing institution</div><div class="sort-sub">Bank, insurer, court, etc.</div></div>
+      </div>
+      <div class="sort-opt" onclick="this.classList.toggle('on')">
+        <div class="sort-icon" style="background:#F0EBF6">📑</div>
+        <div><div class="sort-label">Document type</div><div class="sort-sub">Contract, ID, invoice, letter</div></div>
+      </div>
+    </div>
+    <div class="info-note" style="margin-bottom:24px">
+      <span style="font-size:18px">✨</span>
+      <div class="info-note-text">FileIT will <strong>preview</strong> the new folder structure before moving anything. You can review and adjust before it makes a single change.</div>
+    </div>
+    <div class="row-actions">
+      <button class="btn-secondary" onclick="goTo('s-dashboard',3)">← Back to overview</button>
+      <button class="btn-primary" onclick="showToast('🎉 Organizing 284 files… please hold on!')">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7L5.5 10.5L12 4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Start organizing
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="white" stroke-width="1.2"/><path d="M7 5v3M7 9.5v.5" stroke="white" stroke-width="1.2" stroke-linecap="round"/></svg>
+  <span id="toast-msg">Done!</span>
+</div>
+</div>
+
+<script>
+const labels=['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
+const vals=[12,18,8,24,31,15,42,28,19,37,48,22];
+const maxV=Math.max(...vals);
+const barsEl=document.getElementById('act-bars');
+const labsEl=document.getElementById('act-labels');
+vals.forEach((v,i)=>{
+  const b=document.createElement('div');
+  b.className='act-bar';
+  b.style.height=(v/maxV*85)+'px';
+  b.style.background=v===maxV?'var(--sage)':(v>25?'var(--sage-light)':'var(--warm-mid)');
+  b.title=labels[i]+': '+v+' files';
+  b.onclick=()=>showToast(labels[i]+': '+v+' files added');
+  barsEl.appendChild(b);
+  const l=document.createElement('div');
+  l.className='act-month';l.textContent=labels[i];l.style.flex='1';
+  labsEl.appendChild(l);
+});
+
+const words=[['Contract',22],['Loan',18],['Insurance',16],['Identity',14],['Agreement',20],['Invoice',13],['Lease',11],['Certificate',9],['Bank',19],['Customer',15],['Letter',10],['Claim',8],['Policy',12],['Notice',7],['Tax',14],['Receipt',9]];
+const wc=document.getElementById('wcloud');
+const colors=['var(--sage)','var(--blush)','var(--gold)','var(--ink2)','var(--sage-light)'];
+words.forEach(([w,s])=>{
+  const el=document.createElement('span');
+  el.className='wc-word';
+  el.textContent=w;
+  el.style.fontSize=(10+s/3)+'px';
+  el.style.color=colors[Math.floor(Math.random()*colors.length)];
+  el.onclick=()=>showToast('Filtering by: '+w);
+  wc.appendChild(el);
+});
+
+const custs=[['Novák, Pavel',22],['Horáková, Jana',18],['Müller, Thomas',15],['Svoboda, Lucie',12],['Kratochvíl, P.',9],['Dvořák, Martin',7]];
+const cl=document.getElementById('cust-list');
+custs.forEach(([n,c])=>{
+  const r=document.createElement('div');r.className='cust-row';
+  r.innerHTML=`<div class="cust-name">${n}</div><div class="cust-bar-wrap"><div class="cust-bar" style="width:${Math.round(c/22*100)}%"></div></div><div class="cust-count">${c}</div>`;
+  r.onclick=()=>showToast('Filtering by: '+n);
+  r.style.cursor='pointer';
+  cl.appendChild(r);
+});
+
+const screens=['s-welcome','s-filetypes','s-scanning','s-dashboard','s-cleanup'];
+const screenNames=['Welcome','File types','Scanning…','Dashboard','Clean up'];
+function goTo(id,idx){
+  screens.forEach(s=>document.getElementById(s).classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  for(let i=0;i<5;i++){
+    const ns=document.getElementById('ns'+i);
+    if(!ns)return;
+    ns.classList.remove('active','done');
+    if(i<idx)ns.classList.add('done');
+    else if(i===idx)ns.classList.add('active');
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function toggleFT(el){el.classList.toggle('selected')}
+function selectOpt(el){document.querySelectorAll('.opt-card').forEach(c=>c.classList.remove('selected'));el.classList.add('selected')}
+
+let toastT;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  document.getElementById('toast-msg').textContent=msg;
+  t.classList.add('show');
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>t.classList.remove('show'),3000);
+}
+goTo('s-welcome',0);
+</script>
+</body>
+</html>

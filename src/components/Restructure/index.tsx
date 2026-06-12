@@ -123,6 +123,8 @@ export function Restructure() {
   function handleSelectDest(mode: 'local' | 'cloud' | 'c2c') {
     if (mode === 'local') {
       setDestinationMode({ type: 'local_only' });
+      // Set default LOCAL-ONLY path when switching to local mode
+      setTargetPath('C:\\ReOrganized');
     } else if (mode === 'cloud') {
       setShowCloudModal(true);
       setCloudModalVariant('default');

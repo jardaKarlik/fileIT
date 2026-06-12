@@ -1,12 +1,51 @@
 // src/components/Dashboard/index.tsx
 
+import { useState } from 'react';
 import { useStore } from '../../store';
+import { api } from '../../utils/tauriApi';
 import './Dashboard.css';
 
+// Helper to get years and file counts for timeline
+function getYearsAndCounts(files: any[]) {
+  const years: string[] = [];
+  const vals: number[] = [];
 
-const MONTHS = ['dub','kvě','čvn','čvc','srp','zář','říj','lis','pro','led','úno','bře'];
-const VALS   = [12,18,8,24,31,15,42,28,19,37,48,22];
-const MAX    = Math.max(...VALS);
+  // Create map to count files by year
+  const yearCounts: { [key: number]: number } = {};
+
+  // Count files by year from document_date or modified date
+  files.forEach(file => {
+    try {
+      const dateStr = file.document_date || file.record?.modified;
+      if (!dateStr) return;
+
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return;
+
+      const year = date.getFullYear();
+      yearCounts[year] = (yearCounts[year] ?? 0) + 1;
+    } catch (e) {
+      // Ignore parsing errors
+    }
+  });
+
+  // Sort years and build display arrays
+  const sortedYears = Object.keys(yearCounts)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  sortedYears.forEach(year => {
+    years.push(String(year));
+    vals.push(yearCounts[year]);
+  });
+
+  // If no years found, return empty arrays
+  if (years.length === 0) {
+    return { years: [], vals: [] };
+  }
+
+  return { years, vals };
+}
 
 const CUSTOMERS = [
   ['Novák Pavel',22],['Horáková Jana',18],['Müller Thomas',15],
@@ -15,6 +54,10 @@ const CUSTOMERS = [
 
 export function Dashboard() {
   const { setScreen, scanResult } = useStore();
+
+  const [backupState, setBackupState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [, setBackupPath] = useState<string>('');
+  const [exportState, setExportState] = useState<'idle' | 'loading' | 'done'>('idle');
 
   const totalFiles = scanResult?.total_files ?? 284;
   const totalGB   = ((scanResult?.total_size_bytes ?? 2_576_351_232) / 1e9).toFixed(1).replace('.', ',');
@@ -25,6 +68,65 @@ export function Dashboard() {
   const unclassifiedCount = scanResult?.files
     ? scanResult.files.filter(f => !f.institution || f.confidence < 0.65).length
     : 0;
+
+  // Get years and file counts for timeline
+  const { years: YEARS, vals: VALS } = getYearsAndCounts(scanResult?.files ?? []);
+  const MAX = Math.max(...VALS, 1); // Ensure MAX is at least 1 to avoid divide by zero
+
+  async function handleBackup() {
+    if (backupState === 'loading') return;
+    setBackupState('loading');
+    try {
+      const zipPath = await api.createStandaloneBackup();
+      setBackupPath(zipPath);
+      setBackupState('done');
+    } catch (e) {
+      console.error('Backup failed:', e);
+      setBackupState('error');
+      setTimeout(() => setBackupState('idle'), 4000);
+    }
+  }
+
+  function handleExport() {
+    if (!scanResult?.files?.length) return;
+    setExportState('loading');
+
+    try {
+      const headers = ['Soubor', 'Cesta', 'Klient', 'Instituce', 'Typ dokumentu', 'Datum dokumentu', 'Shoda %', 'Duplicita'];
+      const rows = scanResult.files.map(f => [
+        f.record.name,
+        f.record.path,
+        f.customer?.name ?? '',
+        f.institution?.canonical_name ?? '',
+        f.document_type ?? '',
+        f.document_date ? new Date(f.document_date).toLocaleDateString('cs-CZ') : '',
+        Math.round((f.confidence ?? 0) * 100) + '%',
+        f.is_duplicate ? 'ano' : 'ne',
+      ]);
+
+      const csvContent = [headers, ...rows]
+        .map(row => row.map(cell =>
+          '"' + String(cell ?? '').replace(/"/g, '""') + '"'
+        ).join(';'))
+        .join('\n');
+
+      const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `fileit_relace_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setExportState('done');
+      setTimeout(() => setExportState('idle'), 3000);
+    } catch (e) {
+      console.error('Export failed:', e);
+      setExportState('idle');
+    }
+  }
 
   return (
     <div className="dash-screen">
@@ -44,7 +146,11 @@ export function Dashboard() {
                   <span className="ucebna-badge">{unclassifiedCount}</span>
                 )}
               </button>
-              <button className="btn-hero-ghost" onClick={() => {}}>Exportovat relaci</button>
+              <button className="btn-hero-ghost"
+                onClick={handleExport}
+                disabled={exportState === 'loading'}>
+                {exportState === 'loading' ? 'Exportuji…' : exportState === 'done' ? '✓ Exportováno' : 'Exportovat relaci'}
+              </button>
               <button className="btn-hero-primary" onClick={() => setScreen('scanning')}>
                 <span>↺</span> Znovu prohlédnout
               </button>
@@ -79,28 +185,37 @@ export function Dashboard() {
             </div>
             <div className="cta-arrow">→</div>
           </div>
-          <div className="cta-card backup" onClick={() => {}}>
+          <div className="cta-card backup" onClick={handleBackup}
+            style={{ opacity: backupState === 'loading' ? 0.7 : 1,
+                     cursor: backupState === 'loading' ? 'not-allowed' : 'pointer' }}>
             <div className="cta-card-content">
               <div className="cta-card-label">Chraňte svou práci</div>
               <div className="cta-card-title">Zálohovat</div>
-              <div className="cta-card-desc">Bezpečnostní ZIP + volitelně kopie na OneDrive, Google Drive nebo Dropbox.</div>
+              <div className="cta-card-desc">
+                {backupState === 'idle' && 'Bezpečnostní ZIP + volitelně kopie na OneDrive, Google Drive nebo Dropbox.'}
+                {backupState === 'loading' && 'Vytváříme zálohu…'}
+                {backupState === 'done' && '✓ Záloha uložena'}
+                {backupState === 'error' && '⚠ Záloha selhala — zkuste to znovu'}
+              </div>
             </div>
-            <div className="cta-arrow">→</div>
+            <div className="cta-arrow">
+              {backupState === 'loading' ? '…' : backupState === 'done' ? '✓' : '→'}
+            </div>
           </div>
         </div>
 
         {/* Charts row */}
         <div className="charts-row">
           <div className="chart-card">
-            <div className="chart-title">Aktivita souborů v čase <span className="chart-tag">podle data vzniku</span></div>
+            <div className="chart-title">Aktivita souborů v čase <span className="chart-tag">podle roku vzniku</span></div>
             <div className="activity-bars">
               {VALS.map((v,i) => (
                 <div key={i} className="act-bar-wrap">
                   <div className="act-bar" style={{
                     height: `${(v/MAX)*90}px`,
                     background: v===MAX ? 'linear-gradient(180deg,#FF1493,#FE865B)' : v>25 ? 'var(--pink-soft)' : '#E8D4E8'
-                  }} title={`${MONTHS[i]}: ${v} souborů`} />
-                  <div className="act-month">{MONTHS[i]}</div>
+                  }} title={`${YEARS[i]}: ${v} souborů`} />
+                  <div className="act-month">{YEARS[i]}</div>
                 </div>
               ))}
             </div>

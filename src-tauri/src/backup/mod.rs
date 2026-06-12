@@ -30,7 +30,7 @@ use zip::{write::FileOptions, ZipWriter};
 pub fn estimate_backup_size(files: &[ClassifiedFile]) -> u64 {
     let total_bytes: u64 = files
         .iter()
-        .map(|f| f.record.size_bytes.unwrap_or(0))
+        .map(|f| f.record.size_bytes)
         .sum();
 
     // Add ~10% for ZIP metadata and Deflate compression headers

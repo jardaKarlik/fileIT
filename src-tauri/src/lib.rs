@@ -95,6 +95,7 @@ pub fn run() {
             commands::start_scan,
             commands::build_preview,
             commands::run_restructure,
+            commands::create_standalone_backup,
             commands::confirm_restructure,
             commands::restore_restructure,
             commands::pick_folder,

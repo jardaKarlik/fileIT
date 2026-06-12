@@ -140,7 +140,7 @@ export const useStore = create<FileITState>((set) => ({
 
   destinationMode: { type: 'local_only' },
   setDestinationMode: (destinationMode) => set({ destinationMode }),
-  targetPath: 'C:\\FileIT\\Organized\\',
+  targetPath: 'C:\\ReOrganized',
   setTargetPath: (targetPath) => set({ targetPath }),
   backupEnabled: true,
   setBackupEnabled: (backupEnabled) => set({ backupEnabled }),

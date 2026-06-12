@@ -1,0 +1,1563 @@
+- generic [ref=e1]:
+  - generic [ref=e6]:
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - button "Lee, , Lee" [ref=e12] [cursor=pointer]:
+          - generic "Lee, ," [ref=e14]:
+            - generic [ref=e15]: L
+          - generic [ref=e16]: Lee
+          - img [ref=e18]
+        - button [ref=e894] [cursor=pointer]:
+          - img [ref=e895]
+      - generic [ref=e21]:
+        - button "Search Ctrl K" [ref=e22] [cursor=pointer]:
+          - img [ref=e24]
+          - generic [ref=e26]: Search
+          - generic [ref=e27]: Ctrl K
+        - button "Lottie animation" [ref=e28] [cursor=pointer]:
+          - img "Lottie animation" [ref=e32]:
+            - img [ref=e34]
+      - generic [ref=e67]:
+        - generic [ref=e70]:
+          - button "Create task" [ref=e71] [cursor=pointer]:
+            - img [ref=e73]
+          - button "Dropdown menu" [ref=e78] [cursor=pointer]:
+            - button "Record a Clip" [ref=e79]:
+              - img [ref=e81]
+        - button "Dropdown menu" [ref=e85] [cursor=pointer]:
+          - generic "Jarda Karlik, , online" [ref=e88]:
+            - generic [ref=e89]: JK
+            - img [ref=e91]
+          - img [ref=e94]
+    - generic [ref=e100]:
+      - navigation "Sidebar" [ref=e102]:
+        - generic [ref=e103]:
+          - generic [ref=e104]:
+            - generic [ref=e105]:
+              - link "Home" [ref=e109] [cursor=pointer]:
+                - /url: https://app.clickup.com/90121813699/inbox
+                - img [ref=e113]
+                - generic [ref=e118]: Home
+                - note [ref=e121]:
+                  - generic [ref=e122]: "1"
+              - generic [ref=e123]:
+                - link "Planner 9" [ref=e126] [cursor=pointer]:
+                  - /url: https://app.clickup.com/90121813699/calendar
+                  - generic [ref=e127]:
+                    - img [ref=e131]
+                    - generic [ref=e136]: Planner
+                    - generic [ref=e138]:
+                      - generic: "9"
+                - link "AI" [ref=e141] [cursor=pointer]:
+                  - /url: https://app.clickup.com/90121813699/ai
+                  - generic [ref=e142]:
+                    - img [ref=e146]
+                    - generic [ref=e151]: AI
+                - link "Teams" [ref=e155] [cursor=pointer]:
+                  - /url: https://app.clickup.com/90121813699/teams-pulse
+                  - generic [ref=e156]:
+                    - img [ref=e160]
+                    - generic [ref=e165]: Teams
+            - button "Dropdown menu" [ref=e168] [cursor=pointer]:
+              - img [ref=e170]
+              - generic [ref=e172]:
+                - img [ref=e176]
+                - img [ref=e181]
+                - img [ref=e186]
+                - img [ref=e189]
+              - generic [ref=e194]: More
+          - generic [ref=e198]:
+            - button "Invite" [ref=e203] [cursor=pointer]:
+              - img [ref=e205]
+              - generic [ref=e207]: Invite
+            - button "Upgrade" [ref=e209] [cursor=pointer]:
+              - generic [ref=e211]: Upgrade
+      - main [ref=e212]:
+        - generic [ref=e214]:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic: Home
+                          - generic:
+                            - link "Number of unseen notifications":
+                              - /url: https://app.clickup.com/90121813699/inbox
+                              - generic:
+                                - generic:
+                                  - note
+                                  - generic: Number of unseen notifications
+                              - generic:
+                                - img
+                            - generic:
+                              - generic:
+                                - textbox "Search sidebar..."
+                                - generic:
+                                  - img
+                            - generic:
+                              - button:
+                                - generic:
+                                  - img
+                            - generic:
+                              - button "Close sidebar":
+                                - generic:
+                                  - img
+                            - button "Create":
+                              - button "Create":
+                                - generic:
+                                  - img
+                                - paragraph: Create
+                        - generic:
+                          - generic:
+                            - generic:
+                              - tree:
+                                - treeitem [level=1]
+                                - treeitem "Inbox" [level=1]:
+                                  - generic:
+                                    - link "Inbox":
+                                      - /url: https://app.clickup.com/90121813699/inbox
+                                      - generic:
+                                        - img
+                                      - generic: Inbox
+                                - treeitem "Replies" [level=1]:
+                                  - generic:
+                                    - link "Replies":
+                                      - /url: https://app.clickup.com/90121813699/chat/r/threads
+                                      - generic:
+                                        - img
+                                      - generic: Replies
+                                - treeitem "Assigned Comments" [level=1]:
+                                  - generic:
+                                    - link "Assigned Comments":
+                                      - /url: https://app.clickup.com/90121813699/chat/r/assigned
+                                      - generic:
+                                        - img
+                                      - generic: Assigned Comments
+                                - treeitem "My Tasks" [level=2]:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - img
+                                      - link "My Tasks":
+                                        - /url: https://app.clickup.com/90121813699/my-work
+                                        - generic:
+                                          - generic: My Tasks
+                                - treeitem "More" [level=1]:
+                                  - generic:
+                                    - button "More":
+                                      - generic:
+                                        - img
+                                      - generic: More
+                                - treeitem [level=1]
+                                - treeitem "Favorites Dropdown menu" [level=1]:
+                                  - generic:
+                                    - generic:
+                                      - button "Favorites":
+                                        - generic: Favorites
+                                        - generic:
+                                          - img
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - button:
+                                              - generic:
+                                                - img
+                                          - generic:
+                                            - button "Dropdown menu":
+                                              - generic:
+                                                - img
+                                - treeitem [level=1]
+                                - treeitem "Spaces Spaces settings" [expanded] [level=1]:
+                                  - generic:
+                                    - generic:
+                                      - button "Spaces":
+                                        - generic: Spaces
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - button "Spaces settings":
+                                                - generic:
+                                                  - img
+                                                - generic: Spaces settings
+                                          - generic:
+                                            - button:
+                                              - generic:
+                                                - img
+                                - treeitem "All Tasks - Lee" [level=2]:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - img
+                                      - link "All Tasks - Lee":
+                                        - /url: https://app.clickup.com/90121813699/v/t/90121813699
+                                        - generic: All Tasks - Lee
+                                - treeitem "Team Space, , Team Space" [expanded] [level=2]:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic "Team Space, ,":
+                                              - generic:
+                                                - img
+                                      - link "Team Space":
+                                        - /url: https://app.clickup.com/90121813699/v/s/90127901813
+                                        - generic:
+                                          - generic: Team Space
+                                      - generic:
+                                        - generic:
+                                          - button:
+                                            - generic:
+                                              - img
+                                          - button:
+                                            - generic:
+                                              - img
+                                - treeitem "Project 1 4" [level=3]:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - button:
+                                            - generic:
+                                              - img
+                                      - link "Project 1":
+                                        - /url: https://app.clickup.com/90121813699/v/li/901218688909/901211671865?pr=90127901813
+                                        - generic:
+                                          - generic: Project 1
+                                      - generic: "4"
+                                - treeitem "Project 2 3" [level=3]:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - button:
+                                            - generic:
+                                              - img
+                                      - link "Project 2":
+                                        - /url: https://app.clickup.com/90121813699/v/li/901218688908/901211671866?pr=90127901813
+                                        - generic:
+                                          - generic: Project 2
+                                      - generic: "3"
+                                - treeitem "Get Started with ClickUp 6" [level=3]:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - button:
+                                            - generic:
+                                              - img
+                                      - link "Get Started with ClickUp":
+                                        - /url: https://app.clickup.com/90121813699/v/li/901218688911/901211671868?pr=90127901813
+                                        - generic:
+                                          - generic: Get Started with ClickUp
+                                      - generic: "6"
+                                - treeitem "FileIT 1.0.9 9" [level=3]:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - button:
+                                            - generic:
+                                              - img
+                                      - link "FileIT 1.0.9":
+                                        - /url: https://app.clickup.com/90121813699/v/li/901218688991/901211671925?pr=90127901813
+                                        - generic:
+                                          - generic: FileIT 1.0.9
+                                      - generic: "9"
+                                - treeitem "Team Docs" [level=3]:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - img
+                                      - link "Team Docs":
+                                        - /url: https://app.clickup.com/90121813699/v/dc/2kxuvfp3-72
+                                        - generic:
+                                          - generic: Team Docs
+                                - treeitem "New Space" [level=2]:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - img
+                                      - generic:
+                                        - generic:
+                                          - generic: New Space
+                                - treeitem [level=1]
+                                - treeitem "Channels" [expanded] [level=1]:
+                                  - generic:
+                                    - generic:
+                                      - button "Channels":
+                                        - generic: Channels
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - button:
+                                              - generic:
+                                                - img
+                                          - generic:
+                                            - button:
+                                              - generic:
+                                                - img
+                                - treeitem "Lee, , General - Lee" [level=2]:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic:
+                                                          - img
+                                                        - generic:
+                                                          - generic:
+                                                            - generic "Lee, ,":
+                                                              - generic: L
+                                      - link "General - Lee":
+                                        - /url: https://app.clickup.com/90121813699/v/cn/7-90121813699-8
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: General
+                                            - generic:
+                                              - generic: "- Lee"
+                                - treeitem "Welcome" [level=2]:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - generic:
+                                                          - img
+                                      - link "Welcome":
+                                        - /url: https://app.clickup.com/90121813699/chat/r/2kxuvfp3-32
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Welcome
+                                - treeitem "Add Channel" [level=2]:
+                                  - generic:
+                                    - link "Add Channel":
+                                      - /url: https://app.clickup.com/90121813699/chat/r/channels
+                                      - generic:
+                                        - img
+                                      - generic: Add Channel
+                                - treeitem [level=1]
+                                - treeitem "Direct Messages" [expanded] [level=1]:
+                                  - generic:
+                                    - generic:
+                                      - button "Direct Messages":
+                                        - generic: Direct Messages
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - button:
+                                              - generic:
+                                                - img
+                                          - generic:
+                                            - button:
+                                              - generic:
+                                                - img
+                                - treeitem "Onboarding Assistant, , online Onboarding Assistant 1" [level=2]:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic "Onboarding Assistant, , online":
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                      - link "Onboarding Assistant":
+                                        - /url: https://app.clickup.com/90121813699/chat/r/2kxuvfp3-492
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Onboarding Assistant
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic: "1"
+                                - treeitem "Jarda Karlik, , online Jarda Karlik — You" [level=2]:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic "Jarda Karlik, , online":
+                                                        - generic: J
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                      - link "Jarda Karlik — You":
+                                        - /url: https://app.clickup.com/90121813699/chat/r/2kxuvfp3-52
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic: Jarda Karlik
+                                              - generic: — You
+                                - treeitem "New message" [level=2]:
+                                  - generic:
+                                    - link "New message":
+                                      - /url: https://app.clickup.com/90121813699/chat/r/launchpad
+                                      - generic:
+                                        - img
+                                      - generic: New message
+                                - treeitem [level=1]
+                                - treeitem [level=1]
+                          - generic:
+                            - generic:
+                              - button "Space settings"
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - button "Folder settings"
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - button "List settings"
+                          - generic:
+                            - generic:
+                              - button "Dropdown menu"
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - button
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - link "Team Space, , Team Space":
+                                    - /url: https://app.clickup.com/90121813699/v/s/90127901813/1
+                                    - generic:
+                                      - generic "Team Space, ,":
+                                        - generic:
+                                          - img
+                                    - generic: Team Space
+                                - generic: /
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - button "Dropdown menu":
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - img
+                                            - generic:
+                                              - generic:
+                                                - generic:
+                                                  - generic: FileIT 1.0.9
+                                        - generic:
+                                          - img
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - button "FileIT 1.0.9 List settings"
+                              - generic:
+                                - generic:
+                                  - button "Dropdown menu":
+                                    - generic:
+                                      - img
+                                    - generic: Favorite
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - button "View description":
+                                      - generic:
+                                        - img
+                                      - generic: View description
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - button "Add List assignee":
+                                          - generic:
+                                            - generic:
+                                              - button "Add List assignee":
+                                                - generic:
+                                                  - img
+                                                - generic: Add List assignee
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - button "Add List priority":
+                                          - generic:
+                                            - generic:
+                                              - button "Add List priority":
+                                                - generic:
+                                                  - img
+                                                - generic: Add List priority
+                                        - generic: Change priority
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - button "Add List dates":
+                                          - generic:
+                                            - button "Add List dates":
+                                              - generic:
+                                                - img
+                                              - generic: Add List dates
+                                        - generic: Change start and due dates
+                          - generic:
+                            - generic:
+                              - generic:
+                                - button "Add Channel and Start SyncUp":
+                                  - generic:
+                                    - img
+                                - button:
+                                  - generic:
+                                    - img
+                            - generic:
+                              - generic:
+                                - button "Dropdown menu":
+                                  - generic:
+                                    - button:
+                                      - generic:
+                                        - img
+                            - generic:
+                              - generic:
+                                - button "Dropdown menu":
+                                  - generic:
+                                    - button:
+                                      - generic:
+                                        - generic:
+                                          - img
+                            - generic:
+                              - generic:
+                                - button "Ask AI about this Board"
+                            - generic:
+                              - generic:
+                                - button:
+                                  - generic:
+                                    - img
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - button "Add Channel"
+                                - generic:
+                                  - generic [ref=e695]:
+                                    - link [ref=e696] [cursor=pointer]:
+                                      - /url: https://app.clickup.com/90121813699/v/l/li/901218688991
+                                      - img [ref=e702]
+                                    - link "List" [ref=e704] [cursor=pointer]:
+                                      - /url: https://app.clickup.com/90121813699/v/l/li/901218688991
+                                      - generic [ref=e706]: List
+                                  - generic [ref=e708]:
+                                    - link [ref=e709] [cursor=pointer]:
+                                      - /url: https://app.clickup.com/90121813699/v/b/li/901218688991
+                                      - img [ref=e715]
+                                    - link "Board" [ref=e717] [cursor=pointer]:
+                                      - /url: https://app.clickup.com/90121813699/v/b/li/901218688991
+                                      - generic [ref=e719]: Board
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - button "View Add View":
+                                        - generic:
+                                          - button "View Add View":
+                                            - generic:
+                                              - img
+                                            - generic: View
+                                            - generic: Add View
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - button "Dropdown menu":
+                                          - generic:
+                                            - button "Group":
+                                              - generic:
+                                                - img
+                                              - generic:
+                                                - generic:
+                                                  - generic: "Grouping by:"
+                                                  - text: Status
+                                  - generic:
+                                    - button "Subtasks":
+                                      - generic:
+                                        - img
+                                      - generic: "Subtasks: Collapsed"
+                                  - generic:
+                                    - generic:
+                                      - button "Dropdown menu":
+                                        - generic:
+                                          - button "Sort":
+                                            - generic:
+                                              - img
+                                            - generic: Sorting by None
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - button "Filter":
+                                          - generic:
+                                            - button "Filter":
+                                              - generic:
+                                                - img
+                                  - generic:
+                                    - button "Closed" [disabled]:
+                                      - generic:
+                                        - img
+                                      - generic: Adjust your status filter to show closed tasks
+                                  - generic:
+                                    - button "Assignee":
+                                      - generic:
+                                        - img
+                                  - generic:
+                                    - button "Jarda Karlik, ,":
+                                      - generic:
+                                        - generic "Jarda Karlik, ,":
+                                          - generic: J
+                              - generic:
+                                - generic:
+                                  - button:
+                                    - generic:
+                                      - img
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - textbox "Search..."
+                                    - button "Search settings":
+                                      - generic:
+                                        - img
+                              - button:
+                                - generic:
+                                  - img
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - button:
+                                        - generic:
+                                          - img
+                                      - generic:
+                                        - button "Choose task type":
+                                          - button:
+                                            - generic:
+                                              - img
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - list:
+                                  - listitem:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - img
+                                              - generic: to do
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic:
+                                                  - generic: "9"
+                                  - listitem:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - img
+                                              - generic: In progress
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic:
+                                                  - generic: "0"
+                                  - listitem:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic:
+                                                  - generic:
+                                                    - generic:
+                                                      - generic:
+                                                        - img
+                                              - generic: Complete
+                                          - generic:
+                                            - generic:
+                                              - generic:
+                                                - generic:
+                                                  - generic: "0"
+                                - generic:
+                                  - generic:
+                                    - button "Add group":
+                                      - generic:
+                                        - img
+                                      - text: Add group
+                              - generic:
+                                - list:
+                                  - listitem:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - list:
+                                                - listitem:
+                                                  - generic:
+                                                    - generic:
+                                                      - 'button "Open Phase 2: OCR Integration (High Priority)"':
+                                                        - generic: "Open Phase 2: OCR Integration (High Priority)"
+                                                      - generic:
+                                                        - button
+                                                        - generic:
+                                                          - generic:
+                                                            - 'link "Phase 2: OCR Integration (High Priority)"':
+                                                              - /url: https://app.clickup.com/t/90121813699/869dm1pve
+                                                      - generic:
+                                                        - generic:
+                                                          - button:
+                                                            - generic:
+                                                              - img
+                                                      - generic:
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - img
+                                                            - generic:
+                                                              - generic:
+                                                                - button
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - img
+                                                            - generic:
+                                                              - generic:
+                                                                - generic:
+                                                                  - button
+                                                                  - generic: Change start and due dates
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - generic:
+                                                                - button "High":
+                                                                  - generic:
+                                                                    - generic:
+                                                                      - generic:
+                                                                        - img
+                                                                      - generic:
+                                                                        - generic: High
+                                                                - generic: Change priority
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - img
+                                                            - generic:
+                                                              - generic:
+                                                                - generic:
+                                                                  - button
+                                                - listitem:
+                                                  - generic:
+                                                    - generic:
+                                                      - 'button "Open Phase 1: Backup Robustness (Critical)"':
+                                                        - generic: "Open Phase 1: Backup Robustness (Critical)"
+                                                      - generic:
+                                                        - button
+                                                        - generic:
+                                                          - generic:
+                                                            - 'link "Phase 1: Backup Robustness (Critical)" [active]':
+                                                              - /url: https://app.clickup.com/t/90121813699/869dm1pvd
+                                                      - generic:
+                                                        - generic:
+                                                          - generic:
+                                                            - button "Mark complete":
+                                                              - generic:
+                                                                - img
+                                                              - generic: Mark complete
+                                                            - button "Add subtask":
+                                                              - generic:
+                                                                - img
+                                                              - generic: Add subtask
+                                                            - button "Rename":
+                                                              - generic:
+                                                                - img
+                                                              - generic: Rename
+                                                            - generic:
+                                                              - generic:
+                                                                - button "More actions":
+                                                                  - generic: More actions
+                                                                  - generic:
+                                                                    - img
+                                                      - generic:
+                                                        - generic:
+                                                          - button:
+                                                            - generic:
+                                                              - img
+                                                      - generic:
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - img
+                                                            - generic:
+                                                              - generic:
+                                                                - button
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - img
+                                                            - generic:
+                                                              - generic:
+                                                                - generic:
+                                                                  - button
+                                                                  - generic: Change start and due dates
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - generic:
+                                                                - button "Urgent":
+                                                                  - generic:
+                                                                    - generic:
+                                                                      - generic:
+                                                                        - img
+                                                                      - generic:
+                                                                        - generic: Urgent
+                                                                - generic: Change priority
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - img
+                                                            - generic:
+                                                              - generic:
+                                                                - generic:
+                                                                  - button
+                                                - listitem:
+                                                  - generic:
+                                                    - generic:
+                                                      - 'button "Open Phase 0: Source Path Selection (Testing Infrastructure)"':
+                                                        - generic: "Open Phase 0: Source Path Selection (Testing Infrastructure)"
+                                                      - generic:
+                                                        - button
+                                                        - generic:
+                                                          - generic:
+                                                            - 'link "Phase 0: Source Path Selection (Testing Infrastructure)"':
+                                                              - /url: https://app.clickup.com/t/90121813699/869dm1pvf
+                                                      - generic:
+                                                        - generic:
+                                                          - button:
+                                                            - generic:
+                                                              - img
+                                                      - generic:
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - img
+                                                            - generic:
+                                                              - generic:
+                                                                - button
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - img
+                                                            - generic:
+                                                              - generic:
+                                                                - generic:
+                                                                  - button
+                                                                  - generic: Change start and due dates
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - generic:
+                                                                - button "High":
+                                                                  - generic:
+                                                                    - generic:
+                                                                      - generic:
+                                                                        - img
+                                                                      - generic:
+                                                                        - generic: High
+                                                                - generic: Change priority
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - img
+                                                            - generic:
+                                                              - generic:
+                                                                - generic:
+                                                                  - button
+                                                - listitem:
+                                                  - generic:
+                                                    - generic:
+                                                      - button "Open timeline on scan result screen shows last year only. it should be er year and not month":
+                                                        - generic: Open timeline on scan result screen shows last year only. it should be er year and not month
+                                                      - generic:
+                                                        - button "Open timeline on scan result screen shows last year only. it should be er year and not month"
+                                                      - generic:
+                                                        - button
+                                                        - generic:
+                                                          - generic:
+                                                            - link "timeline on scan result screen shows last year only. it should be er year and not month":
+                                                              - /url: https://app.clickup.com/t/90121813699/869dm1q96
+                                                      - generic:
+                                                        - generic:
+                                                          - button "1":
+                                                            - generic:
+                                                              - img
+                                                            - generic: "1"
+                                                      - generic:
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - img
+                                                            - generic:
+                                                              - generic:
+                                                                - button
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - img
+                                                            - generic:
+                                                              - generic:
+                                                                - generic:
+                                                                  - button
+                                                                  - generic: Change start and due dates
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - generic:
+                                                                - button:
+                                                                  - generic:
+                                                                    - generic:
+                                                                      - generic:
+                                                                        - img
+                                                                - generic: Change priority
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - img
+                                                            - generic:
+                                                              - generic:
+                                                                - generic:
+                                                                  - button
+                                                - listitem:
+                                                  - generic:
+                                                    - generic:
+                                                      - button "Open zaloha nefunguje - fix needed. whole process check too":
+                                                        - generic: Open zaloha nefunguje - fix needed. whole process check too
+                                                      - generic:
+                                                        - button "Open zaloha nefunguje - fix needed. whole process check too"
+                                                      - generic:
+                                                        - button
+                                                        - generic:
+                                                          - generic:
+                                                            - link "zaloha nefunguje - fix needed. whole process check too":
+                                                              - /url: https://app.clickup.com/t/90121813699/869dm1qc4
+                                                      - generic:
+                                                        - generic:
+                                                          - button "1":
+                                                            - generic:
+                                                              - img
+                                                            - generic: "1"
+                                                      - generic:
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - img
+                                                            - generic:
+                                                              - generic:
+                                                                - button
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - img
+                                                            - generic:
+                                                              - generic:
+                                                                - generic:
+                                                                  - button
+                                                                  - generic: Change start and due dates
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - generic:
+                                                                - button:
+                                                                  - generic:
+                                                                    - generic:
+                                                                      - generic:
+                                                                        - img
+                                                                - generic: Change priority
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - img
+                                                            - generic:
+                                                              - generic:
+                                                                - generic:
+                                                                  - button
+                                                - listitem:
+                                                  - generic:
+                                                    - generic:
+                                                      - button "Open for LOCAL ONLY the defauth path should on C:\\ReOrganized and not to cloud location":
+                                                        - generic: Open for LOCAL ONLY the defauth path should on C:\ReOrganized and not to cloud location
+                                                      - generic:
+                                                        - button "Open for LOCAL ONLY the defauth path should on C:\\ReOrganized and not to cloud location"
+                                                      - generic:
+                                                        - button
+                                                        - generic:
+                                                          - generic:
+                                                            - link "for LOCAL ONLY the defauth path should on C:\\ReOrganized and not to cloud location":
+                                                              - /url: https://app.clickup.com/t/90121813699/869dm1qex
+                                                      - generic:
+                                                        - generic:
+                                                          - button "1":
+                                                            - generic:
+                                                              - img
+                                                            - generic: "1"
+                                                      - generic:
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - img
+                                                            - generic:
+                                                              - generic:
+                                                                - button
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - img
+                                                            - generic:
+                                                              - generic:
+                                                                - generic:
+                                                                  - button
+                                                                  - generic: Change start and due dates
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - generic:
+                                                                - button:
+                                                                  - generic:
+                                                                    - generic:
+                                                                      - generic:
+                                                                        - img
+                                                                - generic: Change priority
+                                                        - generic:
+                                                          - generic:
+                                                            - img
+                                                          - generic:
+                                                            - generic:
+                                                              - img
+                                                            - generic:
+                                                              - generic:
+                                                                - generic:
+                                                                  - button
+                                              - button "Add Task":
+                                                - generic:
+                                                  - img
+                                                - text: Add Task
+                                  - listitem:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - button "Add Task":
+                                                - generic:
+                                                  - img
+                                                - text: Add Task
+                                  - listitem:
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - generic:
+                                            - generic:
+                                              - button "Add Task":
+                                                - generic:
+                                                  - img
+                                                - text: Add Task
+    - generic [ref=e1400]:
+      - button [ref=e1401]
+      - generic [ref=e1402]:
+        - generic [ref=e1403]:
+          - generic [ref=e1404]:
+            - tab [ref=e1406] [cursor=pointer]:
+              - img [ref=e1408]
+            - 'button "Phase 2: OCR Integration (High Priority) (ctrl + shift + left arrow)" [ref=e1410] [cursor=pointer]':
+              - img [ref=e1412]
+            - 'button "Phase 0: Source Path Selection (Testing Infrastructure) (ctrl + shift + right arrow)" [ref=e1414] [cursor=pointer]':
+              - img [ref=e1416]
+            - generic [ref=e1418]:
+              - link "Team Space, ," [ref=e1419] [cursor=pointer]:
+                - /url: https://app.clickup.com/90121813699/v/s/90127901813/1
+                - generic "Team Space, ," [ref=e1422]:
+                  - img [ref=e1424]
+              - generic [ref=e1426]: /
+              - link "FileIT 1.0.9" [ref=e1427] [cursor=pointer]:
+                - /url: https://app.clickup.com/90121813699/v/li/901218688991
+                - img [ref=e1430]
+                - generic [ref=e1432]: FileIT 1.0.9
+              - button "Dropdown menu" [ref=e1434] [cursor=pointer]:
+                - img [ref=e1436]
+                - generic [ref=e1438]: Add to another List
+              - button "Dropdown menu" [ref=e1441] [cursor=pointer]:
+                - img [ref=e1443]
+                - generic [ref=e1445]: Move task
+          - generic [ref=e1446]:
+            - button "Share" [ref=e1449] [cursor=pointer]:
+              - img [ref=e1451]
+              - generic [ref=e1453]: Share
+            - button "Ask AI about this task" [ref=e1456] [cursor=pointer]:
+              - img [ref=e1458]
+              - generic [ref=e1460]: Ask AI
+            - button "Task settings" [ref=e1463] [cursor=pointer]:
+              - img [ref=e1465]
+            - button "Dropdown menu" [ref=e1469] [cursor=pointer]:
+              - img [ref=e1471]
+            - button "Close window" [ref=e1473] [cursor=pointer]:
+              - img [ref=e1475]
+        - generic [ref=e1477]:
+          - generic [ref=e1482]:
+            - generic [ref=e1483]:
+              - generic [ref=e1484]:
+                - generic [ref=e1485]:
+                  - button "Dropdown menu" [ref=e1486] [cursor=pointer]:
+                    - img [ref=e1489]
+                    - generic [ref=e1491]: Task
+                    - img [ref=e1493]
+                  - button "Copy Task ID 869dm1pvd" [ref=e1496] [cursor=pointer]:
+                    - generic [ref=e1497]: 869dm1pvd
+                - generic [ref=e1499]:
+                  - button "Ask AI" [disabled] [ref=e1506]:
+                    - button "Ask AI" [disabled] [ref=e1508] [cursor=pointer]:
+                      - generic [ref=e1511]: Ask AI
+                  - button "Add Cover" [ref=e1514] [cursor=pointer]:
+                    - img [ref=e1516]
+                    - text: Add Cover
+              - generic [ref=e1521]:
+                - 'heading "Phase 1: Backup Robustness (Critical)" [level=1]'
+                - textbox "Edit task name" [ref=e1522]:
+                  - /placeholder: ""
+                  - text: "Phase 1: Backup Robustness (Critical)"
+              - generic [ref=e1530]:
+                - generic [ref=e1533]:
+                  - text: Ask Brain to
+                  - button "improve the description" [ref=e1534] [cursor=pointer]:
+                    - generic [ref=e1536]: improve the description
+                  - button ",generate subtasks" [ref=e1537] [cursor=pointer]:
+                    - text: ","
+                    - generic [ref=e1539]: generate subtasks
+                  - generic [ref=e1540]: or
+                  - button "find similar tasks" [ref=e1541] [cursor=pointer]:
+                    - generic [ref=e1543]: find similar tasks
+                - button "Close" [ref=e1544] [cursor=pointer]:
+                  - img [ref=e1546]
+              - generic [ref=e1548]:
+                - generic [ref=e1550]:
+                  - generic [ref=e1551]:
+                    - generic [ref=e1553]:
+                      - img [ref=e1555]
+                      - paragraph [ref=e1557]: Status
+                    - button "Change status" [ref=e1560]:
+                      - generic [ref=e1561]: TO DO
+                      - generic [ref=e1563]:
+                        - generic [ref=e1564]: to do
+                        - button "Next status [IN PROGRESS]" [ref=e1565] [cursor=pointer]:
+                          - img [ref=e1567]
+                      - button "Mark as Closed" [ref=e1569] [cursor=pointer]:
+                        - img [ref=e1571]
+                  - generic [ref=e1573]:
+                    - generic [ref=e1575]:
+                      - img [ref=e1577]
+                      - paragraph [ref=e1579]: Assignees
+                    - generic [ref=e1580]:
+                      - list "Assigned people" [ref=e1581]
+                      - list "Assigned teams" [ref=e1582]
+                      - button "Open assignees dropdown" [ref=e1586] [cursor=pointer]:
+                        - generic [ref=e1590]: Empty
+                  - generic [ref=e1591]:
+                    - generic [ref=e1593]:
+                      - img [ref=e1595]
+                      - paragraph [ref=e1597]: Dates
+                    - generic [ref=e1601]:
+                      - button "Start Due" [ref=e1602] [cursor=pointer]:
+                        - generic [ref=e1605]:
+                          - generic [ref=e1606]:
+                            - img [ref=e1608]
+                            - generic [ref=e1610]: Start
+                          - img [ref=e1612]
+                          - generic [ref=e1614]:
+                            - img [ref=e1616]
+                            - generic [ref=e1618]: Due
+                      - generic [ref=e1619]: Change start and due dates
+                  - generic [ref=e1620]:
+                    - generic [ref=e1622]:
+                      - img [ref=e1624]
+                      - paragraph [ref=e1626]: Priority
+                    - generic [ref=e1630]:
+                      - button "Urgent" [ref=e1631] [cursor=pointer]:
+                        - generic [ref=e1632]:
+                          - generic [ref=e1634]:
+                            - img [ref=e1636]
+                            - generic [ref=e1638]: Urgent
+                          - button [ref=e1640]:
+                            - img [ref=e1641]
+                      - generic [ref=e1643]: Change priority
+                  - generic [ref=e1644]:
+                    - generic [ref=e1646]:
+                      - img [ref=e1648]
+                      - paragraph [ref=e1650]: Sprint Points
+                    - button "Empty" [ref=e1654]:
+                      - generic [ref=e1656]: Empty
+                  - generic [ref=e1657]:
+                    - generic [ref=e1659]:
+                      - img [ref=e1661]
+                      - paragraph [ref=e1663]: Track Time
+                    - button "Add time Dropdown menu" [ref=e1665] [cursor=pointer]:
+                      - generic [ref=e1667]:
+                        - img [ref=e1671]
+                        - generic [ref=e1673]: Add time
+                      - generic:
+                        - generic:
+                          - button "Dropdown menu"
+                  - generic [ref=e1674]:
+                    - generic [ref=e1676]:
+                      - img [ref=e1678]
+                      - paragraph [ref=e1680]: Tags
+                    - button "Empty" [ref=e1685] [cursor=pointer]:
+                      - list [ref=e1686]:
+                        - generic [ref=e1687]: Empty
+                  - generic [ref=e1688]:
+                    - generic [ref=e1690]:
+                      - img [ref=e1692]
+                      - paragraph [ref=e1694]: Relationships
+                    - generic [ref=e1697] [cursor=pointer]: Empty
+                - button "Hide empty properties" [ref=e1700] [cursor=pointer]:
+                  - img [ref=e1702]
+                  - text: Hide empty properties
+            - generic [ref=e1709]:
+              - generic [ref=e1710]:
+                - generic [ref=e1711]:
+                  - generic [ref=e1713]:
+                    - generic [ref=e1714]: Fix 3 critical backup system issues discovered in analysis
+                    - generic [ref=e1716]: "## Issues to Fix"
+                    - generic [ref=e1718]: 1. **ZIP Integrity Validation** (MEDIUM severity)
+                    - generic [ref=e1719]: "- Add ZIP CRC validation function"
+                    - generic [ref=e1720]: "- Validate manifest.json checksum on backup open"
+                    - generic [ref=e1721]: "- Return clear error if ZIP corrupted"
+                    - generic [ref=e1722]: "- File: src-tauri/src/backup/mod.rs"
+                    - generic [ref=e1724]: 2. **File Move Verification** (MEDIUM severity)
+                    - generic [ref=e1725]: "- Compute hash AFTER move"
+                    - generic [ref=e1726]: "- Compare with manifest hash"
+                    - generic [ref=e1727]: "- Log mismatch as critical error"
+                    - generic [ref=e1728]: "- File: src-tauri/src/restructure/mod.rs"
+                    - generic [ref=e1730]: 3. **Disk Space Check** (MEDIUM severity)
+                    - generic [ref=e1731]: "- Get AppData partition free space"
+                    - generic [ref=e1732]: "- Estimate backup size from file list"
+                    - generic [ref=e1733]: "- Warn user if insufficient space"
+                    - generic [ref=e1734]: "- Files: src-tauri/src/backup/mod.rs, src-tauri/src/commands/mod.rs"
+                    - generic [ref=e1736]: "## Testing Required"
+                    - generic [ref=e1737]: "- Create backup with 10k+ files"
+                    - generic [ref=e1738]: "- Simulate backup ZIP corruption"
+                    - generic [ref=e1739]: "- Test restore on different drive (cross-filesystem)"
+                    - generic [ref=e1740]: "- Verify no files lost on restore failure"
+                    - generic [ref=e1742]: "## Estimated Time: 4-6 hours"
+                  - generic:
+                    - generic:
+                      - generic:
+                        - button "Dropdown menu"
+                - button "Show more" [ref=e1744] [cursor=pointer]:
+                  - img [ref=e1746]
+                  - text: Show more
+              - generic:
+                - generic:
+                  - button "Dropdown menu"
+              - generic:
+                - generic:
+                  - button "Dropdown menu"
+              - generic:
+                - button "Dropdown menu"
+              - generic:
+                - button "Dropdown menu"
+              - generic:
+                - button "Dropdown menu"
+              - generic:
+                - button "Dropdown menu"
+              - generic:
+                - button "Dropdown menu"
+              - generic:
+                - generic:
+                  - button "Dropdown menu"
+              - generic:
+                - generic:
+                  - button "Dropdown menu"
+              - generic:
+                - generic:
+                  - button "Dropdown menu"
+            - generic [ref=e1750]:
+              - generic [ref=e1752]:
+                - button "Add fields Full screen Add" [ref=e1753]:
+                  - heading "Add fields" [level=6] [ref=e1754]:
+                    - button "Add fields" [ref=e1755]:
+                      - generic [ref=e1757]: Add fields
+                  - generic [ref=e1758]:
+                    - generic "Search" [ref=e1759]:
+                      - generic [ref=e1760] [cursor=pointer]:
+                        - textbox "Search..."
+                        - img [ref=e1762]
+                    - button "Full screen" [ref=e1765] [cursor=pointer]:
+                      - img [ref=e1767]
+                      - generic [ref=e1769]: Full screen
+                    - button "Add" [ref=e1771] [cursor=pointer]:
+                      - img [ref=e1773]
+                      - generic [ref=e1775]: Add
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - button
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - button
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - button
+              - generic [ref=e1784]:
+                - generic [ref=e1785]:
+                  - heading "Add subtask" [level=2] [ref=e1786]:
+                    - generic [ref=e1788]: Add subtask
+                  - button "Suggest subtasks" [ref=e1791] [cursor=pointer]: Suggest subtasks
+                - button "Add Task" [ref=e1796] [cursor=pointer]:
+                  - img [ref=e1798]
+                  - generic [ref=e1800]: Add Task
+              - generic [ref=e1802]:
+                - generic [ref=e1803]:
+                  - heading "Checklists" [level=2] [ref=e1804]:
+                    - generic [ref=e1806]: Checklists
+                  - button [ref=e1810] [cursor=pointer]:
+                    - button [ref=e1811]:
+                      - img [ref=e1813]
+                - button "Create checklist" [ref=e1817] [cursor=pointer]:
+                  - img [ref=e1819]
+                  - generic [ref=e1821]: Create checklist
+              - generic [ref=e1823]:
+                - generic [ref=e1825]:
+                  - heading "Attachments" [level=2] [ref=e1826]:
+                    - generic [ref=e1828]: Attachments
+                  - button "Scroll to Attachments" [ref=e1830] [cursor=pointer]:
+                    - img [ref=e1832]
+                    - generic [ref=e1834]: Scroll to Attachments
+                - generic [ref=e1836]:
+                  - generic [ref=e1837]: Drop your files here to
+                  - button "Upload" [ref=e1838] [cursor=pointer]
+          - tablist "Task sidebar navigation" [ref=e1841]:
+            - generic "Details" [ref=e1842]:
+              - generic [ref=e1843]:
+                - tab "Details" [selected] [ref=e1844]:
+                  - img [ref=e1846]
+                - generic [ref=e1848]: Details
+            - generic [ref=e1850]:
+              - tab "Activity" [ref=e1851] [cursor=pointer]:
+                - img [ref=e1853]
+              - generic [ref=e1855]: Activity
+            - tab "Links" [ref=e1860] [cursor=pointer]:
+              - img [ref=e1862]
+            - generic [ref=e1865]:
+              - tab "More" [ref=e1866] [cursor=pointer]:
+                - img [ref=e1868]
+              - generic [ref=e1870]: More
+    - generic:
+      - generic:
+        - generic:
+          - status
+      - generic:
+        - generic:
+          - status
+  - generic:
+    - generic:
+      - text: ×
+      - generic:
+        - generic:
+          - button "Improve" [disabled]:
+            - generic:
+              - img
+            - generic: Improve
+          - generic:
+            - generic:
+              - button "Dropdown menu" [disabled]:
+                - button "Edit" [disabled]:
+                  - generic:
+                    - img
+                  - generic: Edit
+            - textbox
+          - generic:
+            - generic:
+              - button "Bulleted list":
+                - generic:
+                  - img
+                - generic: Bulleted list
+              - button "All lists":
+                - generic:
+                  - img
+                - generic: All lists
+          - generic:
+            - button "Turn Into":
+              - generic: Text
+              - generic:
+                - img
+              - generic: Turn Into
+          - generic:
+            - button "Text color":
+              - generic: A
+              - generic: Text color
+          - button:
+            - generic:
+              - img
+          - button:
+            - generic:
+              - img
+          - button:
+            - generic:
+              - img
+          - button:
+            - generic:
+              - img
+          - button:
+            - generic:
+              - img
+          - generic:
+            - button "Alignment":
+              - generic:
+                - img
+              - generic:
+                - img
+              - generic: Alignment
+          - generic:
+            - button:
+              - generic:
+                - img
+          - generic:
+            - generic:
+              - button "Task" [disabled]:
+                - generic:
+                  - img
+                - text: Task
+              - button "Create task options":
+                - generic:
+                  - img
+                - generic: Create task options
+          - generic:
+            - button "More settings":
+              - generic:
+                - img
+              - generic: More settings

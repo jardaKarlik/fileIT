@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FileIT — Scan Pipeline</title>
+<style>
+body{margin:0;padding:24px;background:#FAF7F2;font-family:system-ui,sans-serif}
+svg{width:100%;height:auto;display:block}
+.t{font-family:system-ui,sans-serif;font-size:14px;fill:#2C2C2A}
+.ts{font-family:system-ui,sans-serif;font-size:12px;fill:#5F5E5A}
+.th{font-family:system-ui,sans-serif;font-size:14px;font-weight:500;fill:#2C2C2A}
+.node{cursor:pointer}
+.node:hover{opacity:0.85}
+.arr{stroke:#888780;stroke-width:1.5;fill:none}
+.box{fill:#F1EFE8;stroke:#888780;stroke-width:0.5}
+.leader{stroke:#888780;stroke-width:0.5;stroke-dasharray:4 3;fill:none}
+
+.c-teal rect,.c-teal circle,.c-teal ellipse{fill:#E1F5EE;stroke:#0F6E56;stroke-width:0.5}
+.c-teal .t,.c-teal .th{fill:#085041}
+.c-teal .ts{fill:#0F6E56}
+
+.c-purple rect,.c-purple circle,.c-purple ellipse{fill:#EEEDFE;stroke:#534AB7;stroke-width:0.5}
+.c-purple .t,.c-purple .th{fill:#3C3489}
+.c-purple .ts{fill:#534AB7}
+
+.c-amber rect,.c-amber circle,.c-amber ellipse{fill:#FAEEDA;stroke:#854F0B;stroke-width:0.5}
+.c-amber .t,.c-amber .th{fill:#633806}
+.c-amber .ts{fill:#854F0B}
+
+.c-green rect,.c-green circle,.c-green ellipse{fill:#EAF3DE;stroke:#3B6D11;stroke-width:0.5}
+.c-green .t,.c-green .th{fill:#27500A}
+.c-green .ts{fill:#3B6D11}
+
+.c-red rect,.c-red circle,.c-red ellipse{fill:#FCEBEB;stroke:#A32D2D;stroke-width:0.5}
+.c-red .t,.c-red .th{fill:#791F1F}
+.c-red .ts{fill:#A32D2D}
+
+.c-gray rect,.c-gray circle,.c-gray ellipse{fill:#F1EFE8;stroke:#5F5E5A;stroke-width:0.5}
+.c-gray .t,.c-gray .th{fill:#444441}
+.c-gray .ts{fill:#5F5E5A}
+
+@media(prefers-color-scheme:dark){
+  body{background:#1a1917}
+  .t,.th{fill:#E8E6E0}
+  .ts{fill:#9C9A92}
+  .arr{stroke:#888780}
+  .leader{stroke:#5F5E5A}
+
+  .c-teal rect,.c-teal circle,.c-teal ellipse{fill:#085041;stroke:#5DCAA5}
+  .c-teal .t,.c-teal .th{fill:#9FE1CB}
+  .c-teal .ts{fill:#5DCAA5}
+
+  .c-purple rect,.c-purple circle,.c-purple ellipse{fill:#3C3489;stroke:#AFA9EC}
+  .c-purple .t,.c-purple .th{fill:#CECBF6}
+  .c-purple .ts{fill:#AFA9EC}
+
+  .c-amber rect,.c-amber circle,.c-amber ellipse{fill:#633806;stroke:#EF9F27}
+  .c-amber .t,.c-amber .th{fill:#FAC775}
+  .c-amber .ts{fill:#EF9F27}
+
+  .c-green rect,.c-green circle,.c-green ellipse{fill:#27500A;stroke:#97C459}
+  .c-green .t,.c-green .th{fill:#C0DD97}
+  .c-green .ts{fill:#97C459}
+
+  .c-red rect,.c-red circle,.c-red ellipse{fill:#791F1F;stroke:#F09595}
+  .c-red .t,.c-red .th{fill:#F7C1C1}
+  .c-red .ts{fill:#F09595}
+
+  .c-gray rect,.c-gray circle,.c-gray ellipse{fill:#444441;stroke:#B4B2A9}
+  .c-gray .t,.c-gray .th{fill:#D3D1C7}
+  .c-gray .ts{fill:#B4B2A9}
+}
+</style>
+</head>
+<body>
+<svg viewBox="0 0 680 620" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>FileIT file scanning pipeline — five stages from discovery to session store</title>
+<desc>Left-to-right flowchart showing five pipeline stages: discovery, filter, content extraction, classification, and session store. A parallel cloud probe feeds into the session store.</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+
+<text class="ts" x="340" y="28" text-anchor="middle" dominant-baseline="central">Async Rust pipeline · tokio runtime · progress events emitted to UI</text>
+
+<g class="node c-gray">
+  <rect x="40" y="48" width="110" height="68" rx="8" stroke-width="0.5"/>
+  <text class="th" x="95" y="74" text-anchor="middle" dominant-baseline="central">Discovery</text>
+  <text class="ts" x="95" y="94" text-anchor="middle" dominant-baseline="central">walkdir recursive</text>
+  <text class="ts" x="95" y="108" text-anchor="middle" dominant-baseline="central">all drives</text>
+</g>
+
+<line x1="150" y1="82" x2="178" y2="82" stroke="#888780" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+<g class="node c-gray">
+  <rect x="178" y="48" width="110" height="68" rx="8" stroke-width="0.5"/>
+  <text class="th" x="233" y="74" text-anchor="middle" dominant-baseline="central">Filter</text>
+  <text class="ts" x="233" y="94" text-anchor="middle" dominant-baseline="central">extension · size</text>
+  <text class="ts" x="233" y="108" text-anchor="middle" dominant-baseline="central">system paths</text>
+</g>
+
+<line x1="288" y1="82" x2="316" y2="82" stroke="#888780" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+<g class="node c-teal">
+  <rect x="316" y="48" width="114" height="68" rx="8" stroke-width="0.5"/>
+  <text class="th" x="373" y="74" text-anchor="middle" dominant-baseline="central">Extract</text>
+  <text class="ts" x="373" y="94" text-anchor="middle" dominant-baseline="central">text, metadata</text>
+  <text class="ts" x="373" y="108" text-anchor="middle" dominant-baseline="central">per-type handler</text>
+</g>
+
+<line x1="430" y1="82" x2="458" y2="82" stroke="#1D9E75" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+<g class="node c-teal">
+  <rect x="458" y="48" width="114" height="68" rx="8" stroke-width="0.5"/>
+  <text class="th" x="515" y="74" text-anchor="middle" dominant-baseline="central">Classify</text>
+  <text class="ts" x="515" y="94" text-anchor="middle" dominant-baseline="central">entity · type</text>
+  <text class="ts" x="515" y="108" text-anchor="middle" dominant-baseline="central">institution · date</text>
+</g>
+
+<line x1="572" y1="82" x2="600" y2="82" stroke="#1D9E75" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+<g class="node c-purple">
+  <rect x="600" y="48" width="60" height="68" rx="8" stroke-width="0.5"/>
+  <text class="th" x="630" y="74" text-anchor="middle" dominant-baseline="central">Store</text>
+  <text class="ts" x="630" y="94" text-anchor="middle" dominant-baseline="central">RAM only</text>
+  <text class="ts" x="630" y="108" text-anchor="middle" dominant-baseline="central">no disk</text>
+</g>
+
+<rect x="40" y="160" width="292" height="1" fill="none" stroke="#888780" stroke-dasharray="4 3" stroke-width="0.5"/>
+<text class="ts" x="186" y="152" text-anchor="middle" dominant-baseline="central">Filter rules (system paths excluded)</text>
+
+<g class="c-gray">
+  <rect x="40" y="172" width="292" height="100" rx="10" stroke-width="0.5"/>
+  <text class="th" x="60" y="196" dominant-baseline="central">Always excluded</text>
+</g>
+<g class="c-red">
+  <rect x="56" y="210" width="120" height="30" rx="4" stroke-width="0.5"/>
+  <text class="ts" x="116" y="225" text-anchor="middle" dominant-baseline="central">Windows / System32</text>
+</g>
+<g class="c-red">
+  <rect x="184" y="210" width="120" height="30" rx="4" stroke-width="0.5"/>
+  <text class="ts" x="244" y="225" text-anchor="middle" dominant-baseline="central">Program Files</text>
+</g>
+<g class="c-red">
+  <rect x="56" y="248" width="120" height="14" rx="3" stroke-width="0.5"/>
+  <text class="ts" x="116" y="255" text-anchor="middle" dominant-baseline="central">node_modules, .git</text>
+</g>
+<g class="c-red">
+  <rect x="184" y="248" width="120" height="14" rx="3" stroke-width="0.5"/>
+  <text class="ts" x="244" y="255" text-anchor="middle" dominant-baseline="central">Temp / AppData / cache</text>
+</g>
+
+<rect x="344" y="160" width="296" height="1" fill="none" stroke="#888780" stroke-dasharray="4 3" stroke-width="0.5"/>
+<text class="ts" x="492" y="152" text-anchor="middle" dominant-baseline="central">Extraction handlers (per filetype)</text>
+
+<g class="c-teal">
+  <rect x="344" y="172" width="296" height="100" rx="10" stroke-width="0.5"/>
+  <text class="th" x="364" y="196" dominant-baseline="central">Content extractors</text>
+</g>
+<g class="c-teal">
+  <rect x="360" y="210" width="76" height="30" rx="4" stroke-width="0.5"/>
+  <text class="ts" x="398" y="225" text-anchor="middle" dominant-baseline="central">PDF → text</text>
+</g>
+<g class="c-teal">
+  <rect x="444" y="210" width="76" height="30" rx="4" stroke-width="0.5"/>
+  <text class="ts" x="482" y="225" text-anchor="middle" dominant-baseline="central">DOCX → XML</text>
+</g>
+<g class="c-teal">
+  <rect x="528" y="210" width="96" height="30" rx="4" stroke-width="0.5"/>
+  <text class="ts" x="576" y="225" text-anchor="middle" dominant-baseline="central">Image → OCR</text>
+</g>
+<g class="c-teal">
+  <rect x="360" y="248" width="76" height="14" rx="3" stroke-width="0.5"/>
+  <text class="ts" x="398" y="255" text-anchor="middle" dominant-baseline="central">XLSX → rows</text>
+</g>
+<g class="c-teal">
+  <rect x="444" y="248" width="76" height="14" rx="3" stroke-width="0.5"/>
+  <text class="ts" x="482" y="255" text-anchor="middle" dominant-baseline="central">EML → body</text>
+</g>
+<g class="c-teal">
+  <rect x="528" y="248" width="96" height="14" rx="3" stroke-width="0.5"/>
+  <text class="ts" x="576" y="255" text-anchor="middle" dominant-baseline="central">first 8KB only</text>
+</g>
+
+<text class="ts" x="340" y="308" text-anchor="middle" dominant-baseline="central">Classification signals fed to Rust classifier</text>
+
+<g class="c-gray">
+  <rect x="40" y="322" width="600" height="130" rx="12" stroke-width="0.5"/>
+  <text class="th" x="60" y="348" dominant-baseline="central">Classifier — what it extracts from content</text>
+</g>
+
+<g class="c-purple">
+  <rect x="56" y="360" width="130" height="44" rx="6" stroke-width="0.5"/>
+  <text class="th" x="121" y="378" text-anchor="middle" dominant-baseline="central">Customer name</text>
+  <text class="ts" x="121" y="396" text-anchor="middle" dominant-baseline="central">NER regex + name lists</text>
+</g>
+<g class="c-purple">
+  <rect x="198" y="360" width="130" height="44" rx="6" stroke-width="0.5"/>
+  <text class="th" x="263" y="378" text-anchor="middle" dominant-baseline="central">Institution</text>
+  <text class="ts" x="263" y="396" text-anchor="middle" dominant-baseline="central">keyword dictionary</text>
+</g>
+<g class="c-purple">
+  <rect x="340" y="360" width="130" height="44" rx="6" stroke-width="0.5"/>
+  <text class="th" x="405" y="378" text-anchor="middle" dominant-baseline="central">Doc type</text>
+  <text class="ts" x="405" y="396" text-anchor="middle" dominant-baseline="central">contract · ID · invoice</text>
+</g>
+<g class="c-purple">
+  <rect x="482" y="360" width="130" height="44" rx="6" stroke-width="0.5"/>
+  <text class="th" x="547" y="378" text-anchor="middle" dominant-baseline="central">Date</text>
+  <text class="ts" x="547" y="396" text-anchor="middle" dominant-baseline="central">date regex, EXIF</text>
+</g>
+
+<g class="c-amber">
+  <rect x="40" y="478" width="600" height="112" rx="12" stroke-width="0.5"/>
+  <text class="th" x="60" y="504" dominant-baseline="central">Session store — in RAM, cleared on app close</text>
+</g>
+<g class="c-amber">
+  <rect x="56" y="516" width="130" height="36" rx="6" stroke-width="0.5"/>
+  <text class="ts" x="121" y="534" text-anchor="middle" dominant-baseline="central">FileRecord structs</text>
+</g>
+<g class="c-amber">
+  <rect x="198" y="516" width="130" height="36" rx="6" stroke-width="0.5"/>
+  <text class="ts" x="263" y="534" text-anchor="middle" dominant-baseline="central">Classification map</text>
+</g>
+<g class="c-amber">
+  <rect x="340" y="516" width="130" height="36" rx="6" stroke-width="0.5"/>
+  <text class="ts" x="405" y="534" text-anchor="middle" dominant-baseline="central">Duplicate index</text>
+</g>
+<g class="c-amber">
+  <rect x="482" y="516" width="130" height="36" rx="6" stroke-width="0.5"/>
+  <text class="ts" x="547" y="534" text-anchor="middle" dominant-baseline="central">Cloud match map</text>
+</g>
+
+<line x1="340" y1="452" x2="340" y2="476" stroke="#888780" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+</svg>
+</body>
+</html>

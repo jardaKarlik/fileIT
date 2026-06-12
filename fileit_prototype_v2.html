@@ -1,0 +1,2519 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FileIT — Chytrý pořadač</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800;9..144,900&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --indigo:#4B0082;
+  --indigo-deep:#2E0052;
+  --indigo-light:#6B2AA2;
+  --pink:#FF1493;
+  --pink-soft:#FF4FB0;
+  --pink-pale:#FFE4F3;
+  --coral:#FE865B;
+  --coral-soft:#FF9E78;
+  --coral-pale:#FFE8DC;
+  --ink:#1A0F2E;
+  --ink2:#4A3D5E;
+  --ink3:#8A7B9E;
+  --bg:#FAFAFC;
+  --bg-warm:#FFF8F5;
+  --border:#E8E4F0;
+  --border2:#D4CEE0;
+  --white:#FFFFFF;
+  --gradient:linear-gradient(180deg, #4B0082 0%, #7A1A8F 30%, #FF1493 65%, #FE865B 100%);
+  --gradient-hero:linear-gradient(165deg, #4B0082 0%, #6B1B8F 25%, #C01580 55%, #FF1493 75%, #FE865B 100%);
+  --shadow-soft:0 2px 12px rgba(75,0,130,0.08);
+  --shadow-pop:0 8px 32px rgba(75,0,130,0.18);
+  --shadow-lift:0 12px 48px rgba(255,20,147,0.20);
+}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+#app{width:100%;min-height:600px;position:relative}
+
+/* NAV */
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
+.topnav.home-mode .nav-steps{visibility:hidden}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-mark{width:34px;height:34px;background:var(--gradient);border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(255,20,147,0.3)}
+.logo-mark svg{width:18px;height:18px}
+.logo-text{font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--ink);letter-spacing:-0.5px;font-optical-sizing:auto}
+.logo-text span{background:linear-gradient(135deg,var(--pink),var(--coral));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.nav-steps{display:flex;gap:4px;align-items:center}
+.nav-step{width:28px;height:3px;border-radius:2px;background:var(--border2);transition:all .4s}
+.nav-step.active{background:var(--pink);width:40px;box-shadow:0 1px 4px rgba(255,20,147,0.4)}
+.nav-step.done{background:var(--indigo-light)}
+.nav-label{font-size:12px;color:var(--ink3);font-weight:500;letter-spacing:0.3px}
+
+/* SCREENS */
+.screen{display:none;animation:fadeSlide .4s ease}
+.screen.active{display:block}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   WELCOME SCREEN — "Neon Dusk"
+   A single atmospheric surface. No split. Gradient inhabits the entire canvas.
+   Content floats as glass objects belonging to the same world as the light.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.welcome-wrap{position:relative;min-height:640px;background:var(--gradient-hero);overflow:hidden;isolation:isolate}
+/* Atmospheric depth: three soft light fields layered on the gradient */
+.welcome-wrap::before{content:'';position:absolute;top:-25%;right:-20%;width:75%;height:75%;background:radial-gradient(ellipse at center,rgba(255,255,255,0.22) 0%,transparent 55%);pointer-events:none;z-index:0}
+.welcome-wrap::after{content:'';position:absolute;bottom:-30%;left:-15%;width:70%;height:70%;background:radial-gradient(ellipse at center,rgba(254,134,91,0.45) 0%,transparent 60%);pointer-events:none;z-index:0}
+/* Subtle grain — evokes the crafted, printed quality of the reference */
+.welcome-grain{position:absolute;inset:0;opacity:0.08;mix-blend-mode:overlay;pointer-events:none;z-index:1;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>")}
+
+.welcome-inner{position:relative;z-index:2;display:grid;grid-template-columns:1.15fr 0.85fr;align-items:center;gap:48px;padding:72px 56px;min-height:640px}
+
+/* LEFT: typographic hero */
+.welcome-hero{position:relative;max-width:620px}
+.welcome-eyebrow{font-size:11px;font-weight:700;letter-spacing:3px;color:rgba(255,255,255,0.9);text-transform:uppercase;margin-bottom:36px;display:flex;align-items:center;gap:14px}
+.welcome-eyebrow::before{content:'';width:32px;height:1.5px;background:rgba(255,255,255,0.7)}
+.welcome-eyebrow-mark{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:400;letter-spacing:0;color:rgba(255,255,255,0.55);margin-left:auto;padding-left:14px;border-left:1px solid rgba(255,255,255,0.2);text-transform:none}
+.welcome-title{font-family:'Fraunces',serif;font-size:92px;line-height:0.92;color:white;letter-spacing:-3.5px;font-weight:800;font-optical-sizing:auto;margin-bottom:28px;font-variation-settings:"opsz" 144}
+.welcome-title em{font-style:italic;font-weight:300;color:rgba(255,255,255,0.85);font-variation-settings:"opsz" 144}
+.welcome-title .underline-swell{position:relative;display:inline-block}
+.welcome-title .underline-swell::after{content:'';position:absolute;left:0;right:0;bottom:0.08em;height:0.12em;background:rgba(254,134,91,0.8);z-index:-1;border-radius:2px}
+.welcome-sub{font-size:18px;color:rgba(255,255,255,0.85);line-height:1.55;font-weight:400;max-width:480px;margin-bottom:48px;letter-spacing:-0.1px}
+.welcome-actions{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:52px}
+.btn-primary{background:white;color:var(--indigo);border:none;border-radius:999px;padding:18px 34px;font-family:'Inter',sans-serif;font-size:14.5px;font-weight:600;cursor:pointer;transition:all .25s cubic-bezier(.4,0,.2,1);display:inline-flex;align-items:center;gap:10px;letter-spacing:-0.2px;box-shadow:0 2px 0 rgba(75,0,130,0.2),0 20px 60px rgba(75,0,130,0.35)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 2px 0 rgba(75,0,130,0.2),0 28px 72px rgba(255,20,147,0.45)}
+.btn-primary.inverted{background:var(--pink);color:white}
+.btn-primary.inverted:hover{background:#FF3EA3}
+.btn-secondary{background:transparent;color:rgba(255,255,255,0.92);border:1.5px solid rgba(255,255,255,0.35);border-radius:999px;padding:16px 28px;font-family:'Inter',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .25s;letter-spacing:-0.1px}
+.btn-secondary:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.7)}
+.welcome-badges{display:flex;gap:24px;flex-wrap:wrap;padding-top:28px;border-top:1px solid rgba(255,255,255,0.18)}
+.badge{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;color:rgba(255,255,255,0.85);font-weight:500;letter-spacing:0.2px}
+.badge-dot{width:5px;height:5px;border-radius:50%}
+.badge-dot.pink{background:var(--pink);box-shadow:0 0 8px rgba(255,20,147,0.8)}
+.badge-dot.coral{background:var(--coral);box-shadow:0 0 8px rgba(254,134,91,0.8)}
+.badge-dot.white{background:white;box-shadow:0 0 8px rgba(255,255,255,0.8)}
+
+/* RIGHT: the visual artifact — glass folder scene floating on the gradient */
+.welcome-art{position:relative;width:100%;height:100%;min-height:480px;display:flex;align-items:center;justify-content:center}
+.folder-scene{position:relative;width:380px;height:440px}
+/* Each folder = frosted glass tile */
+.folder-card{position:absolute;border-radius:22px;padding:22px;background:rgba(255,255,255,0.18);backdrop-filter:blur(24px) saturate(140%);-webkit-backdrop-filter:blur(24px) saturate(140%);border:1px solid rgba(255,255,255,0.35);box-shadow:0 30px 80px -20px rgba(46,0,82,0.6),inset 0 1px 0 rgba(255,255,255,0.4);color:white;transition:transform .35s cubic-bezier(.4,0,.2,1)}
+.fc1{width:240px;top:4px;left:60px;transform:rotate(-5deg);z-index:1;opacity:0.9}
+.fc1:hover{transform:rotate(-5deg) translateY(-4px)}
+.fc2{width:270px;top:90px;left:40px;transform:rotate(2deg);z-index:2;background:rgba(255,255,255,0.24);border-color:rgba(255,255,255,0.45)}
+.fc2:hover{transform:rotate(2deg) translateY(-4px)}
+.fc3{width:260px;top:200px;left:58px;transform:rotate(-1.5deg);z-index:3;background:linear-gradient(135deg,rgba(255,255,255,0.35) 0%,rgba(255,228,243,0.28) 100%);border-color:rgba(255,255,255,0.55)}
+.fc3:hover{transform:rotate(-1.5deg) translateY(-4px)}
+.folder-icon{width:34px;height:26px;margin-bottom:12px;opacity:0.95}
+.folder-label{font-size:12.5px;font-weight:600;color:rgba(255,255,255,0.98);margin-bottom:4px;font-family:'Inter',sans-serif;letter-spacing:-0.1px}
+.folder-label.muted{color:rgba(255,255,255,0.7);font-weight:500}
+.folder-label.organized{color:white;font-weight:700}
+.folder-label.organized::before{content:'';display:inline-block;width:14px;height:14px;border-radius:50%;background:var(--coral);margin-right:7px;vertical-align:-2px;box-shadow:0 0 12px rgba(254,134,91,0.8)}
+.folder-meta{font-size:11px;color:rgba(255,255,255,0.75);font-weight:400;letter-spacing:-0.05px}
+.folder-chips{display:flex;gap:7px;margin-bottom:10px}
+.folder-chip{width:30px;height:38px;border-radius:6px;border:1.5px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.2)}
+.folder-chip.c2{background:rgba(254,134,91,0.35);border-color:rgba(254,134,91,0.6)}
+.folder-chip.c3{background:rgba(255,20,147,0.3);border-color:rgba(255,20,147,0.6)}
+
+/* Floating metric tiles — crystallized data */
+.float-card{position:absolute;background:rgba(26,15,46,0.55);backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);border:1px solid rgba(255,255,255,0.25);border-radius:18px;padding:14px 18px;display:flex;flex-direction:column;gap:3px;box-shadow:0 20px 60px -15px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.2)}
+.float-card-label{font-size:10px;color:rgba(255,255,255,0.7);font-weight:500;letter-spacing:1.5px;text-transform:uppercase}
+.float-card-value{font-family:'Fraunces',serif;font-size:32px;font-weight:800;letter-spacing:-1.5px;color:white;line-height:1;font-variation-settings:"opsz" 144}
+.float-card-inline{flex-direction:row;align-items:center;gap:10px;padding:11px 16px}
+.float-card-inline .float-card-label{letter-spacing:0.2px;text-transform:none;font-size:11.5px;color:rgba(255,255,255,0.88);font-weight:500}
+
+/* Corner quiet marks — typography as composition */
+.welcome-corner{position:absolute;top:32px;right:48px;z-index:2;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase}
+.welcome-corner-bl{position:absolute;bottom:32px;right:56px;z-index:2;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,0.45);letter-spacing:0.5px;display:flex;gap:24px}
+.welcome-corner-bl span{opacity:0.7}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HOME SCREEN — Editorial landing for returning users (the new screen #1)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.home-wrap{background:white;padding:60px 64px;min-height:640px;position:relative;overflow:hidden}
+.home-corner-tr{position:absolute;top:22px;right:28px;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10px;color:rgba(26,15,46,0.4);letter-spacing:1.5px}
+.home-corner-bl{position:absolute;bottom:22px;left:28px;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10px;color:rgba(26,15,46,0.35);letter-spacing:0.5px}
+.home-head{display:flex;align-items:flex-start;gap:32px;margin-bottom:56px;max-width:960px}
+.home-head-main{flex:1}
+.home-eyebrow{font-size:11px;font-weight:700;letter-spacing:2.5px;color:var(--pink);text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:12px}
+.home-eyebrow::before{content:'';width:28px;height:1.5px;background:var(--pink)}
+.home-title{font-family:'Fraunces',Georgia,serif;font-size:56px;line-height:1;color:var(--ink);letter-spacing:-2px;font-weight:700;margin:0 0 18px;font-optical-sizing:auto}
+.home-title em{font-style:italic;font-weight:400;color:var(--coral)}
+.home-sub{font-size:15px;color:var(--ink2);line-height:1.55;max-width:520px;margin:0}
+.lastrun-card{background:white;border:1px solid var(--border);border-radius:12px;padding:14px 18px;min-width:220px}
+.lastrun-label{font-size:9.5px;font-weight:700;letter-spacing:1.5px;color:var(--ink3);text-transform:uppercase;margin-bottom:6px}
+.lastrun-date{font-family:'Fraunces',Georgia,serif;font-size:20px;font-weight:700;color:var(--ink);letter-spacing:-0.5px;line-height:1.15;margin-bottom:4px}
+.lastrun-meta{font-size:11px;color:var(--ink2);line-height:1.4}
+.lastrun-ago{font-size:10px;color:var(--ink3);margin-top:6px}
+.home-ctas{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:40px}
+.home-cta{border-radius:18px;padding:28px 30px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.home-cta:hover{transform:translateY(-2px);box-shadow:var(--shadow-pop)}
+.home-cta.analyze{background:linear-gradient(135deg,#F5EBFF 0%,#FFFFFF 100%);border:1.5px solid var(--border)}
+.home-cta.restruct{background:linear-gradient(135deg,#FFE4F3 0%,#FFE8DC 100%);border:2px solid var(--pink);padding:27px 29px}
+.home-cta::before{content:'';position:absolute;top:-20px;right:-20px;width:120px;height:120px;background:radial-gradient(circle,rgba(75,0,130,0.08) 0%,transparent 70%);pointer-events:none}
+.home-cta.restruct::before{width:140px;height:140px;background:radial-gradient(circle,rgba(255,20,147,0.15) 0%,transparent 70%);top:-30px;right:-30px}
+.home-cta-badge{position:absolute;top:14px;right:16px;background:linear-gradient(135deg,var(--pink),var(--coral));color:white;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:4px 10px;border-radius:50px;box-shadow:0 3px 10px rgba(255,20,147,0.3)}
+.home-cta-inner{position:relative}
+.home-cta-row{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.home-cta-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-size:17px}
+.home-cta-icon.indigo{background:linear-gradient(135deg,var(--indigo-light),var(--indigo))}
+.home-cta-icon.pink{background:linear-gradient(135deg,var(--pink),var(--coral));box-shadow:0 6px 16px rgba(255,20,147,0.3)}
+.home-cta-mode{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase}
+.home-cta-mode.indigo{color:var(--indigo)}
+.home-cta-mode.pink{color:var(--pink)}
+.home-cta-title{font-family:'Fraunces',Georgia,serif;font-size:26px;font-weight:700;color:var(--ink);letter-spacing:-0.8px;line-height:1.1;margin-bottom:10px}
+.home-cta-desc{font-size:13px;color:var(--ink2);line-height:1.55;margin:0 0 20px;max-width:320px}
+.home-cta-actions{display:flex;align-items:center;gap:12px}
+.home-cta-btn{border:none;border-radius:10px;padding:11px 20px;font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;color:white}
+.home-cta-btn.indigo{background:var(--indigo);box-shadow:0 4px 14px rgba(75,0,130,0.25)}
+.home-cta-btn.pink{background:linear-gradient(135deg,var(--pink),var(--coral));box-shadow:0 6px 18px rgba(255,20,147,0.35)}
+.home-cta-time{font-size:11px;color:var(--ink3)}
+.home-how{display:flex;align-items:center;gap:14px;padding:18px 0;border-top:1px solid var(--border);cursor:pointer;transition:opacity .15s}
+.home-how:hover{opacity:0.7}
+.home-how-icon{width:36px;height:36px;border-radius:9px;background:white;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--indigo);font-size:16px;flex-shrink:0}
+.home-how-text{flex:1}
+.home-how-title{font-family:'Fraunces',Georgia,serif;font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-0.3px;margin-bottom:2px}
+.home-how-sub{font-size:12px;color:var(--ink2);line-height:1.4}
+.home-how-link{color:var(--pink);font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.home-status{display:flex;align-items:center;justify-content:space-between;margin-top:28px;padding-top:18px;border-top:1px dashed var(--border)}
+.home-status-left{font-size:11px;color:var(--ink3);line-height:1.5;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.status-pulse{display:inline-flex;align-items:center;gap:6px}
+.status-pulse .dot{width:6px;height:6px;border-radius:50%;background:#3B6D11;box-shadow:0 0 6px rgba(59,109,17,0.5)}
+.home-status-right{display:flex;align-items:center;gap:16px}
+.home-status-link{font-size:11px;color:var(--ink3);cursor:pointer}
+.home-status-link:hover{color:var(--ink)}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HOW IT WORKS SCREEN — Three tabs explaining the destination modes
+   ═══════════════════════════════════════════════════════════════════════════ */
+.how-wrap{padding:44px 48px;max-width:1000px;margin:0 auto;position:relative}
+.how-corner-tr{position:absolute;top:-22px;right:4px;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10px;color:rgba(26,15,46,0.4);letter-spacing:1.5px}
+.how-corner-bl{position:absolute;bottom:-30px;left:4px;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10px;color:rgba(26,15,46,0.35);letter-spacing:0.5px}
+.how-eyebrow{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--pink);text-transform:uppercase;margin-bottom:6px}
+.how-title{font-family:'Fraunces',Georgia,serif;font-size:38px;font-weight:700;color:var(--ink);letter-spacing:-1.2px;margin:0 0 8px;font-optical-sizing:auto}
+.how-sub{font-size:14px;color:var(--ink2);line-height:1.55;max-width:620px;margin:0 0 30px}
+.how-back{background:none;border:none;color:var(--ink2);font-size:13px;cursor:pointer;margin-bottom:18px;font-family:'Inter',sans-serif;display:inline-flex;align-items:center;gap:6px;padding:0}
+.how-back:hover{color:var(--indigo)}
+.how-tabs{display:flex;gap:2px;border-bottom:1.5px solid var(--border);margin-bottom:32px}
+.how-tab{padding:12px 20px;background:transparent;border:none;display:flex;align-items:center;gap:8px;cursor:pointer;opacity:0.65;transition:opacity .15s;font-family:'Inter',sans-serif}
+.how-tab:hover{opacity:0.85}
+.how-tab.active{background:white;border:1.5px solid var(--border);border-bottom:1.5px solid white;border-radius:10px 10px 0 0;margin-bottom:-1.5px;position:relative;top:0;opacity:1}
+.how-tab-icon{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-size:11px}
+.how-tab-icon.indigo{background:linear-gradient(135deg,var(--indigo-light),var(--indigo))}
+.how-tab-icon.pink{background:linear-gradient(135deg,var(--pink),var(--pink-soft))}
+.how-tab-icon.coral{background:linear-gradient(135deg,var(--coral),var(--coral-soft))}
+.how-tab-name{font-family:'Fraunces',Georgia,serif;font-size:14px;font-weight:700;color:var(--ink);letter-spacing:-0.3px}
+.how-tab-badge{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:4px}
+.how-tab-badge.indigo{color:var(--indigo);background:#F0E8F5}
+.how-tab-badge.pink{color:var(--pink);background:var(--pink-pale)}
+.how-tab-badge.coral{color:#D85A30;background:var(--coral-pale)}
+.how-panel{display:none}
+.how-panel.active{display:block}
+.how-grid{display:grid;grid-template-columns:0.95fr 1.05fr;gap:40px;align-items:start;margin-bottom:36px}
+.how-story-title{font-family:'Fraunces',Georgia,serif;font-size:26px;font-weight:700;color:var(--ink);letter-spacing:-0.6px;margin-bottom:14px;line-height:1.15}
+.how-story-body{font-size:14px;color:var(--ink2);line-height:1.65;margin:0 0 22px}
+.how-when{border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px}
+.how-when.indigo{background:#F5EBFF;border:1px solid rgba(75,0,130,0.15)}
+.how-when.pink{background:var(--pink-pale);border:1px solid rgba(255,20,147,0.2)}
+.how-when.coral{background:var(--coral-pale);border:1px solid rgba(254,134,91,0.25)}
+.how-when-icon{font-size:18px;line-height:1.2}
+.how-when-label{font-size:12px;font-weight:700;margin-bottom:4px}
+.how-when-label.indigo{color:var(--indigo)}
+.how-when-label.pink{color:var(--pink)}
+.how-when-label.coral{color:#D85A30}
+.how-when-text{font-size:11.5px;color:var(--ink2);line-height:1.55}
+.how-flow{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:22px 26px}
+.how-flow-label{font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--ink3);text-transform:uppercase;margin-bottom:18px}
+.flow-step{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px}
+.flow-step:last-child{margin-bottom:0}
+.flow-step-icon-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
+.flow-step-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.flow-step-icon.start{background:white;border:1.5px solid var(--border2);font-size:18px}
+.flow-step-icon.engine{background:linear-gradient(135deg,var(--indigo-light),var(--indigo));color:white;box-shadow:0 4px 12px rgba(75,0,130,0.3)}
+.flow-step-icon.end-local{background:linear-gradient(135deg,var(--pink-pale),var(--coral-pale));border:1.5px solid var(--pink);font-size:18px}
+.flow-step-icon.end-cloud{background:linear-gradient(135deg,var(--pink-pale),var(--coral-pale));border:1.5px solid var(--coral);font-size:18px}
+.flow-step-icon.sync{background:linear-gradient(135deg,var(--pink),var(--pink-soft));color:white;font-size:16px;box-shadow:0 4px 12px rgba(255,20,147,0.3)}
+.flow-step-icon.sync-coral{background:linear-gradient(135deg,var(--coral),var(--coral-soft));color:white;font-size:16px;box-shadow:0 4px 12px rgba(254,134,91,0.35)}
+.flow-step-icon.cloud-src{background:linear-gradient(135deg,var(--pink),var(--pink-soft));color:white;font-size:17px;box-shadow:0 4px 12px rgba(255,20,147,0.25)}
+.flow-step-connector{width:2px;height:14px;background:var(--border2)}
+.flow-step-connector.pink{background:rgba(255,20,147,0.3)}
+.flow-step-connector.coral{background:rgba(254,134,91,0.3)}
+.flow-step-text{flex:1;padding-top:8px}
+.flow-step-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px}
+.flow-step-body{font-size:11px;color:var(--ink2);line-height:1.5}
+.flow-step-path{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10px;color:var(--indigo);background:white;border:1px solid var(--border);padding:4px 8px;border-radius:5px;display:inline-block;margin-top:4px}
+.how-facts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:28px}
+.fact-card{background:white;border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+.fact-label{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px}
+.fact-label.indigo{color:var(--indigo)}
+.fact-label.pink{color:var(--pink)}
+.fact-label.coral{color:#D85A30}
+.fact-title{font-size:12.5px;color:var(--ink);line-height:1.5;font-weight:500}
+.fact-sub{font-size:11px;color:var(--ink3);line-height:1.5;margin-top:2px}
+.did-you-know{border-radius:10px;padding:12px 16px;display:flex;align-items:flex-start;gap:10px;font-size:11.5px;color:var(--ink2);line-height:1.55}
+.did-you-know.indigo{background:linear-gradient(90deg,rgba(75,0,130,0.04) 0%,rgba(255,20,147,0.04) 100%);border:1px solid rgba(75,0,130,0.12)}
+.did-you-know.pink{background:linear-gradient(90deg,rgba(255,20,147,0.05) 0%,rgba(254,134,91,0.05) 100%);border:1px solid rgba(255,20,147,0.15)}
+.did-you-know.coral{background:linear-gradient(90deg,rgba(254,134,91,0.06) 0%,rgba(255,20,147,0.04) 100%);border:1px solid rgba(254,134,91,0.2)}
+.did-icon{font-size:16px;line-height:1.2}
+.did-title{font-weight:700;color:var(--ink)}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 4 — Analysis modal, Progress log, Confirmation screen, Restore modal
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Analysis modal (blocking overlay when Restructure-direct starts) */
+.analysis-modal{position:fixed;inset:0;background:rgba(26,15,46,0.75);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:210;padding:24px;animation:modalFadeIn .25s ease}
+.analysis-modal.show{display:flex}
+.analysis-card{background:white;border-radius:18px;padding:36px 40px 30px;max-width:520px;width:100%;box-shadow:0 40px 100px rgba(0,0,0,0.4);text-align:center;animation:modalSlideIn .3s cubic-bezier(.4,0,.2,1)}
+.analysis-spinner{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--indigo),var(--pink));display:flex;align-items:center;justify-content:center;margin:0 auto 20px;position:relative;box-shadow:0 12px 40px rgba(255,20,147,0.35)}
+.analysis-spinner::after{content:'';position:absolute;inset:4px;border-radius:50%;background:white}
+.analysis-spinner-inner{position:relative;z-index:1;font-size:28px;animation:spin 2s linear infinite;display:block;color:var(--indigo)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.analysis-title{font-family:'Fraunces',Georgia,serif;font-size:22px;font-weight:700;color:var(--ink);letter-spacing:-0.5px;margin-bottom:6px}
+.analysis-sub{font-size:13px;color:var(--ink2);line-height:1.55;margin-bottom:22px}
+.analysis-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:10px}
+.analysis-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--indigo),var(--pink),var(--coral));transition:width .3s ease;border-radius:3px}
+.analysis-status{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10.5px;color:var(--ink3);margin-bottom:18px;min-height:16px;transition:opacity .3s}
+.analysis-details-btn{background:none;border:none;color:var(--indigo);font-size:12px;font-weight:500;cursor:pointer;padding:4px 10px;margin-bottom:10px;font-family:'Inter',sans-serif}
+.analysis-details-btn:hover{text-decoration:underline}
+.analysis-log{max-height:0;overflow:hidden;transition:max-height .35s cubic-bezier(.4,0,.2,1);background:var(--ink);border-radius:10px;text-align:left}
+.analysis-log.expanded{max-height:180px;overflow-y:auto}
+.analysis-log-inner{padding:12px 14px;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10.5px;line-height:1.7}
+.analysis-log-line{color:rgba(255,255,255,0.7)}
+.analysis-log-line.hit{color:var(--pink-soft)}
+.analysis-log-line.found{color:var(--coral)}
+.analysis-cancel{margin-top:18px;background:white;color:var(--ink2);border:1px solid var(--border2);border-radius:10px;padding:9px 18px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif}
+.analysis-cancel:hover{border-color:var(--ink2);color:var(--ink)}
+
+/* Progress log screen (between Restructure and Confirmation) */
+.progress-wrap{padding:60px 64px;max-width:820px;margin:0 auto;position:relative}
+.progress-corner-tr{position:absolute;top:22px;right:28px;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10px;color:rgba(26,15,46,0.4);letter-spacing:1.5px}
+.progress-eyebrow{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--pink);text-transform:uppercase;margin-bottom:6px}
+.progress-title{font-family:'Fraunces',Georgia,serif;font-size:36px;font-weight:700;color:var(--ink);letter-spacing:-1.2px;margin:0 0 10px}
+.progress-sub{font-size:14px;color:var(--ink2);line-height:1.55;max-width:580px;margin:0 0 28px}
+.progress-big-bar{height:10px;background:var(--border);border-radius:5px;overflow:hidden;margin-bottom:8px}
+.progress-big-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--indigo),var(--pink),var(--coral));transition:width .4s;border-radius:5px}
+.progress-status-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:11px;color:var(--ink3)}
+.progress-status-row b{color:var(--ink);font-weight:600}
+.progress-log-pane{background:var(--ink);border-radius:14px;padding:20px 24px;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:11.5px;line-height:1.75;height:320px;overflow-y:auto;box-shadow:0 8px 32px rgba(26,15,46,0.2)}
+.progress-log-line{color:rgba(255,255,255,0.75)}
+.progress-log-line.cmd{color:rgba(255,255,255,0.5)}
+.progress-log-line.ok{color:#7BD88F}
+.progress-log-line.hit{color:var(--pink-soft)}
+.progress-log-line.found{color:var(--coral)}
+.progress-log-line.done{color:#7BD88F;font-weight:500}
+
+/* Confirmation screen */
+.conf-wrap{padding:56px 60px;max-width:960px;margin:0 auto;position:relative}
+.conf-corner-tr{position:absolute;top:22px;right:28px;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10px;color:rgba(26,15,46,0.4);letter-spacing:1.5px}
+.conf-corner-bl{position:absolute;bottom:-10px;left:4px;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10px;color:rgba(26,15,46,0.35);letter-spacing:0.5px}
+.conf-head-row{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.conf-check-icon{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--coral));display:flex;align-items:center;justify-content:center;color:white;font-size:20px;box-shadow:0 8px 24px rgba(255,20,147,0.3)}
+.conf-eyebrow{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--pink);text-transform:uppercase;margin-bottom:2px}
+.conf-timestamp{font-size:12px;color:var(--ink3)}
+.conf-title{font-family:'Fraunces',Georgia,serif;font-size:46px;font-weight:700;color:var(--ink);letter-spacing:-1.8px;line-height:1.05;margin:0 0 16px;max-width:680px;font-optical-sizing:auto}
+.conf-title em{font-style:italic;font-weight:400;color:var(--coral)}
+.conf-sub{font-size:15px;color:var(--ink2);line-height:1.55;margin:0 0 36px;max-width:580px}
+.conf-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:36px}
+.conf-stat-card{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:20px 22px}
+.conf-stat-label{font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--ink3);text-transform:uppercase;margin-bottom:10px}
+.conf-stat-val{font-family:'Fraunces',Georgia,serif;font-size:36px;font-weight:800;letter-spacing:-1.5px;line-height:1;margin-bottom:4px}
+.conf-stat-val.c1{color:var(--indigo)}
+.conf-stat-val.c2{color:var(--pink)}
+.conf-stat-val.c3{color:var(--coral)}
+.conf-stat-val.c4{color:#BA7517}
+.conf-stat-sub{font-size:11px;color:var(--ink2)}
+
+.conf-verify{background:linear-gradient(135deg,#F5EBFF 0%,#FFFFFF 100%);border:1px solid rgba(75,0,130,0.15);border-radius:14px;padding:24px 26px;margin-bottom:24px}
+.conf-verify-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px}
+.conf-verify-icon{width:36px;height:36px;border-radius:10px;background:white;border:1.5px solid rgba(75,0,130,0.2);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.conf-verify-title{font-family:'Fraunces',Georgia,serif;font-size:18px;font-weight:700;color:var(--ink);letter-spacing:-0.3px;margin-bottom:4px}
+.conf-verify-sub{font-size:12px;color:var(--ink2);line-height:1.55}
+.conf-steps{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.conf-step{display:flex;align-items:flex-start;gap:12px}
+.conf-step-num{width:20px;height:20px;border-radius:50%;background:var(--indigo);color:white;font-size:10px;font-weight:700;font-family:'Fraunces',Georgia,serif;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.conf-step-num.pink{background:var(--pink)}
+.conf-step-text{font-size:12.5px;color:var(--ink2);line-height:1.55}
+.conf-step-text.pink{color:var(--ink);font-weight:500}
+.conf-step-text b{font-weight:600;color:var(--ink)}
+.conf-path{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:11px;color:var(--indigo);background:rgba(75,0,130,0.08);padding:1.5px 6px;border-radius:3px}
+.conf-open-folder{background:white;color:var(--indigo);border:1.5px solid var(--indigo);border-radius:10px;padding:10px 18px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-family:'Inter',sans-serif}
+.conf-open-folder:hover{background:var(--indigo);color:white}
+
+.conf-backup-strip{background:rgba(75,0,130,0.04);border:1px dashed rgba(75,0,130,0.2);border-radius:10px;padding:12px 16px;display:flex;align-items:flex-start;gap:10px;font-size:11px;color:var(--ink2);line-height:1.55;margin-bottom:32px}
+.conf-backup-strip b{color:var(--ink)}
+.conf-backup-filename{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10.5px;color:var(--indigo);background:rgba(75,0,130,0.08);padding:1px 5px;border-radius:3px}
+
+.conf-decisions{display:flex;gap:12px;margin-bottom:18px}
+.conf-decision{flex:1;border-radius:14px;padding:22px 26px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.conf-decision.confirm{background:linear-gradient(135deg,#FFE4F3,#FFE8DC);border:2px solid var(--pink)}
+.conf-decision.confirm::before{content:'';position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:radial-gradient(circle,rgba(255,20,147,0.15) 0%,transparent 70%);pointer-events:none}
+.conf-decision.restore{background:white;border:1.5px solid var(--border)}
+.conf-decision:hover{transform:translateY(-1px)}
+.conf-decision-inner{position:relative}
+.conf-decision-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.conf-decision-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.conf-decision-icon.ok{background:linear-gradient(135deg,var(--pink),var(--coral));color:white;box-shadow:0 4px 12px rgba(255,20,147,0.3)}
+.conf-decision-icon.undo{background:var(--bg);border:1.5px solid var(--border2);color:var(--ink2)}
+.conf-decision-title{font-family:'Fraunces',Georgia,serif;font-size:18px;font-weight:700;color:var(--ink);letter-spacing:-0.4px}
+.conf-decision-desc{font-size:12px;color:var(--ink2);line-height:1.55;margin:0 0 14px}
+.conf-decision-btn{border:none;border-radius:10px;padding:11px 20px;font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;width:100%;justify-content:center}
+.conf-decision-btn.ok{background:linear-gradient(135deg,var(--pink),var(--coral));color:white;box-shadow:0 6px 18px rgba(255,20,147,0.35)}
+.conf-decision-btn.undo{background:white;color:var(--ink);border:1.5px solid var(--border2)}
+.conf-decision-btn.undo:hover{border-color:var(--ink2)}
+.conf-footer{display:flex;align-items:center;justify-content:space-between;padding-top:20px;border-top:1px solid var(--border);font-size:11px;color:var(--ink3);line-height:1.55}
+.conf-persist{display:flex;align-items:center;gap:6px}
+.conf-persist b{color:var(--ink)}
+.conf-home-link{cursor:pointer;font-size:11px;color:var(--ink3)}
+.conf-home-link:hover{color:var(--ink)}
+
+/* Restore "are you sure" modal */
+.restore-modal{position:fixed;inset:0;background:rgba(26,15,46,0.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:220;padding:24px;animation:modalFadeIn .25s ease}
+.restore-modal.show{display:flex}
+.restore-card{background:white;border-radius:18px;padding:32px 36px 28px;max-width:460px;width:100%;box-shadow:0 40px 100px rgba(0,0,0,0.4);animation:modalSlideIn .3s cubic-bezier(.4,0,.2,1);text-align:center}
+.restore-icon{width:54px;height:54px;border-radius:50%;background:#FFF3E0;border:1.5px solid #F5A623;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:22px}
+.restore-title{font-family:'Fraunces',Georgia,serif;font-size:22px;font-weight:700;color:var(--ink);letter-spacing:-0.5px;margin-bottom:10px}
+.restore-body{font-size:13.5px;color:var(--ink2);line-height:1.6;margin:0 0 24px}
+.restore-body b{color:var(--ink)}
+.restore-actions{display:flex;gap:10px}
+.restore-btn-cancel{flex:1;background:white;color:var(--ink2);border:1px solid var(--border2);border-radius:10px;padding:12px 18px;font-size:12.5px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif}
+.restore-btn-cancel:hover{border-color:var(--ink2)}
+.restore-btn-confirm{flex:1;background:#D85A30;color:white;border:none;border-radius:10px;padding:12px 18px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 6px 18px rgba(216,90,48,0.35)}
+.restore-btn-confirm:hover{background:#B4481E}
+
+/* FILE TYPES SCREEN */
+.section-wrap{padding:44px 48px;max-width:920px;margin:0 auto}
+.section-header{margin-bottom:36px}
+.section-eyebrow{font-size:12px;font-weight:700;letter-spacing:2px;color:var(--pink);text-transform:uppercase;margin-bottom:10px}
+.section-title{font-family:'Fraunces',serif;font-size:44px;color:var(--ink);margin-bottom:12px;line-height:1.05;letter-spacing:-1.5px;font-weight:700}
+.section-sub{font-size:16px;color:var(--ink2);line-height:1.6;font-weight:400;max-width:640px}
+.file-types-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}
+.ft-card{background:white;border:2px solid var(--border);border-radius:18px;padding:20px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.ft-card:hover{border-color:var(--pink-soft);box-shadow:var(--shadow-soft);transform:translateY(-2px)}
+.ft-card.selected{border-color:var(--pink);background:linear-gradient(135deg,#FFF 0%,var(--pink-pale) 100%)}
+.ft-card.selected::after{content:'✓';position:absolute;top:12px;right:14px;width:22px;height:22px;background:var(--pink);border-radius:50%;color:white;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:22px;text-align:center}
+.ft-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:20px}
+.ft-name{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px;font-family:'Inter',sans-serif}
+.ft-desc{font-size:12px;color:var(--ink2);line-height:1.5;font-weight:400}
+.ft-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:50px;margin-top:10px;letter-spacing:0.5px;text-transform:uppercase}
+.ft-badge.core{background:var(--pink-pale);color:var(--pink)}
+.ft-badge.extra{background:var(--coral-pale);color:var(--coral)}
+.section-divider{height:1px;background:var(--border);margin:28px 0}
+.extra-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px}
+.extra-chip{display:flex;align-items:center;gap:6px;background:white;border:1.5px solid var(--border);border-radius:50px;padding:7px 16px;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;color:var(--ink2)}
+.extra-chip:hover{border-color:var(--coral);color:var(--coral)}
+.extra-chip.on{background:var(--coral-pale);border-color:var(--coral);color:var(--coral)}
+.row-actions{display:flex;align-items:center;justify-content:space-between}
+.info-note{display:flex;align-items:flex-start;gap:12px;background:linear-gradient(135deg,#F5EBFF 0%,#FFE4F3 50%,#FFE8DC 100%);border-radius:16px;padding:16px 20px;max-width:680px}
+.info-note-icon{font-size:20px;line-height:1.4}
+.info-note-text{font-size:13px;color:var(--ink2);line-height:1.6}
+.info-note-text strong{color:var(--indigo);font-weight:700}
+.btn-next{background:var(--pink);color:white;border:none;border-radius:14px;padding:14px 28px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(255,20,147,0.25)}
+.btn-next:hover{background:#FF3EA3;transform:translateY(-1px);box-shadow:0 8px 24px rgba(255,20,147,0.35)}
+.btn-back{background:transparent;color:var(--ink2);border:1.5px solid var(--border2);border-radius:14px;padding:13px 24px;font-family:'Inter',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s}
+.btn-back:hover{border-color:var(--indigo);color:var(--indigo)}
+
+/* SCANNING SCREEN */
+.scan-wrap{padding:48px;max-width:760px;margin:0 auto;text-align:center}
+.scan-anim{width:140px;height:140px;margin:0 auto 36px;position:relative}
+.scan-ring{position:absolute;border-radius:50%;animation:pulse 2.2s ease-in-out infinite}
+.scan-ring:nth-child(1){inset:0;border:2px solid var(--pink);animation-delay:0s;opacity:0.3}
+.scan-ring:nth-child(2){inset:14px;border:2px solid var(--pink);animation-delay:.4s;opacity:0.6}
+.scan-ring:nth-child(3){inset:28px;background:var(--gradient-hero);box-shadow:0 8px 32px rgba(255,20,147,0.4)}
+@keyframes pulse{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:1;transform:scale(1.04)}}
+.scan-inner{width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:absolute;top:28px;left:28px}
+.scan-title{font-family:'Fraunces',serif;font-size:32px;margin-bottom:12px;letter-spacing:-1px;font-weight:700;color:var(--ink)}
+.scan-subtitle{font-size:15px;color:var(--ink2);margin-bottom:36px;line-height:1.6;max-width:540px;margin-left:auto;margin-right:auto}
+.scan-log{background:var(--ink);border:1px solid var(--indigo);border-radius:14px;padding:18px;text-align:left;margin-bottom:20px;max-height:200px;overflow:hidden;font-family:'JetBrains Mono',monospace}
+.scan-log-line{font-size:12px;color:rgba(255,255,255,0.5);padding:3px 0;display:flex;align-items:center;gap:10px;line-height:1.5}
+.scan-log-line.new{color:var(--coral);font-weight:500}
+.scan-log-line.found{color:var(--pink-soft)}
+.scan-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.scan-dot.green{background:var(--coral)}
+.scan-dot.pink{background:var(--pink)}
+.scan-dot.gray{background:var(--ink3)}
+.progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:10px;max-width:520px;margin-left:auto;margin-right:auto}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--indigo),var(--pink),var(--coral));border-radius:4px;transition:width .3s;animation:pgrow 4s ease forwards}
+@keyframes pgrow{0%{width:0%}30%{width:45%}60%{width:72%}85%{width:88%}100%{width:95%}}
+.progress-note{font-size:12px;color:var(--ink3);font-weight:500;margin-bottom:24px}
+.cloud-detect{background:linear-gradient(135deg,var(--indigo) 0%,var(--pink) 100%);border-radius:16px;padding:18px 24px;text-align:left;margin-bottom:28px;max-width:520px;margin-left:auto;margin-right:auto;color:white;box-shadow:var(--shadow-pop)}
+.cloud-detect-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.8);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.cloud-detect-text{font-size:13px;line-height:1.5;font-weight:400}
+
+/* DASHBOARD SCREEN */
+.dash-hero{background:var(--gradient-hero);color:white;padding:36px 40px 28px;position:relative;overflow:hidden}
+.dash-hero::before{content:'';position:absolute;top:-40%;right:-10%;width:50%;height:100%;background:radial-gradient(ellipse,rgba(255,142,91,0.4) 0%,transparent 60%);pointer-events:none}
+.dash-hero-inner{max-width:1100px;margin:0 auto;position:relative;z-index:1}
+.dash-hero-top{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:20px}
+.dash-title{font-family:'Fraunces',serif;font-size:44px;color:white;letter-spacing:-1.5px;line-height:1;font-weight:800;margin-bottom:8px}
+.dash-subtitle{font-size:14px;color:rgba(255,255,255,0.85);font-weight:400}
+.dash-top-actions{display:flex;gap:10px}
+.btn-hero-primary{background:white;color:var(--indigo);border:none;border-radius:12px;padding:12px 22px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,0.15)}
+.btn-hero-primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,0.2)}
+.btn-hero-ghost{background:rgba(255,255,255,0.15);color:white;border:1.5px solid rgba(255,255,255,0.4);border-radius:12px;padding:11px 20px;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;cursor:pointer;backdrop-filter:blur(8px)}
+.btn-hero-ghost:hover{background:rgba(255,255,255,0.25)}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.stat-card-hero{background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.25);border-radius:16px;padding:18px 20px;backdrop-filter:blur(12px)}
+.stat-label-hero{font-size:11px;color:rgba(255,255,255,0.8);margin-bottom:8px;font-weight:600;letter-spacing:1px;text-transform:uppercase}
+.stat-value-hero{font-size:36px;font-weight:800;color:white;font-family:'Fraunces',serif;letter-spacing:-1px;line-height:1;margin-bottom:6px}
+.stat-sub-hero{font-size:12px;color:rgba(255,255,255,0.75);font-weight:400}
+.stat-sub-hero.warn{color:#FFD9BC}
+
+.dash-body{padding:28px 40px;max-width:1100px;margin:0 auto}
+
+.hero-ctas{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.cta-card{border-radius:20px;padding:24px 28px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.cta-card.restructure{background:var(--indigo);color:white}
+.cta-card.restructure:hover{background:var(--indigo-deep);transform:translateY(-2px);box-shadow:var(--shadow-pop)}
+.cta-card.backup{background:white;border:2px solid var(--pink);color:var(--ink)}
+.cta-card.backup:hover{border-color:var(--pink);background:var(--pink-pale);transform:translateY(-2px);box-shadow:var(--shadow-soft)}
+.cta-card-content{flex:1}
+.cta-card-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;opacity:0.8}
+.cta-card-title{font-family:'Fraunces',serif;font-size:28px;font-weight:700;letter-spacing:-0.5px;margin-bottom:6px;line-height:1.1}
+.cta-card-desc{font-size:13px;opacity:0.85;line-height:1.5;font-weight:400}
+.cta-card.backup .cta-card-title{color:var(--indigo)}
+.cta-card.backup .cta-card-label{color:var(--pink)}
+.cta-arrow{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.cta-card.restructure .cta-arrow{background:var(--pink);color:white}
+.cta-card.backup .cta-arrow{background:var(--pink);color:white}
+
+.charts-row{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
+.charts-row2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px}
+.chart-card{background:white;border:1px solid var(--border);border-radius:16px;padding:20px}
+.chart-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;letter-spacing:-0.2px}
+.chart-tag{font-size:10px;font-weight:600;background:var(--pink-pale);color:var(--pink);padding:3px 10px;border-radius:50px;letter-spacing:0.5px;text-transform:uppercase}
+.treemap{position:relative;height:150px;border-radius:10px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:3px}
+.tm-cell{display:flex;flex-direction:column;justify-content:flex-end;padding:10px;border-radius:6px;cursor:pointer;transition:filter .2s;position:relative;overflow:hidden}
+.tm-cell:hover{filter:brightness(1.08)}
+.tm-label{font-size:11px;font-weight:600;color:rgba(255,255,255,0.95);line-height:1.2}
+.tm-val{font-size:18px;font-weight:800;color:white;font-family:'Fraunces',serif}
+.wordcloud{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:center;padding:12px 0}
+.wc-word{border-radius:6px;padding:2px 4px;cursor:pointer;transition:opacity .2s;font-weight:500;line-height:1.2}
+.wc-word:hover{opacity:0.7}
+.activity-bars{display:flex;align-items:flex-end;gap:4px;height:100px}
+.act-bar{flex:1;border-radius:4px 4px 0 0;min-height:4px;cursor:pointer;transition:opacity .2s;position:relative}
+.act-bar:hover{opacity:0.85}
+.act-month{font-size:10px;color:var(--ink3);text-align:center;margin-top:6px;font-weight:500}
+.cust-list{display:flex;flex-direction:column;gap:8px;max-height:180px;overflow:hidden}
+.cust-row{display:flex;align-items:center;gap:12px;cursor:pointer;transition:opacity .2s}
+.cust-row:hover{opacity:0.75}
+.cust-bar-wrap{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.cust-bar{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--pink),var(--coral))}
+.cust-name{font-size:12px;color:var(--ink2);min-width:110px;font-weight:500}
+.cust-count{font-size:12px;color:var(--ink3);min-width:28px;text-align:right;font-weight:600}
+
+/* CLEANUP / RESTRUCTURE SCREEN */
+.cleanup-wrap{padding:44px 48px;max-width:1000px;margin:0 auto}
+.option-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:32px}
+.opt-card{background:white;border:2px solid var(--border);border-radius:20px;padding:26px 22px;cursor:pointer;transition:all .2s;text-align:center}
+.opt-card:hover{border-color:var(--pink-soft);transform:translateY(-2px);box-shadow:var(--shadow-soft)}
+.opt-card.selected{border-color:var(--pink);background:linear-gradient(135deg,#FFF 0%,var(--pink-pale) 100%)}
+.opt-icon{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px}
+.opt-icon.indigo{background:linear-gradient(135deg,var(--indigo-light),var(--indigo))}
+.opt-icon.pink{background:linear-gradient(135deg,var(--pink),var(--pink-soft))}
+.opt-icon.coral{background:linear-gradient(135deg,var(--coral),var(--coral-soft))}
+.opt-title{font-family:'Fraunces',serif;font-size:19px;font-weight:700;color:var(--ink);margin-bottom:8px;letter-spacing:-0.3px}
+.opt-desc{font-size:12px;color:var(--ink2);line-height:1.55;font-weight:400}
+.sort-label{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:14px;letter-spacing:-0.2px}
+.sort-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:28px}
+.sort-opt{background:white;border:1.5px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s}
+.sort-opt:hover{border-color:var(--pink-soft)}
+.sort-opt.on{border-color:var(--pink);background:var(--pink-pale)}
+.sort-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.sort-icon.c1{background:linear-gradient(135deg,var(--indigo-light),var(--indigo))}
+.sort-icon.c2{background:linear-gradient(135deg,var(--pink),var(--pink-soft))}
+.sort-icon.c3{background:linear-gradient(135deg,var(--coral),var(--coral-soft))}
+.sort-icon.c4{background:linear-gradient(135deg,var(--pink-soft),var(--coral))}
+.sort-textwrap{display:flex;flex-direction:column;gap:2px}
+.sort-label-inner{font-size:14px;font-weight:600;color:var(--ink)}
+.sort-sub{font-size:12px;color:var(--ink3);font-weight:400}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESTRUCTURE SCREEN — Jak to máme uspořádat?
+   ═══════════════════════════════════════════════════════════════════════════ */
+.rs-wrap{padding:40px 48px;max-width:1000px;margin:0 auto}
+.rs-eyebrow-row{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+.rs-eyebrow-mark{margin-left:auto;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10px;color:rgba(26,15,46,0.45);letter-spacing:1px}
+.rs-title{font-family:'Fraunces',Georgia,serif;font-size:38px;font-weight:700;color:var(--ink);letter-spacing:-1.2px;margin:0 0 6px;font-optical-sizing:auto}
+.rs-sub{font-size:14px;color:var(--ink2);margin:0 0 26px;max-width:580px;line-height:1.5}
+.rs-sub em{font-style:italic;color:var(--pink);font-weight:500}
+
+.rs-section-head{font-size:11px;font-weight:700;letter-spacing:1.2px;color:rgba(26,15,46,0.55);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:baseline;gap:10px}
+.rs-section-hint{font-size:11px;color:rgba(26,15,46,0.45);font-weight:400;letter-spacing:0;text-transform:none}
+
+/* Destination mode cards */
+.dest-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+.dest-card{border:1.5px solid var(--border);background:white;border-radius:14px;padding:15px 17px;cursor:pointer;transition:all .18s;position:relative}
+.dest-card:hover:not(.disabled){border-color:var(--pink-soft);transform:translateY(-1px);box-shadow:var(--shadow-soft)}
+.dest-card.selected{border:2px solid var(--pink);background:linear-gradient(135deg,#FFF,#FFE4F3);padding:14px 16px}
+.dest-card.disabled{opacity:0.55;cursor:not-allowed;background:#F5F4F8}
+.dest-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.dest-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;color:white;flex-shrink:0}
+.dest-icon.local{background:linear-gradient(135deg,var(--indigo-light),var(--indigo))}
+.dest-icon.cloud{background:linear-gradient(135deg,var(--pink),var(--pink-soft))}
+.dest-icon.c2c{background:linear-gradient(135deg,var(--coral),var(--coral-soft))}
+.dest-name{font-family:'Fraunces',Georgia,serif;font-size:15px;font-weight:700;color:var(--ink)}
+.dest-check{margin-left:auto;width:20px;height:20px;background:var(--pink);border-radius:50%;color:white;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+.dest-desc{font-size:11px;color:var(--ink2);line-height:1.5;margin-bottom:10px}
+.dest-path-row{border-top:1px dashed rgba(75,0,130,0.18);padding-top:10px}
+.dest-path-label{font-size:9.5px;font-weight:600;color:rgba(26,15,46,0.55);letter-spacing:0.5px;margin-bottom:6px;text-transform:uppercase}
+.dest-path-field{display:flex;align-items:center;gap:6px}
+.dest-path-input{flex:1;min-width:0;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10.5px;color:var(--indigo);background:white;border:1px solid rgba(75,0,130,0.2);padding:7px 9px;border-radius:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text}
+.dest-browse{font-size:10.5px;font-weight:600;color:var(--pink);background:white;border:1.5px solid var(--pink);border-radius:7px;padding:6px 12px;cursor:pointer;flex-shrink:0;white-space:nowrap;transition:all .15s}
+.dest-browse:hover{background:var(--pink);color:white}
+.dest-cloud-dot{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--pink);font-weight:500;margin-top:2px}
+.dest-cloud-dot .dot{width:6px;height:6px;border-radius:50%;background:var(--coral);box-shadow:0 0 8px rgba(254,134,91,0.8)}
+.dest-disabled-reason{font-size:10.5px;color:var(--ink3);font-style:italic;margin-top:6px;line-height:1.4}
+
+/* Collision warning */
+.rs-tip{font-size:11px;color:rgba(26,15,46,0.55);margin:4px 0 26px;font-style:italic;line-height:1.5}
+.collision-warn{background:#FFF3E0;border:1px solid #F5A623;border-radius:10px;padding:10px 14px;margin:8px 0 22px;display:flex;align-items:flex-start;gap:10px;font-size:11.5px;color:#7A4A00;line-height:1.55}
+.collision-warn b{font-weight:700}
+
+/* Grouping palette + structure stack */
+.group-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:28px}
+.palette-card{background:white;border:1px solid var(--border);border-radius:14px;padding:18px}
+.palette-label{font-size:10.5px;font-weight:600;color:rgba(26,15,46,0.6);margin-bottom:12px;letter-spacing:0.5px}
+.palette-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.palette-chip{border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;display:flex;align-items:center;gap:10px;background:white;cursor:pointer;transition:all .15s}
+.palette-chip:hover:not(.used){border-color:var(--pink-soft);background:rgba(255,20,147,0.03);transform:translateY(-1px)}
+.palette-chip.used{opacity:0.5;cursor:default}
+.palette-chip.used.lvl1{background:rgba(75,0,130,0.03)}
+.palette-chip.used.lvl2{background:rgba(255,20,147,0.05)}
+.palette-chip.used.lvl3{background:rgba(254,134,91,0.05)}
+.chip-icon{width:28px;height:28px;border-radius:7px;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.chip-icon.i-customer{background:linear-gradient(135deg,var(--indigo-light),var(--indigo))}
+.chip-icon.i-date{background:linear-gradient(135deg,var(--pink),var(--pink-soft))}
+.chip-icon.i-inst{background:linear-gradient(135deg,var(--coral),var(--coral-soft))}
+.chip-icon.i-doc{background:linear-gradient(135deg,var(--pink-soft),var(--coral))}
+.chip-text{flex:1;min-width:0}
+.chip-name{font-size:12.5px;font-weight:600;color:var(--ink)}
+.chip-meta{font-size:10px;color:rgba(26,15,46,0.55);display:flex;align-items:center;gap:5px;margin-top:2px}
+.coverage-dot{width:5px;height:5px;border-radius:50%}
+.coverage-dot.high{background:#3B6D11}
+.coverage-dot.mid{background:#BA7517}
+.chip-num{width:24px;height:24px;border-radius:50%;color:white;font-size:11px;font-family:'Fraunces',Georgia,serif;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.chip-num.lvl1{background:var(--indigo)}
+.chip-num.lvl2{background:var(--pink)}
+.chip-num.lvl3{background:var(--coral)}
+.chip-add{font-size:11px;font-weight:600;color:var(--pink);background:rgba(255,20,147,0.08);border:none;border-radius:7px;padding:5px 11px;cursor:pointer;flex-shrink:0;transition:all .15s}
+.chip-add:hover{background:rgba(255,20,147,0.2)}
+
+.stack-card{background:linear-gradient(160deg,var(--indigo) 0%,var(--indigo-light) 100%);border-radius:14px;padding:18px;color:white;position:relative;overflow:hidden}
+.stack-card::before{content:'';position:absolute;top:-30%;right:-20%;width:60%;height:60%;background:radial-gradient(ellipse,rgba(254,134,91,0.35) 0%,transparent 60%);pointer-events:none}
+.stack-inner{position:relative}
+.stack-label{font-size:10.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,0.75);margin-bottom:14px}
+.stack-row{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;padding:10px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.stack-num{width:22px;height:22px;border-radius:50%;background:var(--coral);color:var(--ink);font-size:11px;font-weight:700;font-family:'Fraunces',Georgia,serif;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.stack-name{flex:1;min-width:0;font-size:12px;font-weight:600}
+.stack-arrows{display:flex;flex-direction:column;gap:1px}
+.stack-arrow{background:none;border:none;font-size:10.5px;cursor:pointer;padding:0;line-height:1;color:rgba(255,255,255,0.7)}
+.stack-arrow:disabled{color:rgba(255,255,255,0.3);cursor:not-allowed}
+.stack-arrow:hover:not(:disabled){color:white}
+.stack-remove{background:none;border:none;color:rgba(255,255,255,0.5);font-size:15px;cursor:pointer;padding:0 0 0 2px;line-height:1}
+.stack-remove:hover{color:white}
+.stack-empty{border:1.5px dashed rgba(255,255,255,0.3);border-radius:10px;padding:12px;text-align:center;margin-bottom:7px}
+.stack-empty-text{font-size:11px;color:rgba(255,255,255,0.55);line-height:1.35}
+.stack-counter{font-size:9.5px;color:rgba(255,255,255,0.55);text-align:center;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;letter-spacing:0.5px;margin-top:10px}
+
+/* Preview card */
+.preview-card{background:white;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px}
+.preview-stats{background:#F5EBFF;padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.p-stat{display:flex;align-items:baseline;gap:6px}
+.p-stat-val{font-family:'Fraunces',Georgia,serif;font-size:24px;font-weight:800;letter-spacing:-0.5px}
+.p-stat-val.c1{color:var(--indigo)}
+.p-stat-val.c2{color:var(--pink)}
+.p-stat-val.c3{color:var(--coral)}
+.p-stat-lbl{font-size:11px;color:var(--ink2)}
+.p-stat-sep{width:1px;height:22px;background:var(--border2)}
+.preview-path{margin-left:auto;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10px;color:rgba(26,15,46,0.55);background:white;padding:5px 9px;border-radius:5px;border:1px solid var(--border)}
+.tree{padding:16px 20px;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:12px;line-height:1.75}
+.tree-root{display:flex;align-items:center;gap:8px;color:var(--indigo);font-weight:600}
+.tree-branch{padding-left:22px}
+.tree-node{display:flex;align-items:center;gap:8px;color:var(--ink)}
+.tree-node .tree-conn{color:rgba(26,15,46,0.3)}
+.tree-node .tree-count{margin-left:auto;font-size:10px;color:rgba(26,15,46,0.5)}
+.tree-sub{padding-left:30px;color:rgba(26,15,46,0.7)}
+.tree-subnode{display:flex;align-items:center;gap:6px}
+.tree-subnode .tree-conn{color:rgba(26,15,46,0.25)}
+.tree-subnode .tree-count{margin-left:auto;font-size:10px;color:rgba(26,15,46,0.45)}
+.tree-ellipsis{display:flex;align-items:center;gap:8px;color:rgba(26,15,46,0.5);margin-top:4px;font-style:italic;padding-left:2px}
+.tree-unknown{display:flex;align-items:center;gap:8px;color:#BA7517;margin-top:8px}
+.tree-unknown .tree-conn{color:rgba(186,117,23,0.4)}
+.tree-unknown .tree-count{margin-left:auto;font-size:10px;color:rgba(186,117,23,0.7)}
+
+/* Safe-side backup strip */
+.backup-strip{background:linear-gradient(90deg,rgba(75,0,130,0.05) 0%,rgba(255,20,147,0.05) 100%);border:1px solid rgba(75,0,130,0.15);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:14px;margin-bottom:24px;transition:all .25s}
+.backup-strip.off{background:linear-gradient(90deg,rgba(216,90,48,0.1) 0%,rgba(216,90,48,0.06) 100%);border-color:rgba(216,90,48,0.5)}
+.backup-icon{width:40px;height:40px;border-radius:50%;background:var(--indigo);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;transition:background .25s}
+.backup-strip.off .backup-icon{background:#D85A30}
+.backup-text{flex:1}
+.backup-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:3px}
+.backup-strip.off .backup-title{color:#7A2F00}
+.backup-desc{font-size:11px;color:var(--ink2);line-height:1.55}
+.backup-strip.off .backup-desc{color:#7A4A00}
+.backup-filename{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10.5px;background:rgba(75,0,130,0.08);padding:1.5px 6px;border-radius:4px}
+.backup-toggle-label{display:flex;align-items:center;gap:9px;cursor:pointer;font-size:11px;color:var(--ink);font-weight:500;flex-shrink:0;user-select:none}
+.toggle-pill{position:relative;width:40px;height:22px;background:var(--pink);border-radius:20px;transition:background .2s;flex-shrink:0}
+.backup-strip.off .toggle-pill{background:#D85A30}
+.toggle-thumb{position:absolute;top:2px;left:20px;width:18px;height:18px;background:white;border-radius:50%;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.backup-strip.off .toggle-thumb{left:2px}
+
+/* Footer action row */
+.rs-footer{display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--border)}
+.footer-action{display:flex;align-items:center;gap:14px}
+.footer-summary{font-size:11px;color:rgba(26,15,46,0.55);text-align:right;line-height:1.4}
+.footer-summary b{color:var(--ink)}
+.footer-summary small{font-size:10px;color:rgba(26,15,46,0.4)}
+.btn-run{background:linear-gradient(135deg,var(--pink),var(--coral));color:white;border:none;border-radius:12px;padding:13px 24px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 6px 20px rgba(255,20,147,0.35);transition:all .2s;font-family:'Inter',sans-serif}
+.btn-run:hover{transform:translateY(-1px);box-shadow:0 12px 32px rgba(255,20,147,0.45)}
+.btn-run .arrow{font-size:14px}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CLOUD CONFIRMATION MODAL — Použít OneDrive pro zálohu?
+   ═══════════════════════════════════════════════════════════════════════════ */
+.modal-overlay{position:fixed;inset:0;background:rgba(26,15,46,0.65);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:200;padding:24px;animation:modalFadeIn .25s ease}
+.modal-overlay.show{display:flex}
+@keyframes modalFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes modalSlideIn{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-card{background:white;border-radius:18px;padding:32px 36px 28px;max-width:480px;width:100%;box-shadow:0 40px 100px rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.15);animation:modalSlideIn .3s cubic-bezier(.4,0,.2,1)}
+.modal-head{display:flex;align-items:flex-start;gap:16px;margin-bottom:22px}
+.modal-icon{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--pink),var(--coral));display:flex;align-items:center;justify-content:center;flex-shrink:0;color:white;font-size:20px;box-shadow:0 8px 20px rgba(255,20,147,0.3)}
+.modal-eyebrow{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--pink);text-transform:uppercase;margin-bottom:4px}
+.modal-title{font-family:'Fraunces',Georgia,serif;font-size:22px;font-weight:700;color:var(--ink);letter-spacing:-0.6px;line-height:1.2;margin-bottom:6px}
+.modal-sub{font-size:13px;color:var(--ink2);line-height:1.55}
+
+/* Variant A — single detected cloud card */
+.modal-cloud-card{background:#F5EBFF;border:1px solid rgba(75,0,130,0.15);border-radius:10px;padding:12px 14px;margin-bottom:22px;display:flex;align-items:center;gap:12px}
+.modal-cloud-icon-wrap{width:38px;height:38px;border-radius:8px;background:white;border:1px solid rgba(75,0,130,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cloud-brand{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:700}
+.cloud-brand.onedrive{background:linear-gradient(135deg,#0078D4,#00BCF2)}
+.cloud-brand.dropbox{background:linear-gradient(135deg,#0061FF,#60EFFF)}
+.cloud-brand.gdrive{background:linear-gradient(135deg,#4285F4,#34A853,#FBBC04,#EA4335)}
+.cloud-brand.box{background:linear-gradient(135deg,#0061D5,#003D87)}
+.modal-cloud-text{flex:1;min-width:0}
+.modal-cloud-name{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:2px;display:flex;align-items:center;gap:6px}
+.modal-cloud-path{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10px;color:var(--indigo)}
+.badge-running{display:inline-flex;align-items:center;gap:4px;font-size:9px;color:#3B6D11;background:rgba(59,109,17,0.1);padding:2px 6px;border-radius:4px;font-weight:600}
+.badge-running .dot{width:5px;height:5px;border-radius:50%;background:#3B6D11}
+
+.modal-actions{display:flex;flex-direction:column;gap:8px}
+.modal-btn-primary{background:linear-gradient(135deg,var(--pink),var(--coral));color:white;border:none;border-radius:10px;padding:13px 20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 6px 18px rgba(255,20,147,0.3);font-family:'Inter',sans-serif;transition:all .2s}
+.modal-btn-primary:hover{transform:translateY(-1px);box-shadow:0 10px 26px rgba(255,20,147,0.4)}
+.modal-actions-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.modal-btn-secondary{background:white;color:var(--ink2);border:1px solid var(--border2);border-radius:10px;padding:11px 16px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
+.modal-btn-secondary:hover{border-color:var(--ink2);color:var(--ink)}
+.modal-btn-alt{background:white;color:var(--indigo);border:1px solid var(--indigo);border-radius:10px;padding:11px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
+.modal-btn-alt:hover{background:var(--indigo);color:white}
+
+/* Variant B — multi-cloud list */
+.modal-cloud-list{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.cloud-list-item{background:white;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s}
+.cloud-list-item:hover:not(.disabled){border-color:var(--pink-soft)}
+.cloud-list-item.selected{border:2px solid var(--pink);padding:9px 11px}
+.cloud-list-item.disabled{opacity:0.55;cursor:not-allowed}
+.cloud-list-item.manual{background:#F5F4F8;border:1.5px dashed var(--border2)}
+.cloud-list-icon-wrap{width:38px;height:38px;border-radius:8px;background:rgba(75,0,130,0.05);border:1px solid rgba(75,0,130,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cloud-list-item.disabled .cloud-list-icon-wrap,.cloud-list-item.manual .cloud-list-icon-wrap{background:#F5F4F8;border-color:rgba(26,15,46,0.08)}
+.cloud-list-item.manual .cloud-list-icon-wrap{background:white;border:1px dashed var(--border2)}
+.cloud-list-icon-manual{color:var(--ink3);font-size:16px;font-weight:300}
+.cloud-list-text{flex:1;min-width:0}
+.cloud-list-name{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:2px;display:flex;align-items:center;gap:6px}
+.cloud-list-name-dim{font-size:9px;color:rgba(26,15,46,0.5);font-weight:500}
+.cloud-list-path{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10px;color:var(--indigo)}
+.cloud-list-path.dim{color:rgba(26,15,46,0.55);font-style:italic;font-family:'Inter',sans-serif}
+.cloud-list-check{width:18px;height:18px;background:var(--pink);border-radius:50%;color:white;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+.cloud-list-chev{color:var(--ink3);font-size:16px}
+
+.modal-footer-row{display:flex;gap:8px}
+.modal-btn-back{background:white;color:var(--ink2);border:1px solid var(--border2);border-radius:10px;padding:11px 18px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif}
+.modal-btn-back:hover{border-color:var(--ink2)}
+.modal-btn-confirm{flex:1;background:linear-gradient(135deg,var(--pink),var(--coral));color:white;border:none;border-radius:10px;padding:11px 18px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(255,20,147,0.3);font-family:'Inter',sans-serif;transition:all .2s}
+.modal-btn-confirm:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(255,20,147,0.4)}
+
+/* Post-confirmation state on Local + Cloud card */
+.dest-cloud-row{display:flex;align-items:center;gap:5px;margin-bottom:8px}
+.dest-cloud-mini-icon{width:14px;height:14px;border-radius:3px;display:flex;align-items:center;justify-content:center;color:white;font-size:7px;font-weight:700;flex-shrink:0}
+.dest-cloud-mini-icon.onedrive{background:linear-gradient(135deg,#0078D4,#00BCF2)}
+.dest-cloud-name-small{font-size:11px;color:var(--ink);font-weight:600}
+.dest-cloud-ready{font-size:10px;color:#3B6D11;margin-left:2px}
+
+/* Sync explainer strip shown after Local+Cloud is confirmed */
+.sync-explainer{background:#F5EBFF;border:1px solid rgba(75,0,130,0.15);border-radius:8px;padding:9px 13px;font-size:11px;color:var(--indigo);display:flex;align-items:center;gap:10px;margin:6px 0 22px;line-height:1.5}
+.sync-explainer-path{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10px;background:rgba(75,0,130,0.1);padding:1.5px 5px;border-radius:3px}
+
+/* TOAST */
+.toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--ink);color:white;border-radius:50px;padding:14px 28px;font-size:13px;font-weight:500;transition:transform .3s;z-index:100;display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(75,0,130,0.3)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast-dot{width:8px;height:8px;border-radius:50%;background:var(--pink)}
+
+</style>
+</head>
+<body>
+<div id="app">
+<nav class="topnav">
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 14V8C3 7.4 3.4 7 4 7H6V5C6 4.4 6.4 4 7 4H11C11.6 4 12 4.4 12 5V7H14C14.6 7 15 7.4 15 8V14C15 14.6 14.6 15 14 15H4C3.4 15 3 14.6 3 14Z" fill="white" fill-opacity="0.95"/>
+        <path d="M7 10H11M9 8V12" stroke="#4B0082" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="logo-text">File<span>IT</span></span>
+  </div>
+  <div class="nav-steps">
+    <div class="nav-step done" id="ns0"></div>
+    <div class="nav-step active" id="ns1"></div>
+    <div class="nav-step" id="ns2"></div>
+    <div class="nav-step" id="ns3"></div>
+    <div class="nav-step" id="ns4"></div>
+  </div>
+  <div style="width:140px;text-align:right">
+    <span class="nav-label" id="screen-label">Úvod</span>
+  </div>
+</nav>
+
+<!-- SCREEN 0: HOME — Editorial entry screen -->
+<div class="screen active" id="s-home">
+  <div class="home-wrap">
+    <div class="home-corner-tr">FILEIT · V1.0 · HOME</div>
+    <div class="home-corner-bl">N°00 · home</div>
+
+    <div class="home-head">
+      <div class="home-head-main">
+        <div class="home-eyebrow"><span>Vítejte zpět, Anno</span></div>
+        <h1 class="home-title">Co budeme dělat <em>dnes?</em></h1>
+        <p class="home-sub">Vyberte, jak vám má FileIT pomoci. Kdykoli během práce se můžete podívat, jak to funguje.</p>
+      </div>
+      <div class="lastrun-card" id="lastrun-card">
+        <div class="lastrun-label">Poslední spuštění</div>
+        <div class="lastrun-date">14. dubna 2026</div>
+        <div class="lastrun-meta">Uspořádáno 284 souborů</div>
+        <div class="lastrun-ago">před 3 dny</div>
+      </div>
+    </div>
+
+    <div class="home-ctas">
+
+      <div class="home-cta analyze" onclick="goTo('s-filetypes',1)">
+        <div class="home-cta-inner">
+          <div class="home-cta-row">
+            <div class="home-cta-icon indigo">🔍</div>
+            <div class="home-cta-mode indigo">Režim 1</div>
+          </div>
+          <div class="home-cta-title">Jen analyzovat<br>moje soubory</div>
+          <p class="home-cta-desc">FileIT prohlédne vaše disky a ukáže vám přehled — co kde máte, kolik toho je, kdo jsou vaši klienti. Nic se neuspořádá ani nepřesune.</p>
+          <div class="home-cta-actions">
+            <button class="home-cta-btn indigo" onclick="event.stopPropagation();goTo('s-filetypes',1)">Začít analýzu <span>→</span></button>
+            <span class="home-cta-time">~2–5 min</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="home-cta restruct" onclick="startRestructureDirect()">
+        <div class="home-cta-badge">Hlavní</div>
+        <div class="home-cta-inner">
+          <div class="home-cta-row">
+            <div class="home-cta-icon pink">✨</div>
+            <div class="home-cta-mode pink">Režim 2</div>
+          </div>
+          <div class="home-cta-title">Uspořádat<br>moje soubory</div>
+          <p class="home-cta-desc">FileIT prohlédne, porozumí a roztřídí vaše soubory do smysluplných složek. Před jakýmkoli přesunem uvidíte náhled a potvrdíte.</p>
+          <div class="home-cta-actions">
+            <button class="home-cta-btn pink" onclick="event.stopPropagation();startRestructureDirect()">Spustit uspořádání <span>→</span></button>
+            <span class="home-cta-time">~5–10 min</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="home-how" onclick="goTo('s-how',0)">
+      <div class="home-how-icon">ℹ</div>
+      <div class="home-how-text">
+        <div class="home-how-title">Jak to funguje</div>
+        <div class="home-how-sub">Tři způsoby, jak FileIT uspořádává vaše soubory — lokálně, lokálně + cloud, z cloudu do cloudu</div>
+      </div>
+      <span class="home-how-link">Ukázat <span style="font-size:16px">→</span></span>
+    </div>
+
+    <div class="home-status">
+      <div class="home-status-left">
+        <span class="status-pulse"><span class="dot"></span>FileIT běží</span>
+        <span>·</span>
+        <span>3 disky připravené</span>
+        <span>·</span>
+        <span>OneDrive rozpoznán</span>
+      </div>
+      <div class="home-status-right">
+        <span class="home-status-link" onclick="goTo('s-how',0)">Nápověda</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 0b: HOW IT WORKS — Three-tab explainer of destination modes -->
+<div class="screen" id="s-how">
+  <div class="how-wrap">
+    <button class="how-back" onclick="goTo('s-home',0)">← Zpět na domů</button>
+    <div class="how-corner-tr">FILEIT · V1.0 · HOW</div>
+    <div class="how-corner-bl">N°06 · jak to funguje</div>
+
+    <div class="how-eyebrow">Nápověda</div>
+    <h2 class="how-title">Jak to funguje</h2>
+    <p class="how-sub">FileIT umí uspořádat vaše soubory třemi způsoby. Který se hodí vám, záleží na tom, kde jsou dnes a kam je chcete dostat.</p>
+
+    <div class="how-tabs">
+      <button class="how-tab active" id="how-tab-local" onclick="switchHowTab('local')">
+        <div class="how-tab-icon indigo">💻</div>
+        <span class="how-tab-name">Lokálně</span>
+        <span class="how-tab-badge indigo" id="how-badge-local">Zvoleno</span>
+      </button>
+      <button class="how-tab" id="how-tab-cloud" onclick="switchHowTab('cloud')">
+        <div class="how-tab-icon pink">☁</div>
+        <span class="how-tab-name">Lokálně + cloud</span>
+      </button>
+      <button class="how-tab" id="how-tab-c2c" onclick="switchHowTab('c2c')">
+        <div class="how-tab-icon coral">⇄</div>
+        <span class="how-tab-name">Z cloudu do cloudu</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: LOCAL -->
+    <div class="how-panel active" id="how-panel-local">
+      <div class="how-grid">
+        <div>
+          <div class="how-story-title">Všechno zůstává<br>na vašem počítači.</div>
+          <p class="how-story-body">FileIT přečte vaše soubory, porozumí jejich obsahu a uspořádá je do smysluplných složek — vše na vašem disku. Žádný cloud, žádné nahrávání, nic neopustí váš počítač.</p>
+          <div class="how-when indigo">
+            <span class="how-when-icon">🔒</span>
+            <div>
+              <div class="how-when-label indigo">Kdy tento režim</div>
+              <div class="how-when-text">Když pracujete převážně lokálně, nemáte cloud, nebo jsou vaše soubory citlivé a nechcete je nikam posílat.</div>
+            </div>
+          </div>
+        </div>
+        <div class="how-flow">
+          <div class="how-flow-label">Tok souborů</div>
+          <div class="flow-step">
+            <div class="flow-step-icon-col">
+              <div class="flow-step-icon start">📁</div>
+              <div class="flow-step-connector"></div>
+            </div>
+            <div class="flow-step-text">
+              <div class="flow-step-title">Vaše stávající soubory</div>
+              <div class="flow-step-body">Rozházené po složkách, ploše, ve Staženém — jak to chodí</div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-icon-col">
+              <div class="flow-step-icon engine">⚙</div>
+              <div class="flow-step-connector"></div>
+            </div>
+            <div class="flow-step-text">
+              <div class="flow-step-title">FileIT analyzuje a uspořádá</div>
+              <div class="flow-step-body">Přečte obsah, rozpozná klienty a instituce, navrhne strukturu složek</div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-icon-col">
+              <div class="flow-step-icon end-local">📂</div>
+            </div>
+            <div class="flow-step-text">
+              <div class="flow-step-title">Uspořádané soubory na disku</div>
+              <div class="flow-step-body">Smysluplná struktura — podle klienta, data, instituce</div>
+              <div class="flow-step-path">C:\FileIT\Organized\</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="how-facts">
+        <div class="fact-card">
+          <div class="fact-label indigo">Stačí</div>
+          <div class="fact-title">Aplikace FileIT</div>
+          <div class="fact-sub">A volná cílová složka</div>
+        </div>
+        <div class="fact-card">
+          <div class="fact-label indigo">Bezpečnost</div>
+          <div class="fact-title">Nic neopouští počítač</div>
+          <div class="fact-sub">Včetně analýzy obsahu</div>
+        </div>
+        <div class="fact-card">
+          <div class="fact-label indigo">Záloha</div>
+          <div class="fact-title">Safe-side ZIP</div>
+          <div class="fact-sub">Obnova jedním klikem</div>
+        </div>
+      </div>
+      <div class="did-you-know indigo">
+        <span class="did-icon">💡</span>
+        <div><span class="did-title">Víte, že…</span> i v lokálním režimu si FileIT vytvoří bezpečnostní zálohu před jakýmkoli přesunem. Pokud by se cokoli nepovedlo, vrátíme vše na původní místo jedním klikem.</div>
+      </div>
+    </div>
+
+    <!-- TAB 2: CLOUD -->
+    <div class="how-panel" id="how-panel-cloud">
+      <div class="how-grid">
+        <div>
+          <div class="how-story-title">Uspořádáno a<br>automaticky v cloudu.</div>
+          <p class="how-story-body">FileIT uspořádá vaše soubory do složky, kterou sleduje váš cloudový klient — OneDrive, Google Drive, Dropbox nebo Box. Ten se postará o nahrávání do cloudu. Nic nestahuje, nic dvakrát neukládá.</p>
+          <div class="how-when pink">
+            <span class="how-when-icon">☁</span>
+            <div>
+              <div class="how-when-label pink">Kdy tento režim</div>
+              <div class="how-when-text">Když chcete mít soubory přístupné i mimo počítač — z telefonu, tabletu, nebo pro sdílení s kolegy. Cloud klient musí být spuštěný a aktivní.</div>
+            </div>
+          </div>
+        </div>
+        <div class="how-flow">
+          <div class="how-flow-label">Tok souborů</div>
+          <div class="flow-step">
+            <div class="flow-step-icon-col">
+              <div class="flow-step-icon start">📁</div>
+              <div class="flow-step-connector"></div>
+            </div>
+            <div class="flow-step-text">
+              <div class="flow-step-title">Vaše stávající soubory</div>
+              <div class="flow-step-body">Místně na počítači, kdekoli je máte</div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-icon-col">
+              <div class="flow-step-icon engine">⚙</div>
+              <div class="flow-step-connector"></div>
+            </div>
+            <div class="flow-step-text">
+              <div class="flow-step-title">FileIT uspořádá do cloudové složky</div>
+              <div class="flow-step-body">Výsledek zapíše do složky, kterou sleduje váš cloud klient</div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-icon-col">
+              <div class="flow-step-icon end-local">📂</div>
+              <div class="flow-step-connector pink"></div>
+            </div>
+            <div class="flow-step-text">
+              <div class="flow-step-title">Uspořádané soubory na disku</div>
+              <div class="flow-step-body">Ve složce cloudového klienta</div>
+              <div class="flow-step-path">…\OneDrive\FileIT\Organized\</div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-icon-col">
+              <div class="flow-step-icon sync">☁</div>
+            </div>
+            <div class="flow-step-text">
+              <div class="flow-step-title">Cloud klient zasynchronizuje</div>
+              <div class="flow-step-body">Automaticky — FileIT do toho nijak nezasahuje</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="how-facts">
+        <div class="fact-card">
+          <div class="fact-label pink">Potřebujete</div>
+          <div class="fact-title">Běžící cloud klient</div>
+          <div class="fact-sub">OneDrive, Google Drive, Dropbox, Box</div>
+        </div>
+        <div class="fact-card">
+          <div class="fact-label pink">Přístup</div>
+          <div class="fact-title">Kdekoli se přihlásíte</div>
+          <div class="fact-sub">Telefon, tablet, jiný počítač</div>
+        </div>
+        <div class="fact-card">
+          <div class="fact-label pink">Kopie</div>
+          <div class="fact-title">Jedna — na disku</div>
+          <div class="fact-sub">Cloud ji sám přenese</div>
+        </div>
+      </div>
+      <div class="did-you-know pink">
+        <span class="did-icon">💡</span>
+        <div><span class="did-title">Víte, že…</span> FileIT nepoužívá žádné cloudové API ani přihlašovací údaje. Spoléhá se na to, že váš cloud klient už umí synchronizovat — a udělá to sám, jakmile se objeví nové soubory ve sledované složce.</div>
+      </div>
+    </div>
+
+    <!-- TAB 3: CLOUD TO CLOUD -->
+    <div class="how-panel" id="how-panel-c2c">
+      <div class="how-grid">
+        <div>
+          <div class="how-story-title">Z jednoho cloudu<br>do druhého.</div>
+          <p class="how-story-body">Máte soubory na osobním OneDrive, ale patří do firemního Google Drive? FileIT přečte soubory ze složky zdrojového cloudu, uspořádá je, a výsledek uloží do složky cílového cloudu. Oba cloud klienti pak zbytek zařídí sami.</p>
+          <div class="how-when coral">
+            <span class="how-when-icon">⇄</span>
+            <div>
+              <div class="how-when-label coral">Kdy tento režim</div>
+              <div class="how-when-text">Když se vám soubory omylem ocitly v jiném cloudu, než měly. Nebo když stěhujete práci mezi osobním a firemním úložištěm.</div>
+            </div>
+          </div>
+        </div>
+        <div class="how-flow">
+          <div class="how-flow-label">Tok souborů</div>
+          <div class="flow-step">
+            <div class="flow-step-icon-col">
+              <div class="flow-step-icon cloud-src">☁</div>
+              <div class="flow-step-connector"></div>
+            </div>
+            <div class="flow-step-text">
+              <div class="flow-step-title">Soubory ve zdrojovém cloudu</div>
+              <div class="flow-step-body">Například osobní OneDrive, synchronizovaný na počítač</div>
+              <div class="flow-step-path">…\OneDrive\</div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-icon-col">
+              <div class="flow-step-icon engine">⚙</div>
+              <div class="flow-step-connector"></div>
+            </div>
+            <div class="flow-step-text">
+              <div class="flow-step-title">FileIT přečte a uspořádá</div>
+              <div class="flow-step-body">Pracuje lokálně s tím, co sync klient zdrojového cloudu stáhl na disk</div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-icon-col">
+              <div class="flow-step-icon end-cloud">📂</div>
+              <div class="flow-step-connector coral"></div>
+            </div>
+            <div class="flow-step-text">
+              <div class="flow-step-title">Zapíše do cílového cloudu</div>
+              <div class="flow-step-body">Do složky druhého cloud klienta</div>
+              <div class="flow-step-path">…\Google Drive\FileIT\Organized\</div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-icon-col">
+              <div class="flow-step-icon sync-coral">☁</div>
+            </div>
+            <div class="flow-step-text">
+              <div class="flow-step-title">Cílový cloud zasynchronizuje</div>
+              <div class="flow-step-body">Vše se objeví ve druhém cloudu automaticky</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="how-facts">
+        <div class="fact-card">
+          <div class="fact-label coral">Potřebujete</div>
+          <div class="fact-title">Dva běžící cloudy</div>
+          <div class="fact-sub">Zdrojový a cílový, oba synchronizované</div>
+        </div>
+        <div class="fact-card">
+          <div class="fact-label coral">Omezení</div>
+          <div class="fact-title">Limity cloudů</div>
+          <div class="fact-sub">Každý má jiná pravidla velikosti</div>
+        </div>
+        <div class="fact-card">
+          <div class="fact-label coral">Výhoda</div>
+          <div class="fact-title">Žádné API</div>
+          <div class="fact-sub">Žádné přihlášení do cloudu</div>
+        </div>
+      </div>
+      <div class="did-you-know coral">
+        <span class="did-icon">💡</span>
+        <div><span class="did-title">Víte, že…</span> zdrojový cloud se nevymaže. FileIT originál nechá na místě, jen z něj vytvoří uspořádanou kopii v cílovém cloudu. Můžete si sami rozhodnout, kdy (a jestli vůbec) původní soubory smažete.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SCREEN 1: WELCOME — "Neon Dusk" unified atmosphere (reachable via deep link only) -->
+<div class="screen" id="s-welcome">
+  <div class="welcome-wrap">
+    <div class="welcome-grain"></div>
+    <div class="welcome-corner">FileIT · v1.0 · 2026</div>
+    <div class="welcome-corner-bl">
+      <span>NEON TWILIGHT · 001</span>
+      <span>INDIGO / PINK / CORAL</span>
+    </div>
+    <div class="welcome-inner">
+      <div class="welcome-hero">
+        <div class="welcome-eyebrow">
+          <span>Váš chytrý pořadač</span>
+          <span class="welcome-eyebrow-mark">N°01 · úvod</span>
+        </div>
+        <h1 class="welcome-title">Každý soubor<br>na <em>svém</em><br><span class="underline-swell">místě.</span></h1>
+        <p class="welcome-sub">FileIT tiše prohlédne vaše dokumenty, rozumí tomu, co obsahují, a všechno uspořádá — po vašem. Bez potřeby znalostí IT.</p>
+        <div class="welcome-actions">
+          <button class="btn-primary" onclick="goTo('s-filetypes',1)">
+            Začít uklízet
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="#4B0082" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="btn-secondary" onclick="goTo('s-dashboard',3)">Zobrazit přehled</button>
+        </div>
+        <div class="welcome-badges">
+          <div class="badge"><div class="badge-dot white"></div>Soukromí na prvním místě</div>
+          <div class="badge"><div class="badge-dot coral"></div>V souladu s GDPR</div>
+          <div class="badge"><div class="badge-dot pink"></div>Funguje offline</div>
+        </div>
+      </div>
+
+      <div class="welcome-art">
+        <div class="folder-scene">
+          <div class="folder-card fc1">
+            <svg class="folder-icon" viewBox="0 0 34 26"><path d="M2 6C2 4.9 2.9 4 4 4H12L15 7H30C31.1 7 32 7.9 32 9V22C32 23.1 31.1 24 30 24H4C2.9 24 2 23.1 2 22V6Z" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/></svg>
+            <div class="folder-label muted">Neroztříděné dokumenty</div>
+            <div class="folder-meta">47 různých souborů · různá data</div>
+          </div>
+          <div class="folder-card fc2">
+            <svg class="folder-icon" viewBox="0 0 34 26"><path d="M2 6C2 4.9 2.9 4 4 4H12L15 7H30C31.1 7 32 7.9 32 9V22C32 23.1 31.1 24 30 24H4C2.9 24 2 23.1 2 22V6Z" fill="rgba(254,134,91,0.35)" stroke="rgba(255,255,255,0.9)" stroke-width="1.5"/></svg>
+            <div class="folder-label organized">Uspořádáno FileIT</div>
+            <div class="folder-meta">Podle klienta · zálohováno</div>
+          </div>
+          <div class="folder-card fc3">
+            <div class="folder-chips">
+              <div class="folder-chip"></div>
+              <div class="folder-chip c2"></div>
+              <div class="folder-chip c3"></div>
+            </div>
+            <div class="folder-meta" style="font-weight:500">smlouvy · faktury · doklady · skeny</div>
+          </div>
+          <div class="float-card" style="top:-16px;right:-28px">
+            <div class="float-card-label">Nalezeno souborů</div>
+            <div class="float-card-value">284</div>
+          </div>
+          <div class="float-card float-card-inline" style="bottom:-12px;right:-20px">
+            <div style="width:7px;height:7px;border-radius:50%;background:var(--coral);box-shadow:0 0 10px rgba(254,134,91,0.9)"></div>
+            <div class="float-card-label">OneDrive rozpoznán</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2: FILE TYPES -->
+<div class="screen" id="s-filetypes">
+  <div class="section-wrap">
+    <div class="section-header">
+      <div class="section-eyebrow">Krok 1 ze 3</div>
+      <h2 class="section-title">Jaké soubory máme zkontrolovat?</h2>
+      <p class="section-sub">FileIT se zaměří na vaše důležité dokumenty — smlouvy, úřední dopisy, podklady od bank a klientské složky. Tyto typy jsou vybrané automaticky. Další si můžete přidat níže.</p>
+    </div>
+    <div class="file-types-grid">
+      <div class="ft-card selected" onclick="toggleFT(this)">
+        <div class="ft-icon" style="background:var(--pink-pale)">📄</div>
+        <div class="ft-name">PDF dokumenty</div>
+        <div class="ft-desc">Smlouvy, dohody, úřední dopisy, skenované doklady</div>
+        <span class="ft-badge core">Základ</span>
+      </div>
+      <div class="ft-card selected" onclick="toggleFT(this)">
+        <div class="ft-icon" style="background:#F0E8F5">📝</div>
+        <div class="ft-name">Word dokumenty</div>
+        <div class="ft-desc">Šablony, zprávy, korespondence, dohody</div>
+        <span class="ft-badge core">Základ</span>
+      </div>
+      <div class="ft-card selected" onclick="toggleFT(this)">
+        <div class="ft-icon" style="background:var(--coral-pale)">📊</div>
+        <div class="ft-name">Excel a tabulky</div>
+        <div class="ft-desc">Finanční údaje, seznamy klientů, rozpočty, faktury</div>
+        <span class="ft-badge core">Základ</span>
+      </div>
+      <div class="ft-card selected" onclick="toggleFT(this)">
+        <div class="ft-icon" style="background:var(--pink-pale)">🖼</div>
+        <div class="ft-name">Obrázky (JPG, BMP)</div>
+        <div class="ft-desc">Skenované doklady, fotky dokumentů, podepsané listy</div>
+        <span class="ft-badge core">Základ</span>
+      </div>
+      <div class="ft-card" onclick="toggleFT(this)">
+        <div class="ft-icon" style="background:var(--coral-pale)">📧</div>
+        <div class="ft-name">Uložené e-maily</div>
+        <div class="ft-desc">Soubory .msg a .eml uložené z pošty</div>
+        <span class="ft-badge extra">Volitelné</span>
+      </div>
+      <div class="ft-card" onclick="toggleFT(this)">
+        <div class="ft-icon" style="background:#F0E8F5">🗒</div>
+        <div class="ft-name">Text a poznámky</div>
+        <div class="ft-desc">Prosté textové soubory, poznámky, rychlé záznamy</div>
+        <span class="ft-badge extra">Volitelné</span>
+      </div>
+    </div>
+    <div class="section-divider"></div>
+    <div class="sort-label" style="margin-bottom:14px">Přidat další typy</div>
+    <div class="extra-row">
+      <div class="extra-chip" onclick="this.classList.toggle('on')">+ ZIP archivy</div>
+      <div class="extra-chip" onclick="this.classList.toggle('on')">+ PowerPoint</div>
+      <div class="extra-chip" onclick="this.classList.toggle('on')">+ XML / JSON</div>
+      <div class="extra-chip" onclick="this.classList.toggle('on')">+ Audio záznamy</div>
+      <div class="extra-chip" onclick="this.classList.toggle('on')">+ CSV data</div>
+    </div>
+    <div class="info-note" style="margin-bottom:28px">
+      <span class="info-note-icon">🔒</span>
+      <div class="info-note-text">FileIT <strong>nikdy</strong> nenahrává vaše soubory nikam mimo váš počítač. Analýza obsahu probíhá výhradně lokálně. Do dokumentů nahlížíme jen proto, abychom vám je pomohli uspořádat — vaše data zůstávají jen vaše.</div>
+    </div>
+    <div class="row-actions">
+      <button class="btn-back" onclick="goTo('s-welcome',0)">← Zpět</button>
+      <button class="btn-next" onclick="goTo('s-scanning',2)">Spustit prohlížení →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 3: SCANNING -->
+<div class="screen" id="s-scanning">
+  <div class="scan-wrap">
+    <div class="scan-anim">
+      <div class="scan-ring"></div>
+      <div class="scan-ring"></div>
+      <div class="scan-ring"></div>
+      <div class="scan-inner">
+        <svg width="32" height="32" viewBox="0 0 28 28" fill="none"><path d="M6 22L14 8L22 22H6Z" fill="none" stroke="white" stroke-width="2.2" stroke-linejoin="round"/><path d="M14 15V18" stroke="white" stroke-width="2.2" stroke-linecap="round"/><circle cx="14" cy="20.5" r="1.2" fill="white"/></svg>
+      </div>
+    </div>
+    <h2 class="scan-title">Čteme vaše soubory…</h2>
+    <p class="scan-subtitle">FileIT prohlíží vybrané disky a nahlíží do dokumentů, aby rozuměl, o co se jedná. Může to trvat několik minut.</p>
+    <div class="progress-bar"><div class="progress-fill" id="prog-bar"></div></div>
+    <div class="progress-note" id="prog-note">Prohlížíme C:\Users\Anna\Dokumenty …</div>
+    <div class="scan-log" id="scan-log">
+      <div class="scan-log-line found"><div class="scan-dot pink"></div>Indexujeme složku Dokumenty — nalezeno 124 souborů</div>
+      <div class="scan-log-line found"><div class="scan-dot pink"></div>Čteme obsah: Najemni_smlouva_2023.pdf ✓</div>
+      <div class="scan-log-line new"><div class="scan-dot green"></div>Identifikován klient: Novák, Pavel · 3 soubory</div>
+      <div class="scan-log-line new"><div class="scan-dot green"></div>Nalezena instituce: ČEZ Prodej · vyúčtování</div>
+      <div class="scan-log-line"><div class="scan-dot gray"></div>Prohlížíme Plochu…</div>
+      <div class="scan-log-line"><div class="scan-dot gray"></div>Kontrolujeme Stažené soubory…</div>
+    </div>
+    <div class="cloud-detect">
+      <div class="cloud-detect-label">☁ Rozpoznáno cloudové úložiště</div>
+      <div class="cloud-detect-text">OneDrive je nainstalován a běží. Po dokončení analýzy budete moci porovnat a zálohovat uspořádané soubory.</div>
+    </div>
+    <button class="btn-next" onclick="goTo('s-dashboard',3)" style="margin:0 auto">Zobrazit výsledky →</button>
+  </div>
+</div>
+
+<!-- SCREEN 4: DASHBOARD -->
+<div class="screen" id="s-dashboard">
+  <div class="dash-hero">
+    <div class="dash-hero-inner">
+      <div class="dash-hero-top">
+        <div>
+          <div class="dash-title">Přehled vašich souborů</div>
+          <div class="dash-subtitle">Prohlédnuto 284 souborů ze 3 disků · 17. dubna 2026</div>
+        </div>
+        <div class="dash-top-actions">
+          <button class="btn-hero-ghost" onclick="showToast('Exportujeme data relace…')">Exportovat relaci</button>
+          <button class="btn-hero-primary" onclick="showToast('Spouštíme novou analýzu')">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 5C3.5 3 5 2 7 2C9.5 2 11 4 11 6M11 6V3M11 6H8M11 9C10.5 11 9 12 7 12C4.5 12 3 10 3 8M3 8V11M3 8H6" stroke="#4B0082" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Znovu prohlédnout
+          </button>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card-hero">
+          <div class="stat-label-hero">Celkem souborů</div>
+          <div class="stat-value-hero">284</div>
+          <div class="stat-sub-hero">ze 3 disků</div>
+        </div>
+        <div class="stat-card-hero">
+          <div class="stat-label-hero">Celková velikost</div>
+          <div class="stat-value-hero">2,4 GB</div>
+          <div class="stat-sub-hero">~180 MB měsíčně</div>
+        </div>
+        <div class="stat-card-hero">
+          <div class="stat-label-hero">Nalezeno klientů</div>
+          <div class="stat-value-hero">38</div>
+          <div class="stat-sub-hero">z obsahu souborů</div>
+        </div>
+        <div class="stat-card-hero">
+          <div class="stat-label-hero">Duplikáty</div>
+          <div class="stat-value-hero">24</div>
+          <div class="stat-sub-hero warn">jen informativně</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-body">
+    <div class="hero-ctas">
+      <div class="cta-card restructure" onclick="goTo('s-cleanup',4)">
+        <div class="cta-card-content">
+          <div class="cta-card-label">Hlavní akce</div>
+          <div class="cta-card-title">Uspořádat</div>
+          <div class="cta-card-desc">Roztřídit 284 souborů do logických složek podle vašich pravidel.</div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </div>
+      <div class="cta-card backup" onclick="showToast('Otevíráme možnosti zálohy…')">
+        <div class="cta-card-content">
+          <div class="cta-card-label">Chraňte svou práci</div>
+          <div class="cta-card-title">Zálohovat</div>
+          <div class="cta-card-desc">Bezpečnostní ZIP + volitelně kopie na OneDrive, Google Drive nebo Dropbox.</div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Aktivita souborů v čase <span class="chart-tag">podle data vzniku</span></div>
+        <div class="activity-bars" id="act-bars"></div>
+        <div style="display:flex;gap:0;margin-top:2px" id="act-labels"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Soubory podle institucí</div>
+        <div class="treemap">
+          <div class="tm-cell" style="background:var(--indigo);grid-column:1;grid-row:1/3" onclick="showToast('Banky: 84 souborů')">
+            <div class="tm-val">84</div><div class="tm-label">Banky</div>
+          </div>
+          <div class="tm-cell" style="background:var(--pink);grid-column:2;grid-row:1" onclick="showToast('Právní: 62 souborů')">
+            <div class="tm-val">62</div><div class="tm-label">Právní</div>
+          </div>
+          <div class="tm-cell" style="background:var(--coral);grid-column:2;grid-row:2" onclick="showToast('Pojištění: 48 souborů')">
+            <div class="tm-val">48</div><div class="tm-label">Pojištění</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:2px;background:var(--ink3)"></div><span style="font-size:11px;color:var(--ink3);font-weight:500">Ostatní: 90 souborů</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts-row2">
+      <div class="chart-card">
+        <div class="chart-title">Klíčová témata ve vašich souborech</div>
+        <div class="wordcloud" id="wcloud"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Soubory podle klientů</div>
+        <div class="cust-list" id="cust-list"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Typy souborů</div>
+        <div id="donut-wrap" style="position:relative;height:100px;display:flex;align-items:center;justify-content:center">
+          <svg width="100" height="100" viewBox="0 0 90 90">
+            <circle cx="45" cy="45" r="32" fill="none" stroke="var(--border)" stroke-width="14"/>
+            <circle cx="45" cy="45" r="32" fill="none" stroke="#4B0082" stroke-width="14" stroke-dasharray="80 121" stroke-dashoffset="-10" stroke-linecap="round"/>
+            <circle cx="45" cy="45" r="32" fill="none" stroke="#FF1493" stroke-width="14" stroke-dasharray="46 155" stroke-dashoffset="-90" stroke-linecap="round"/>
+            <circle cx="45" cy="45" r="32" fill="none" stroke="#FE865B" stroke-width="14" stroke-dasharray="30 171" stroke-dashoffset="-136" stroke-linecap="round"/>
+            <text x="45" y="50" text-anchor="middle" style="font-size:14px;font-weight:700;fill:var(--ink);font-family:'Fraunces',serif">284</text>
+          </svg>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+          <div style="display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:3px;background:var(--indigo)"></div><span style="font-size:11px;color:var(--ink2);font-weight:500">PDF — 126 souborů</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:3px;background:var(--pink)"></div><span style="font-size:11px;color:var(--ink2);font-weight:500">Word — 82 souborů</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:3px;background:var(--coral)"></div><span style="font-size:11px;color:var(--ink2);font-weight:500">Obrázky — 54 souborů</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:3px;background:var(--border2)"></div><span style="font-size:11px;color:var(--ink2);font-weight:500">Ostatní — 22 souborů</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 5: RESTRUCTURE -->
+<div class="screen" id="s-cleanup">
+  <div class="rs-wrap">
+    <div class="rs-eyebrow-row">
+      <span class="section-eyebrow">Hlavní akce</span>
+      <span class="rs-eyebrow-mark">N°05 · uspořádání</span>
+    </div>
+    <h2 class="rs-title">Jak to máme uspořádat?</h2>
+    <p class="rs-sub">Vyberte, kam soubory poputují a jak je chcete seskupit. Nahlédnete, co to udělá, <em>než</em> cokoli přesuneme.</p>
+
+    <!-- KAM — destination modes -->
+    <div class="rs-section-head"><span>1 / Kam</span></div>
+    <div class="dest-grid">
+
+      <div class="dest-card selected" onclick="selectDest(this,'local')">
+        <div class="dest-row">
+          <div class="dest-icon local">💻</div>
+          <div class="dest-name">Jen v tomto počítači</div>
+          <div class="dest-check">✓</div>
+        </div>
+        <div class="dest-desc">Uspořádáme lokálně. Nic neopustí váš disk.</div>
+        <div class="dest-path-row">
+          <div class="dest-path-label">Cílová složka</div>
+          <div class="dest-path-field">
+            <div class="dest-path-input" id="local-path">C:\FileIT\Organized\</div>
+            <button class="dest-browse" onclick="event.stopPropagation();pickFolder('local')">Procházet…</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dest-card" data-mode="cloud" onclick="selectDest(this,'cloud')">
+        <div class="dest-row">
+          <div class="dest-icon cloud">☁</div>
+          <div class="dest-name">Lokálně + cloud</div>
+        </div>
+        <div class="dest-desc">Uložíme do složky sledované klientem cloudu — ten zbytek zajistí sám.</div>
+        <div class="dest-cloud-body">
+          <div class="dest-cloud-dot">
+            <div class="dot"></div>
+            <span>OneDrive rozpoznán</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dest-card disabled" onclick="event.stopPropagation();showToast('Pro tento režim je potřeba mít rozpoznané dva různé cloudové klienty.')">
+        <div class="dest-row">
+          <div class="dest-icon c2c">⇄</div>
+          <div class="dest-name">Z cloudu do cloudu</div>
+        </div>
+        <div class="dest-desc">Přesuneme soubory mezi dvěma cloudovými úložišti.</div>
+        <div class="dest-disabled-reason">Rozpoznán jen jeden cloud. Pro tento režim jsou potřeba dva.</div>
+      </div>
+
+    </div>
+    <div class="rs-tip">Tip: můžete zvolit libovolnou složku — existující klientský adresář, síťový disk, nebo nové místo. FileIT stávající soubory <strong>nepřepíše</strong>, jen do složky přidá uspořádané soubory.</div>
+
+    <!-- JAK SESKUPIT — palette + stack -->
+    <div class="rs-section-head">
+      <span>2 / Jak seskupit</span>
+      <span class="rs-section-hint">Klikněte na dimenzi a přidejte ji do struktury vpravo. Maximum 3 úrovně.</span>
+    </div>
+    <div class="group-grid">
+
+      <div class="palette-card">
+        <div class="palette-label">Dostupné dimenze</div>
+        <div class="palette-grid" id="palette-grid"></div>
+      </div>
+
+      <div class="stack-card">
+        <div class="stack-inner">
+          <div class="stack-label">Vaše struktura</div>
+          <div id="stack-rows"></div>
+          <div class="stack-counter" id="stack-counter">0 / 3 úrovně použity</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- NÁHLED — live preview -->
+    <div class="rs-section-head">
+      <span>3 / Náhled</span>
+      <span class="rs-section-hint">Takto to bude vypadat na vašem disku.</span>
+    </div>
+
+    <div class="preview-card">
+      <div class="preview-stats">
+        <div class="p-stat"><span class="p-stat-val c1" id="stat-files">284</span><span class="p-stat-lbl">souborů</span></div>
+        <div class="p-stat-sep"></div>
+        <div class="p-stat"><span class="p-stat-val c2" id="stat-folders">38</span><span class="p-stat-lbl" id="stat-folders-lbl">složek klientů</span></div>
+        <div class="p-stat-sep"></div>
+        <div class="p-stat"><span class="p-stat-val c3" id="stat-subfolders">127</span><span class="p-stat-lbl">podsložek</span></div>
+        <div class="preview-path" id="preview-path">C:\FileIT\Organized\</div>
+      </div>
+      <div class="tree" id="tree-render">
+      </div>
+    </div>
+
+    <!-- Safe-side backup -->
+    <div class="backup-strip" id="backup-strip">
+      <div class="backup-icon" id="backup-icon">🛟</div>
+      <div class="backup-text">
+        <div class="backup-title" id="backup-title">Bezpečnostní záloha — zapnuto</div>
+        <div class="backup-desc" id="backup-desc">Před jakýmkoli přesunem vytvoříme zálohu <span class="backup-filename">backup_2026-04-17.zip</span> ve skrytém umístění. Cokoli se nepovede, vrátíme zpět jedním klikem.</div>
+      </div>
+      <label class="backup-toggle-label" onclick="toggleBackup()">
+        <div class="toggle-pill" id="toggle-pill">
+          <div class="toggle-thumb"></div>
+        </div>
+        <span id="toggle-label">Zapnuto</span>
+      </label>
+    </div>
+
+    <!-- Footer -->
+    <div class="rs-footer">
+      <button class="btn-back" onclick="goTo('s-dashboard',3)">← Zpět na přehled</button>
+      <div class="footer-action">
+        <div class="footer-summary">
+          <div>Připraveno přesunout <b>284 souborů</b></div>
+          <div><small>do <b>127 nových složek</b></small></div>
+        </div>
+        <button class="btn-run" onclick="runRestructure()">
+          <span>Spustit uspořádání</span>
+          <span class="arrow">→</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SCREEN 6: PROGRESS LOG (between Restructure and Confirmation) -->
+<div class="screen" id="s-progress">
+  <div class="progress-wrap">
+    <div class="progress-corner-tr">FILEIT · V1.0 · RUN</div>
+    <div class="progress-eyebrow">Probíhá</div>
+    <h2 class="progress-title">Přesouváme vaše soubory…</h2>
+    <p class="progress-sub">Nic nevypínejte. Uspořádání právě probíhá — jakmile to dokončíme, ukážeme vám přehled a vyzveme vás, abyste výsledek zkontrolovali.</p>
+
+    <div class="progress-big-bar"><div class="progress-big-fill" id="progress-big-fill"></div></div>
+    <div class="progress-status-row">
+      <span id="progress-status-text">Připravuje se…</span>
+      <span><b id="progress-pct">0 %</b> · <span id="progress-count">0 / 284</span></span>
+    </div>
+
+    <div class="progress-log-pane" id="progress-log-pane">
+      <div class="progress-log-line cmd">$ fileit restructure --target "C:\FileIT\Organized\"</div>
+      <div class="progress-log-line">Inicializace…</div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 7: CONFIRMATION — Post-Restructure verification + restore -->
+<div class="screen" id="s-confirm">
+  <div class="conf-wrap">
+    <div class="conf-corner-tr">FILEIT · V1.0 · DONE</div>
+    <div class="conf-corner-bl">N°07 · potvrzení výsledku</div>
+
+    <div class="conf-head-row">
+      <div class="conf-check-icon">✓</div>
+      <div>
+        <div class="conf-eyebrow">Hotovo</div>
+        <div class="conf-timestamp" id="conf-timestamp">17. dubna 2026, 14:33 · trvalo 4 min 12 s</div>
+      </div>
+    </div>
+
+    <h1 class="conf-title">Uspořádáno. Teď se <em>podívejte</em>, prosím.</h1>
+    <p class="conf-sub">FileIT přesunul vaše soubory do nové struktury. Otevřete si cílovou složku, projděte několik klientů, a pokud jsou všechny na svém místě, vraťte se sem a potvrďte výsledek.</p>
+
+    <div class="conf-stats">
+      <div class="conf-stat-card">
+        <div class="conf-stat-label">Přesunuto</div>
+        <div class="conf-stat-val c1">284</div>
+        <div class="conf-stat-sub">souborů · 2,4 GB</div>
+      </div>
+      <div class="conf-stat-card">
+        <div class="conf-stat-label">Klientů</div>
+        <div class="conf-stat-val c2">38</div>
+        <div class="conf-stat-sub">nových složek</div>
+      </div>
+      <div class="conf-stat-card">
+        <div class="conf-stat-label">Podsložek</div>
+        <div class="conf-stat-val c3">127</div>
+        <div class="conf-stat-sub">podle měsíce</div>
+      </div>
+      <div class="conf-stat-card">
+        <div class="conf-stat-label">Neznámé</div>
+        <div class="conf-stat-val c4">11</div>
+        <div class="conf-stat-sub">zvlášť ve složce</div>
+      </div>
+    </div>
+
+    <div class="conf-verify">
+      <div class="conf-verify-head">
+        <div class="conf-verify-icon">📂</div>
+        <div>
+          <div class="conf-verify-title">Jak ověřit, že je vše na svém místě</div>
+          <div class="conf-verify-sub">Nic nepospíchejte — není žádný limit. Tohle okno tu na vás počká.</div>
+        </div>
+      </div>
+      <div class="conf-steps">
+        <div class="conf-step">
+          <div class="conf-step-num">1</div>
+          <div class="conf-step-text">Otevřete cílovou složku v Průzkumníku — <span class="conf-path">C:\FileIT\Organized\</span></div>
+        </div>
+        <div class="conf-step">
+          <div class="conf-step-num">2</div>
+          <div class="conf-step-text">Vyberte si pár klientů, které znáte, a projděte jejich složky — jsou dokumenty tam, kde by měly být?</div>
+        </div>
+        <div class="conf-step">
+          <div class="conf-step-num">3</div>
+          <div class="conf-step-text">Mrkněte do složky <b style="color:#BA7517">Neznámý klient</b> — možná něco poznáte a bude třeba to ručně přesunout.</div>
+        </div>
+        <div class="conf-step">
+          <div class="conf-step-num pink">4</div>
+          <div class="conf-step-text pink">Vraťte se sem a rozhodněte — <b>Potvrdit</b>, nebo <b>Vrátit zpět</b>.</div>
+        </div>
+      </div>
+      <button class="conf-open-folder" onclick="showToast('Otevírám Průzkumník souborů na C:\\FileIT\\Organized\\')">
+        <span style="font-size:14px">📂</span>
+        Otevřít cílovou složku
+      </button>
+    </div>
+
+    <div class="conf-backup-strip">
+      <span style="font-size:14px;line-height:1.2">🛟</span>
+      <div>
+        <b>Bezpečnostní záloha je stále aktivní.</b> Do té doby, než potvrdíte nebo vrátíte zpět, máme uloženou zálohu souborů v <span class="conf-backup-filename">backup_2026-04-17_143300.zip</span>. Po potvrzení ji automaticky smažeme za 7 dní.
+      </div>
+    </div>
+
+    <div class="conf-decisions">
+      <div class="conf-decision confirm" onclick="confirmRestructure()">
+        <div class="conf-decision-inner">
+          <div class="conf-decision-head">
+            <div class="conf-decision-icon ok">✓</div>
+            <div class="conf-decision-title">Všechno je v pořádku</div>
+          </div>
+          <p class="conf-decision-desc">Soubory jsem zkontroloval/a a jsou přesně tam, kde mají být. Uspořádání beru jako dokončené.</p>
+          <button class="conf-decision-btn ok">Potvrdit uspořádání <span>→</span></button>
+        </div>
+      </div>
+      <div class="conf-decision restore" onclick="openRestoreModal()">
+        <div class="conf-decision-head">
+          <div class="conf-decision-icon undo">↶</div>
+          <div class="conf-decision-title">Něco není v pořádku</div>
+        </div>
+        <p class="conf-decision-desc">Chci vrátit všechny soubory zpět na jejich původní místa — přesně tam, kde byly před uspořádáním.</p>
+        <button class="conf-decision-btn undo">Vrátit soubory zpět <span style="font-size:14px">↶</span></button>
+      </div>
+    </div>
+
+    <div class="conf-footer">
+      <div class="conf-persist">
+        <span style="font-size:13px;line-height:1">⏱</span>
+        <span>Toto okno se zobrazí i při příštím spuštění, dokud jej nepotvrdíte. Po <b>30 dnech</b> se automaticky považuje za potvrzené.</span>
+      </div>
+      <span class="conf-home-link" onclick="goTo('s-home',0)">Zpět na domů</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- ANALYSIS MODAL (blocking overlay for Restructure-direct path) -->
+<div class="analysis-modal" id="analysis-modal">
+  <div class="analysis-card">
+    <div class="analysis-spinner">
+      <span class="analysis-spinner-inner">⚙</span>
+    </div>
+    <div class="analysis-title">Analyzujeme vaše soubory…</div>
+    <div class="analysis-sub">FileIT prohlíží disky a čte obsah dokumentů, aby věděl, jak je nejlépe uspořádat. Chvíli to potrvá.</div>
+
+    <div class="analysis-bar"><div class="analysis-fill" id="analysis-fill"></div></div>
+    <div class="analysis-status" id="analysis-status">Připravuje se…</div>
+
+    <button class="analysis-details-btn" onclick="toggleAnalysisLog()" id="analysis-details-btn">Zobrazit detaily ▾</button>
+    <div class="analysis-log" id="analysis-log">
+      <div class="analysis-log-inner" id="analysis-log-inner">
+        <div class="analysis-log-line">Inicializace skeneru…</div>
+      </div>
+    </div>
+
+    <button class="analysis-cancel" onclick="cancelAnalysis()">Zrušit a vrátit se domů</button>
+  </div>
+</div>
+
+<!-- RESTORE "ARE YOU SURE" MODAL -->
+<div class="restore-modal" id="restore-modal">
+  <div class="restore-card">
+    <div class="restore-icon">⚠</div>
+    <div class="restore-title">Vrátit všech 284 souborů zpět?</div>
+    <div class="restore-body">Tato akce <b>zruší celé uspořádání</b> a vrátí soubory na jejich původní místa přesně tak, jak byly před začátkem. Nová struktura složek bude odstraněna.</div>
+    <div class="restore-actions">
+      <button class="restore-btn-cancel" onclick="closeRestoreModal()">Zrušit</button>
+      <button class="restore-btn-confirm" onclick="executeRestore()">Ano, vrátit zpět</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLOUD CONFIRMATION MODAL -->
+<div class="modal-overlay" id="cloud-modal">
+  <div class="modal-card" id="modal-card-a">
+    <div class="modal-head">
+      <div class="modal-icon">☁</div>
+      <div>
+        <div class="modal-eyebrow">Potvrzení cíle</div>
+        <div class="modal-title">Použít OneDrive pro zálohu?</div>
+        <div class="modal-sub">Nalezli jsme na vašem počítači klienta OneDrive. Uspořádané soubory uložíme do jeho sledované složky a on je sám zasynchronizuje do cloudu.</div>
+      </div>
+    </div>
+    <div class="modal-cloud-card">
+      <div class="modal-cloud-icon-wrap"><div class="cloud-brand onedrive">☁</div></div>
+      <div class="modal-cloud-text">
+        <div class="modal-cloud-name">OneDrive <span class="badge-running"><span class="dot"></span>běží</span></div>
+        <div class="modal-cloud-path">C:\Users\Anna\OneDrive\</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn-primary" onclick="confirmCloud('onedrive')">Ano, použít OneDrive</button>
+      <div class="modal-actions-row">
+        <button class="modal-btn-secondary" onclick="closeCloudModal()">Ne, zrušit</button>
+        <button class="modal-btn-alt" onclick="showMultiCloud()">Zvolit jiný cloud</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-card" id="modal-card-b" style="display:none">
+    <div class="modal-head">
+      <div class="modal-icon">☁</div>
+      <div>
+        <div class="modal-eyebrow">Vyberte cloud</div>
+        <div class="modal-title">Který cloud má FileIT použít?</div>
+        <div class="modal-sub">Tyto cloudové klienty máte nainstalované a aktivní.</div>
+      </div>
+    </div>
+    <div class="modal-cloud-list" id="cloud-list">
+      <div class="cloud-list-item selected" data-cloud="onedrive" onclick="pickFromList(this,'onedrive')">
+        <div class="cloud-list-icon-wrap"><div class="cloud-brand onedrive">☁</div></div>
+        <div class="cloud-list-text">
+          <div class="cloud-list-name">OneDrive <span class="cloud-list-name-dim">· doporučeno</span></div>
+          <div class="cloud-list-path">C:\Users\Anna\OneDrive\</div>
+        </div>
+        <div class="cloud-list-check">✓</div>
+      </div>
+      <div class="cloud-list-item" data-cloud="dropbox" onclick="pickFromList(this,'dropbox')">
+        <div class="cloud-list-icon-wrap"><div class="cloud-brand dropbox">D</div></div>
+        <div class="cloud-list-text">
+          <div class="cloud-list-name">Dropbox</div>
+          <div class="cloud-list-path">C:\Users\Anna\Dropbox\</div>
+        </div>
+        <span class="badge-running"><span class="dot"></span>běží</span>
+      </div>
+      <div class="cloud-list-item disabled">
+        <div class="cloud-list-icon-wrap"><div class="cloud-brand gdrive">G</div></div>
+        <div class="cloud-list-text">
+          <div class="cloud-list-name">Google Drive</div>
+          <div class="cloud-list-path dim">klient nainstalovaný, ale neběží</div>
+        </div>
+      </div>
+      <div class="cloud-list-item manual" onclick="manualPick()">
+        <div class="cloud-list-icon-wrap"><div class="cloud-list-icon-manual">+</div></div>
+        <div class="cloud-list-text">
+          <div class="cloud-list-name" style="color:var(--ink2)">Ručně vybrat složku</div>
+          <div class="cloud-list-path dim">Libovolná jiná synchronizovaná složka</div>
+        </div>
+        <span class="cloud-list-chev">→</span>
+      </div>
+    </div>
+    <div class="modal-footer-row">
+      <button class="modal-btn-back" onclick="backToDefault()">← Zpět</button>
+      <button class="modal-btn-confirm" onclick="confirmSelectedCloud()"><span id="confirm-label">Pokračovat s OneDrive</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <div class="toast-dot"></div>
+  <span id="toast-msg">Hotovo!</span>
+</div>
+</div>
+
+<script>
+const labels = ['dub','kvě','čvn','čvc','srp','zář','říj','lis','pro','led','úno','bře'];
+const vals = [12,18,8,24,31,15,42,28,19,37,48,22];
+const maxV = Math.max(...vals);
+const barsEl = document.getElementById('act-bars');
+const labsEl = document.getElementById('act-labels');
+vals.forEach((v,i)=>{
+  const b = document.createElement('div');
+  b.className='act-bar';
+  b.style.height=(v/maxV*90)+'px';
+  b.style.background = v===maxV ? 'linear-gradient(180deg,#FF1493,#FE865B)' : (v>25 ? 'var(--pink-soft)' : '#E8D4E8');
+  b.title=labels[i]+': '+v+' souborů';
+  b.onclick=()=>showToast(labels[i]+': přidáno '+v+' souborů');
+  barsEl.appendChild(b);
+  const l=document.createElement('div');
+  l.className='act-month';l.textContent=labels[i];l.style.flex='1';
+  labsEl.appendChild(l);
+});
+
+const words=[['Smlouva',22],['Úvěr',18],['Pojištění',16],['Doklad',14],['Dohoda',20],['Faktura',13],['Nájem',11],['Potvrzení',9],['Banka',19],['Klient',15],['Dopis',10],['Nárok',8],['Pojistka',12],['Oznámení',7],['Daň',14],['Účtenka',9]];
+const wc=document.getElementById('wcloud');
+const colors=['var(--indigo)','var(--pink)','var(--coral)','var(--ink2)','var(--pink-soft)','var(--indigo-light)'];
+words.forEach(([w,s])=>{
+  const el=document.createElement('span');
+  el.className='wc-word';
+  el.textContent=w;
+  el.style.fontSize=(11+s/2.5)+'px';
+  el.style.color=colors[Math.floor(Math.random()*colors.length)];
+  el.onclick=()=>showToast('Filtrujeme podle: '+w);
+  wc.appendChild(el);
+});
+
+const custs=[['Novák, Pavel',22],['Horáková, Jana',18],['Müller, Thomas',15],['Svoboda, Lucie',12],['Kratochvíl, P.',9],['Dvořák, Martin',7]];
+const cl=document.getElementById('cust-list');
+custs.forEach(([n,c])=>{
+  const r=document.createElement('div');r.className='cust-row';
+  r.innerHTML=`<div class="cust-name">${n}</div><div class="cust-bar-wrap"><div class="cust-bar" style="width:${Math.round(c/22*100)}%"></div></div><div class="cust-count">${c}</div>`;
+  r.onclick=()=>showToast('Filtrujeme podle: '+n);
+  cl.appendChild(r);
+});
+
+const screens=['s-home','s-how','s-welcome','s-filetypes','s-scanning','s-dashboard','s-cleanup','s-progress','s-confirm'];
+const screenNames=['Domů','Jak to funguje','Úvod','Typy souborů','Prohlížení…','Přehled','Uspořádání','Probíhá…','Hotovo'];
+const screenStepIndex={'s-home':0,'s-how':0,'s-welcome':0,'s-filetypes':1,'s-scanning':2,'s-dashboard':3,'s-cleanup':4,'s-progress':4,'s-confirm':4};
+function goTo(id,idx){
+  screens.forEach(s=>{const el=document.getElementById(s);if(el)el.classList.remove('active')});
+  const target=document.getElementById(id);
+  if(target)target.classList.add('active');
+  const stepIdx=(idx!==undefined)?idx:(screenStepIndex[id]||0);
+  for(let i=0;i<5;i++){
+    const ns=document.getElementById('ns'+i);
+    if(!ns)continue;
+    ns.classList.remove('active','done');
+    if(id==='s-home'){continue}
+    if(i<stepIdx)ns.classList.add('done');
+    else if(i===stepIdx)ns.classList.add('active');
+  }
+  const nameIdx=screens.indexOf(id);
+  const lbl=document.getElementById('screen-label');
+  if(lbl)lbl.textContent=(nameIdx>=0)?screenNames[nameIdx]:'';
+  const nav=document.querySelector('.topnav');
+  if(nav){if(id==='s-home'||id==='s-how'||id==='s-progress'||id==='s-confirm'){nav.classList.add('home-mode')}else{nav.classList.remove('home-mode')}}
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function startRestructureDirect(){
+  openAnalysisModal();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ANALYSIS MODAL (blocking, for Restructure-direct path)
+// ═══════════════════════════════════════════════════════════════════════════
+let analysisTimer = null;
+let analysisCancelled = false;
+const ANALYSIS_STATUSES = [
+  'Prohlížíme C:\\Users\\Anna\\Documents\\…',
+  'Čteme obsah PDF dokumentů…',
+  'Identifikujeme klienty: Novák Pavel…',
+  'Nalezena instituce: ČEZ Prodej…',
+  'Rozpoznáno: daňové přiznání 2025…',
+  'Čteme skenované doklady přes OCR…',
+  'Identifikován klient: Horáková Jana…',
+  'Nalezena instituce: Česká spořitelna…',
+  'Kontrolujeme složku Plocha…',
+  'Detekujeme duplikáty…',
+  'Dokončujeme analýzu…'
+];
+const ANALYSIS_LOG_LINES = [
+  {cls:'',text:'Skener spuštěn, 3 disky zařazeny do fronty'},
+  {cls:'hit',text:'→ C:\\Users\\Anna\\Documents — 124 souborů nalezeno'},
+  {cls:'hit',text:'→ C:\\Users\\Anna\\Desktop — 47 souborů nalezeno'},
+  {cls:'hit',text:'→ C:\\Users\\Anna\\Downloads — 113 souborů nalezeno'},
+  {cls:'',text:'Celkem 284 souborů k analýze'},
+  {cls:'',text:'Načítání slovníku institucí (47 záznamů)…'},
+  {cls:'found',text:'✓ Klient identifikován: Novák Pavel (3 soubory)'},
+  {cls:'found',text:'✓ Instituce: ČEZ Prodej · vyúčtování'},
+  {cls:'found',text:'✓ Klient identifikován: Horáková Jana (2 soubory)'},
+  {cls:'found',text:'✓ Typ dokumentu: smlouva — 38 výskytů'},
+  {cls:'found',text:'✓ Instituce: Kooperativa · pojistka'},
+  {cls:'found',text:'✓ Klient identifikován: Müller Thomas (4 soubory)'},
+  {cls:'',text:'OCR zpracovává 23 skenovaných stránek…'},
+  {cls:'found',text:'✓ Rodné číslo rozpoznáno — klient přiřazen'},
+  {cls:'found',text:'✓ Typ dokumentu: faktura — 27 výskytů'},
+  {cls:'',text:'Detekce duplikátů: 24 možných duplikátů'},
+  {cls:'done',text:'✓ Analýza dokončena · 284 souborů · 38 klientů'}
+];
+function openAnalysisModal(){
+  analysisCancelled = false;
+  document.getElementById('analysis-modal').classList.add('show');
+  document.getElementById('analysis-fill').style.width = '0%';
+  document.getElementById('analysis-status').textContent = ANALYSIS_STATUSES[0];
+  document.getElementById('analysis-log-inner').innerHTML = '<div class="analysis-log-line">Inicializace skeneru…</div>';
+  const logEl = document.getElementById('analysis-log');
+  const logBtn = document.getElementById('analysis-details-btn');
+  if(logEl)logEl.classList.remove('expanded');
+  if(logBtn)logBtn.textContent = 'Zobrazit detaily ▾';
+
+  let step = 0;
+  const totalSteps = 50;
+  analysisTimer = setInterval(()=>{
+    if(analysisCancelled){clearInterval(analysisTimer);return}
+    step++;
+    const pct = Math.min(100, Math.round(step/totalSteps*100));
+    document.getElementById('analysis-fill').style.width = pct+'%';
+    // rotate status text
+    if(step%5===0){
+      const statusEl = document.getElementById('analysis-status');
+      statusEl.style.opacity='0';
+      setTimeout(()=>{
+        statusEl.textContent = ANALYSIS_STATUSES[Math.min(ANALYSIS_STATUSES.length-1, Math.floor(step/5))];
+        statusEl.style.opacity='1';
+      },200);
+    }
+    // append log lines
+    if(step%3===0){
+      const lineIdx = Math.floor(step/3);
+      if(lineIdx < ANALYSIS_LOG_LINES.length){
+        const line = ANALYSIS_LOG_LINES[lineIdx];
+        const inner = document.getElementById('analysis-log-inner');
+        const el = document.createElement('div');
+        el.className = 'analysis-log-line '+(line.cls||'');
+        el.textContent = line.text;
+        inner.appendChild(el);
+        inner.scrollTop = inner.scrollHeight;
+      }
+    }
+    if(step >= totalSteps){
+      clearInterval(analysisTimer);
+      setTimeout(()=>{
+        document.getElementById('analysis-modal').classList.remove('show');
+        goTo('s-cleanup',4);
+        showToast('Analýza dokončena · 284 souborů');
+      },600);
+    }
+  },80);
+}
+function toggleAnalysisLog(){
+  const logEl = document.getElementById('analysis-log');
+  const btn = document.getElementById('analysis-details-btn');
+  if(logEl.classList.contains('expanded')){
+    logEl.classList.remove('expanded');
+    btn.textContent = 'Zobrazit detaily ▾';
+  }else{
+    logEl.classList.add('expanded');
+    btn.textContent = 'Skrýt detaily ▴';
+  }
+}
+function cancelAnalysis(){
+  analysisCancelled = true;
+  if(analysisTimer)clearInterval(analysisTimer);
+  document.getElementById('analysis-modal').classList.remove('show');
+  goTo('s-home',0);
+  showToast('Analýza zrušena');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PROGRESS LOG SCREEN (Restructure → Confirmation)
+// ═══════════════════════════════════════════════════════════════════════════
+const PROGRESS_LINES = [
+  {cls:'cmd',text:'$ fileit restructure --target "C:\\FileIT\\Organized\\"'},
+  {cls:'',text:'Vytváření bezpečnostní zálohy…'},
+  {cls:'ok',text:'✓ backup_2026-04-17_143300.zip (2,4 GB)'},
+  {cls:'',text:'Připravování cílové adresářové struktury…'},
+  {cls:'ok',text:'✓ 38 klientských složek vytvořeno'},
+  {cls:'ok',text:'✓ 127 podsložek vytvořeno'},
+  {cls:'',text:'Zahájení přesunu souborů…'},
+  {cls:'hit',text:'→ Přesun: Novák Pavel — 22 souborů'},
+  {cls:'hit',text:'→ Přesun: Horáková Jana — 18 souborů'},
+  {cls:'hit',text:'→ Přesun: Müller Thomas — 15 souborů'},
+  {cls:'hit',text:'→ Přesun: Svoboda Lucie — 14 souborů'},
+  {cls:'hit',text:'→ Přesun: Kratochvíl Petr — 12 souborů'},
+  {cls:'hit',text:'→ Přesun: Dvořák Martin — 11 souborů'},
+  {cls:'',text:'Průběžný přesun pokračuje…'},
+  {cls:'hit',text:'→ Přesun: Benešová Eva — 10 souborů'},
+  {cls:'hit',text:'→ Přesun: Pokorný Jan — 9 souborů'},
+  {cls:'hit',text:'→ … dalších 29 klientů zpracováno'},
+  {cls:'hit',text:'→ Přesun: Neznámý klient — 11 souborů'},
+  {cls:'',text:'Kontrola integrity přesunutých souborů…'},
+  {cls:'ok',text:'✓ Všech 284 souborů přesunuto bez chyb'},
+  {cls:'',text:'Zápis manifestu pro případ návratu…'},
+  {cls:'ok',text:'✓ manifest.json zapsán do zálohy'},
+  {cls:'done',text:'✓ Uspořádání dokončeno · 4 min 12 s'}
+];
+function startProgress(){
+  const fill = document.getElementById('progress-big-fill');
+  const pct = document.getElementById('progress-pct');
+  const count = document.getElementById('progress-count');
+  const statusText = document.getElementById('progress-status-text');
+  const pane = document.getElementById('progress-log-pane');
+  if(!fill)return;
+  fill.style.width = '0%';
+  pct.textContent = '0 %';
+  count.textContent = '0 / 284';
+  statusText.textContent = 'Připravuje se…';
+  pane.innerHTML = '';
+
+  let i = 0;
+  const interval = setInterval(()=>{
+    if(i >= PROGRESS_LINES.length){
+      clearInterval(interval);
+      setTimeout(()=>{goTo('s-confirm',0)},800);
+      return;
+    }
+    const line = PROGRESS_LINES[i];
+    const el = document.createElement('div');
+    el.className = 'progress-log-line '+(line.cls||'');
+    el.textContent = line.text;
+    pane.appendChild(el);
+    pane.scrollTop = pane.scrollHeight;
+    const p = Math.round((i+1)/PROGRESS_LINES.length*100);
+    fill.style.width = p+'%';
+    pct.textContent = p+' %';
+    count.textContent = Math.round(p*284/100)+' / 284';
+    if(i<3)statusText.textContent = 'Záloha a příprava struktury';
+    else if(i<PROGRESS_LINES.length-4)statusText.textContent = 'Přesouváme soubory';
+    else statusText.textContent = 'Dokončování';
+    i++;
+  },380);
+}
+function runRestructure(){
+  goTo('s-progress',0);
+  setTimeout(startProgress,300);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONFIRMATION + RESTORE
+// ═══════════════════════════════════════════════════════════════════════════
+function confirmRestructure(){
+  showToast('✓ Uspořádání potvrzeno · záloha se smaže za 7 dní');
+  setTimeout(()=>goTo('s-home',0),1400);
+}
+function openRestoreModal(){
+  document.getElementById('restore-modal').classList.add('show');
+}
+function closeRestoreModal(){
+  document.getElementById('restore-modal').classList.remove('show');
+}
+function executeRestore(){
+  closeRestoreModal();
+  showToast('Obnovujeme 284 souborů z backup_2026-04-17_143300.zip…');
+  setTimeout(()=>{
+    showToast('✓ Všechny soubory vráceny na původní místa');
+    setTimeout(()=>goTo('s-home',0),1200);
+  },1600);
+}
+
+function switchHowTab(which){
+  const modes=['local','cloud','c2c'];
+  modes.forEach(m=>{
+    const tab=document.getElementById('how-tab-'+m);
+    const panel=document.getElementById('how-panel-'+m);
+    const badge=document.getElementById('how-badge-'+m);
+    if(tab)tab.classList.toggle('active',m===which);
+    if(panel)panel.classList.toggle('active',m===which);
+    if(badge)badge.remove();
+  });
+  const activeTab=document.getElementById('how-tab-'+which);
+  if(activeTab){
+    const existing=activeTab.querySelector('.how-tab-badge');
+    if(!existing){
+      const cls=which==='local'?'indigo':which==='cloud'?'pink':'coral';
+      const badge=document.createElement('span');
+      badge.id='how-badge-'+which;
+      badge.className='how-tab-badge '+cls;
+      badge.textContent='Zvoleno';
+      activeTab.appendChild(badge);
+    }
+  }
+}
+function toggleFT(el){el.classList.toggle('selected')}
+function selectOpt(el){document.querySelectorAll('.opt-card').forEach(c=>c.classList.remove('selected'));el.classList.add('selected')}
+
+function selectDest(el,mode){
+  if(el.classList.contains('disabled'))return;
+  if(mode==='cloud' && !el.classList.contains('selected')){
+    openCloudModal();
+    return;
+  }
+  document.querySelectorAll('.dest-card').forEach(c=>{
+    if(!c.classList.contains('disabled'))c.classList.remove('selected');
+  });
+  el.classList.add('selected');
+  const path = document.getElementById('local-path');
+  const previewPath = document.getElementById('preview-path');
+  if(mode==='local'){
+    if(path)path.textContent = 'C:\\FileIT\\Organized\\';
+    if(previewPath)previewPath.textContent = 'C:\\FileIT\\Organized\\';
+    hideSyncExplainer();
+    showToast('Cíl: lokální disk');
+  }
+}
+
+let selectedCloud = 'onedrive';
+const cloudInfo = {
+  onedrive:{name:'OneDrive',path:'C:\\Users\\Anna\\OneDrive\\FileIT\\Organized\\'},
+  dropbox:{name:'Dropbox',path:'C:\\Users\\Anna\\Dropbox\\FileIT\\Organized\\'},
+  gdrive:{name:'Google Drive',path:'C:\\Users\\Anna\\Google Drive\\FileIT\\Organized\\'}
+};
+
+function openCloudModal(){
+  document.getElementById('cloud-modal').classList.add('show');
+  document.getElementById('modal-card-a').style.display='block';
+  document.getElementById('modal-card-b').style.display='none';
+}
+function closeCloudModal(){
+  document.getElementById('cloud-modal').classList.remove('show');
+}
+function showMultiCloud(){
+  document.getElementById('modal-card-a').style.display='none';
+  document.getElementById('modal-card-b').style.display='block';
+}
+function backToDefault(){
+  document.getElementById('modal-card-a').style.display='block';
+  document.getElementById('modal-card-b').style.display='none';
+}
+function pickFromList(el,cloud){
+  if(el.classList.contains('disabled'))return;
+  document.querySelectorAll('.cloud-list-item').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedCloud = cloud;
+  const lbl = document.getElementById('confirm-label');
+  if(lbl && cloudInfo[cloud])lbl.textContent='Pokračovat s '+cloudInfo[cloud].name;
+}
+function confirmSelectedCloud(){
+  confirmCloud(selectedCloud);
+}
+function manualPick(){
+  closeCloudModal();
+  showToast('Otevírá se dialog pro výběr složky…');
+  setTimeout(()=>{
+    const chosen = 'C:\\Users\\Anna\\Sync\\FileIT\\Organized\\';
+    applyCloudDestination('OneDrive',chosen);
+  },900);
+}
+function confirmCloud(cloud){
+  closeCloudModal();
+  const info = cloudInfo[cloud] || cloudInfo.onedrive;
+  applyCloudDestination(info.name,info.path);
+  showToast('Cíl: '+info.name+' (přes sync klienta)');
+}
+function applyCloudDestination(cloudName,fullPath){
+  document.querySelectorAll('.dest-card').forEach(c=>{
+    if(!c.classList.contains('disabled'))c.classList.remove('selected');
+  });
+  const cloudCard = document.querySelector('.dest-card[data-mode="cloud"]');
+  if(cloudCard){
+    cloudCard.classList.add('selected');
+    const body = cloudCard.querySelector('.dest-cloud-body');
+    if(body){
+      const shortPath = '…'+fullPath.substring(fullPath.indexOf('\\',10)) || fullPath;
+      body.innerHTML = `
+        <div class="dest-cloud-row">
+          <div class="dest-cloud-mini-icon onedrive">☁</div>
+          <span class="dest-cloud-name-small">${cloudName}</span>
+          <span class="dest-cloud-ready">· připraveno</span>
+        </div>
+        <div class="dest-path-row" style="border-top:1px dashed rgba(75,0,130,0.2);padding-top:10px">
+          <div class="dest-path-label">Cílová složka v cloudu</div>
+          <div class="dest-path-field">
+            <div class="dest-path-input">${shortPath}</div>
+            <button class="dest-browse" onclick="event.stopPropagation();pickFolder('cloud')">Procházet…</button>
+          </div>
+        </div>
+      `;
+    }
+  }
+  const previewPath = document.getElementById('preview-path');
+  if(previewPath)previewPath.textContent = fullPath;
+  showSyncExplainer(fullPath);
+}
+function showSyncExplainer(path){
+  let e = document.getElementById('sync-explainer');
+  if(!e){
+    e = document.createElement('div');
+    e.id = 'sync-explainer';
+    e.className = 'sync-explainer';
+    const tip = document.querySelector('.rs-tip');
+    if(tip)tip.parentNode.insertBefore(e,tip.nextSibling);
+  }
+  const shortPath = path.length>40 ? '…'+path.substring(path.indexOf('\\',15)) : path;
+  e.innerHTML = `<span style="font-size:13px">☁</span><div><b>Po uspořádání:</b> FileIT uloží soubory do <span class="sync-explainer-path">${shortPath}</span> a cloud klient je automaticky zasynchronizuje do cloudu.</div>`;
+}
+function hideSyncExplainer(){
+  const e = document.getElementById('sync-explainer');
+  if(e)e.remove();
+}
+
+function pickFolder(mode){
+  showToast('Otevírá se dialog pro výběr složky…');
+  setTimeout(()=>{
+    const chosen = 'C:\\Klienti\\2026\\';
+    if(mode==='local'){
+      document.getElementById('local-path').textContent = chosen;
+      document.getElementById('preview-path').textContent = chosen;
+    }
+    showCollisionWarn();
+  },900);
+}
+
+function showCollisionWarn(){
+  let existing = document.getElementById('collision-warn');
+  if(existing)existing.remove();
+  const warn = document.createElement('div');
+  warn.id = 'collision-warn';
+  warn.className = 'collision-warn';
+  warn.innerHTML = '⚠️  <div>Tato složka už obsahuje <b>47 souborů</b>. FileIT vedle nich jen přidá nové klientské podsložky — <b>vaše stávající soubory zůstanou nedotčeny</b>.</div>';
+  const tip = document.querySelector('.rs-tip');
+  tip.parentNode.insertBefore(warn,tip.nextSibling);
+  setTimeout(()=>{ const w=document.getElementById('collision-warn'); if(w)w.style.opacity='0.6'; },8000);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RESTRUCTURE — State-driven preview engine
+// ═══════════════════════════════════════════════════════════════════════════
+
+const RS_DIMENSIONS = {
+  customer: {name:'Jméno klienta', iconClass:'i-customer', icon:'👤', coverage:1.0, coverageText:'', folderWord:'klientů'},
+  date:     {name:'Měsíc a rok',   iconClass:'i-date',     icon:'📅', coverage:1.0, coverageText:'', folderWord:'období'},
+  inst:     {name:'Vydávající instituce', iconClass:'i-inst', icon:'🏦', coverage:0.85, coverageText:'242 souborů (85 %)', folderWord:'institucí'},
+  doc:      {name:'Typ dokumentu', iconClass:'i-doc',      icon:'📑', coverage:0.70, coverageText:'198 souborů (70 %)', folderWord:'typů'}
+};
+const RS_LEVEL_COLOR = ['lvl1','lvl2','lvl3'];
+
+// Mock dataset — 284 files distributed realistically
+const RS_CUSTOMERS = [
+  {name:'Novák Pavel', n:22},{name:'Horáková Jana', n:18},{name:'Müller Thomas', n:15},
+  {name:'Svoboda Lucie', n:14},{name:'Kratochvíl Petr', n:12},{name:'Dvořák Martin', n:11},
+  {name:'Benešová Eva', n:10},{name:'Pokorný Jan', n:9},{name:'Veselá Hana', n:9},
+  {name:'Hájek Tomáš', n:8},{name:'Procházka Josef', n:8},{name:'Novotná Markéta', n:7},
+  {name:'Fialová Zuzana', n:7},{name:'Král Pavel', n:7},{name:'Malá Kateřina', n:6},
+  {name:'Beneš Ondřej', n:6},{name:'Růžičková Iva', n:6},{name:'Šimek Karel', n:5},
+  {name:'Kovářová Lenka', n:5},{name:'Havel Roman', n:5},{name:'Jelínek Milan', n:5},
+  {name:'Blažková Petra', n:4},{name:'Urban Filip', n:4},{name:'Machová Monika', n:4},
+  {name:'Pospíšil Jiří', n:4},{name:'Tichá Vladěna', n:3},{name:'Soukup Michal', n:3},
+  {name:'Pavelková Dana', n:3},{name:'Hrubý Radek', n:3},{name:'Vacková Tereza', n:3},
+  {name:'Kučera Vít', n:3},{name:'Zemanová Alena', n:3},{name:'Bartoš Lukáš', n:2},
+  {name:'Němcová Veronika', n:2},{name:'Říha Adam', n:2},{name:'Horák Jakub', n:2},
+  {name:'Janková Simona', n:2},{name:'Šťastná Olga', n:2}
+];
+const RS_MONTHS = ['2025-09','2025-10','2025-11','2026-01','2026-02','2026-03','2026-04'];
+const RS_INSTITUTIONS = ['ČEZ','Česká spořitelna','Kooperativa','Finanční úřad','ČSOB','Allianz','ÚSSZ'];
+const RS_DOCTYPES = ['Smlouva','Faktura','Vyúčtování','Doklad','Dopis'];
+
+// Build a flat list of 284 file objects, each with 4 attributes
+let RS_FILES = [];
+(function seedFiles(){
+  let id=0;
+  RS_CUSTOMERS.forEach(c=>{
+    for(let i=0;i<c.n;i++){
+      RS_FILES.push({
+        id:++id,
+        customer:c.name,
+        date:RS_MONTHS[(i+c.name.length)%RS_MONTHS.length],
+        inst:Math.random()<0.85 ? RS_INSTITUTIONS[(i+c.name.length*3)%RS_INSTITUTIONS.length] : null,
+        doc: Math.random()<0.70 ? RS_DOCTYPES[(i+c.name.length*7)%RS_DOCTYPES.length] : null
+      });
+    }
+  });
+  // top up to 284 with "unknown customer" bucket
+  for(let i=RS_FILES.length;i<284;i++){
+    RS_FILES.push({
+      id:++i,
+      customer:null,
+      date:RS_MONTHS[i%RS_MONTHS.length],
+      inst:Math.random()<0.85 ? RS_INSTITUTIONS[i%RS_INSTITUTIONS.length] : null,
+      doc: Math.random()<0.70 ? RS_DOCTYPES[i%RS_DOCTYPES.length] : null
+    });
+  }
+})();
+
+// Current structure state — starts with customer+date, user can modify
+let rsStructure = ['customer','date'];
+
+function rsGroupBy(files, keys){
+  // Returns nested tree: { groupName: { count, children } }
+  if(!keys.length)return {count:files.length, children:null, flat:files};
+  const [key, ...rest] = keys;
+  const unknownLabel = key==='customer' ? 'Neznámý klient' : key==='inst' ? 'Bez instituce' : key==='doc' ? 'Neurčený typ' : 'Neurčeno';
+  const groups = {};
+  files.forEach(f=>{
+    const v = f[key] || unknownLabel;
+    if(!groups[v])groups[v]={files:[]};
+    groups[v].files.push(f);
+  });
+  const result = {};
+  Object.keys(groups).sort((a,b)=>{
+    if(a===unknownLabel)return 1;
+    if(b===unknownLabel)return -1;
+    return groups[b].files.length - groups[a].files.length;
+  }).forEach(k=>{
+    result[k] = {
+      count: groups[k].files.length,
+      children: rest.length ? rsGroupBy(groups[k].files, rest) : null,
+      isUnknown: (k===unknownLabel)
+    };
+  });
+  return result;
+}
+
+function rsRenderPalette(){
+  const grid = document.getElementById('palette-grid');
+  if(!grid)return;
+  grid.innerHTML = '';
+  const maxed = rsStructure.length >= 3;
+  Object.keys(RS_DIMENSIONS).forEach(key=>{
+    const dim = RS_DIMENSIONS[key];
+    const usedIdx = rsStructure.indexOf(key);
+    const chip = document.createElement('div');
+    chip.className = 'palette-chip';
+    if(usedIdx>=0){
+      chip.className += ' used '+RS_LEVEL_COLOR[usedIdx];
+      chip.innerHTML = `
+        <div class="chip-icon ${dim.iconClass}">${dim.icon}</div>
+        <div class="chip-text">
+          <div class="chip-name">${dim.name}</div>
+          <div class="chip-meta">Použito na úrovni ${usedIdx+1}</div>
+        </div>
+        <div class="chip-num ${RS_LEVEL_COLOR[usedIdx]}">${usedIdx+1}</div>`;
+    }else{
+      const dotCls = dim.coverage>=0.8 ? 'high' : 'mid';
+      const metaHTML = dim.coverageText ? `<span class="coverage-dot ${dotCls}"></span>${dim.coverageText}` : 'Dostupné pro všechny soubory';
+      chip.innerHTML = `
+        <div class="chip-icon ${dim.iconClass}">${dim.icon}</div>
+        <div class="chip-text">
+          <div class="chip-name">${dim.name}</div>
+          <div class="chip-meta">${metaHTML}</div>
+        </div>
+        ${maxed ? '<span style="font-size:10px;color:var(--ink3);font-style:italic">Max.</span>' : `<button class="chip-add" onclick="event.stopPropagation();addDimension('${key}')">+ Přidat</button>`}`;
+      if(!maxed)chip.onclick = ()=>addDimension(key);
+    }
+    grid.appendChild(chip);
+  });
+}
+
+function rsRenderStack(){
+  const rowsEl = document.getElementById('stack-rows');
+  const counter = document.getElementById('stack-counter');
+  if(!rowsEl)return;
+  rowsEl.innerHTML = '';
+  rsStructure.forEach((key,idx)=>{
+    const dim = RS_DIMENSIONS[key];
+    const row = document.createElement('div');
+    row.className = 'stack-row';
+    const upDisabled = idx===0 ? 'disabled' : '';
+    const downDisabled = idx===rsStructure.length-1 ? 'disabled' : '';
+    row.innerHTML = `
+      <div class="stack-num">${idx+1}</div>
+      <div class="stack-name">${dim.name}</div>
+      <div class="stack-arrows">
+        <button class="stack-arrow" ${upDisabled} onclick="moveDimension('${key}',-1)">▲</button>
+        <button class="stack-arrow" ${downDisabled} onclick="moveDimension('${key}',1)">▼</button>
+      </div>
+      <button class="stack-remove" onclick="removeDimension('${key}')">×</button>`;
+    rowsEl.appendChild(row);
+  });
+  // empty placeholder if there's room for more
+  if(rsStructure.length < 3){
+    const placeholder = document.createElement('div');
+    placeholder.className = 'stack-empty';
+    const remaining = 3 - rsStructure.length;
+    const msg = rsStructure.length===0
+      ? 'Vyberte dimenzi z palety vlevo'
+      : `Přidejte další dimenzi${remaining>1?'<br>pro další úrovně':''}`;
+    placeholder.innerHTML = `<div class="stack-empty-text">${msg}</div>`;
+    rowsEl.appendChild(placeholder);
+  }
+  if(counter)counter.textContent = `${rsStructure.length} / 3 úrovně použity`;
+}
+
+function rsRenderTree(){
+  const treeEl = document.getElementById('tree-render');
+  const statFiles = document.getElementById('stat-files');
+  const statFolders = document.getElementById('stat-folders');
+  const statFoldersLbl = document.getElementById('stat-folders-lbl');
+  const statSubfolders = document.getElementById('stat-subfolders');
+  if(!treeEl)return;
+
+  treeEl.innerHTML = '';
+  if(statFiles)statFiles.textContent = RS_FILES.length;
+
+  if(rsStructure.length === 0){
+    treeEl.innerHTML = `
+      <div class="tree-root"><span style="font-size:14px">📁</span> Organized</div>
+      <div class="tree-branch">
+        <div style="color:var(--ink3);font-style:italic;font-size:11px;padding:20px 4px">Zatím žádná struktura — vyberte dimenzi z palety výše, aby FileIT věděl, jak soubory rozdělit.</div>
+      </div>`;
+    if(statFolders)statFolders.textContent = '—';
+    if(statFoldersLbl)statFoldersLbl.textContent = 'bez rozdělení';
+    if(statSubfolders)statSubfolders.textContent = '—';
+    return;
+  }
+
+  const tree = rsGroupBy(RS_FILES, rsStructure);
+  const topLevelKeys = Object.keys(tree);
+  const topFolderCount = topLevelKeys.length;
+  const topDim = RS_DIMENSIONS[rsStructure[0]];
+  if(statFolders)statFolders.textContent = topFolderCount;
+  if(statFoldersLbl)statFoldersLbl.textContent = 'složek '+topDim.folderWord;
+
+  // Count all subfolders at all deeper levels
+  let subCount = 0;
+  function countSubs(node){
+    if(!node)return;
+    Object.keys(node).forEach(k=>{
+      if(node[k].children){
+        subCount += Object.keys(node[k].children).length;
+        countSubs(node[k].children);
+      }
+    });
+  }
+  countSubs(tree);
+  if(statSubfolders)statSubfolders.textContent = subCount;
+
+  // Build tree HTML — show first ~5 top-level folders, the Unknown bucket separately
+  let html = `<div class="tree-root"><span style="font-size:14px">📁</span> Organized</div><div class="tree-branch">`;
+  const MAX_TOP = 5;
+  const normalKeys = topLevelKeys.filter(k=>!tree[k].isUnknown);
+  const unknownKeys = topLevelKeys.filter(k=>tree[k].isUnknown);
+  const shown = normalKeys.slice(0, MAX_TOP);
+  const hiddenCount = normalKeys.length - shown.length;
+
+  shown.forEach((k,i)=>{
+    const node = tree[k];
+    html += `<div class="tree-node"${i>0?' style="margin-top:2px"':''}>
+      <span class="tree-conn">├─</span><span style="font-size:13px">📁</span> ${k}
+      <span class="tree-count">${node.count} souborů</span>
+    </div>`;
+    // show sub-children for first 2 parents only, to keep preview readable
+    if(node.children && i<2){
+      const subKeys = Object.keys(node.children).slice(0,3);
+      html += `<div class="tree-sub">`;
+      subKeys.forEach(sk=>{
+        html += `<div class="tree-subnode"><span class="tree-conn">├─</span><span style="font-size:12px">📁</span>${sk} <span class="tree-count">${node.children[sk].count}</span></div>`;
+      });
+      html += `</div>`;
+    }
+  });
+
+  if(hiddenCount>0){
+    html += `<div class="tree-ellipsis"><span class="tree-conn">├─</span> … a dalších ${hiddenCount} složek</div>`;
+  }
+
+  unknownKeys.forEach(k=>{
+    const node = tree[k];
+    html += `<div class="tree-unknown">
+      <span class="tree-conn">└─</span><span style="font-size:13px">📁</span> ${k}
+      <span class="tree-count">${node.count} souborů · bez identifikace</span>
+    </div>`;
+  });
+
+  html += `</div>`;
+  treeEl.innerHTML = html;
+}
+
+function rsRenderAll(){
+  rsRenderPalette();
+  rsRenderStack();
+  rsRenderTree();
+}
+
+function addDimension(key){
+  if(rsStructure.length>=3){showToast('Dosažen maximální počet úrovní (3)');return}
+  if(rsStructure.indexOf(key)>=0)return;
+  rsStructure.push(key);
+  rsRenderAll();
+  showToast('Přidáno: '+RS_DIMENSIONS[key].name);
+}
+function removeDimension(key){
+  rsStructure = rsStructure.filter(k=>k!==key);
+  rsRenderAll();
+  showToast('Odebráno: '+RS_DIMENSIONS[key].name);
+}
+function moveDimension(key, delta){
+  const idx = rsStructure.indexOf(key);
+  if(idx<0)return;
+  const newIdx = idx+delta;
+  if(newIdx<0||newIdx>=rsStructure.length)return;
+  rsStructure.splice(idx,1);
+  rsStructure.splice(newIdx,0,key);
+  rsRenderAll();
+}
+
+// Initial render
+window.addEventListener('DOMContentLoaded',()=>{rsRenderAll()});
+
+let backupOn = true;
+function toggleBackup(){
+  backupOn = !backupOn;
+  const strip = document.getElementById('backup-strip');
+  const pill = document.getElementById('toggle-pill');
+  const label = document.getElementById('toggle-label');
+  const title = document.getElementById('backup-title');
+  const desc = document.getElementById('backup-desc');
+  const icon = document.getElementById('backup-icon');
+  if(backupOn){
+    strip.classList.remove('off');
+    label.textContent = 'Zapnuto';
+    title.textContent = 'Bezpečnostní záloha — zapnuto';
+    desc.innerHTML = 'Před jakýmkoli přesunem vytvoříme zálohu <span class="backup-filename">backup_2026-04-17.zip</span> ve skrytém umístění. Cokoli se nepovede, vrátíme zpět jedním klikem.';
+    icon.textContent = '🛟';
+  }else{
+    strip.classList.add('off');
+    label.textContent = 'Vypnuto';
+    title.textContent = 'Bezpečnostní záloha — vypnuto';
+    desc.innerHTML = '⚠ Bez zálohy je uspořádání <b>jednosměrná akce</b>. Pokud se něco nepovede, obnova souborů bude vyžadovat ruční práci. Doporučujeme zálohu ponechat zapnutou.';
+    icon.textContent = '⚠';
+  }
+}
+
+let toastT;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  document.getElementById('toast-msg').textContent=msg;
+  t.classList.add('show');
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>t.classList.remove('show'),3000);
+}
+goTo('s-home',0);
+</script>
+</body>
+</html>

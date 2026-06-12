@@ -1,0 +1,714 @@
+- generic [ref=e80]:
+  - generic [ref=e83]:
+    - generic [ref=e84]:
+      - button "Lee, , Lee" [ref=e86] [cursor=pointer]:
+        - generic "Lee, ," [ref=e88]:
+          - generic [ref=e89]: L
+        - generic [ref=e90]: Lee
+        - img [ref=e92]
+      - button [ref=e1480] [cursor=pointer]:
+        - img [ref=e1481]
+    - generic [ref=e95]:
+      - button "Search Ctrl K" [ref=e96] [cursor=pointer]:
+        - img [ref=e98]
+        - generic [ref=e100]: Search
+        - generic [ref=e101]: Ctrl K
+      - button "Lottie animation" [ref=e102] [cursor=pointer]:
+        - img "Lottie animation" [ref=e106]:
+          - img [ref=e108]
+    - generic [ref=e141]:
+      - generic [ref=e144]:
+        - button "Create task" [ref=e145] [cursor=pointer]:
+          - img [ref=e147]
+        - button "Dropdown menu" [ref=e152] [cursor=pointer]:
+          - button "Record a Clip" [ref=e153]:
+            - img [ref=e155]
+      - button "Dropdown menu" [ref=e159] [cursor=pointer]:
+        - generic "Jarda Karlik, , online" [ref=e162]:
+          - generic [ref=e163]: JK
+          - img [ref=e165]
+        - img [ref=e168]
+  - generic [ref=e174]:
+    - navigation "Sidebar" [ref=e176]:
+      - generic [ref=e177]:
+        - generic [ref=e178]:
+          - generic [ref=e179]:
+            - link "Home" [ref=e183] [cursor=pointer]:
+              - /url: https://app.clickup.com/90121813699/inbox
+              - img [ref=e187]
+              - generic [ref=e192]: Home
+              - note [ref=e195]:
+                - generic [ref=e196]: "1"
+            - generic [ref=e197]:
+              - link "Planner 9" [ref=e200] [cursor=pointer]:
+                - /url: https://app.clickup.com/90121813699/calendar
+                - generic [ref=e201]:
+                  - img [ref=e205]
+                  - generic [ref=e210]: Planner
+                  - generic [ref=e212]:
+                    - generic: "9"
+              - link "AI" [ref=e215] [cursor=pointer]:
+                - /url: https://app.clickup.com/90121813699/ai
+                - generic [ref=e216]:
+                  - img [ref=e220]
+                  - generic [ref=e225]: AI
+              - link "Teams" [ref=e229] [cursor=pointer]:
+                - /url: https://app.clickup.com/90121813699/teams-pulse
+                - generic [ref=e230]:
+                  - img [ref=e234]
+                  - generic [ref=e239]: Teams
+          - button "Dropdown menu" [ref=e242] [cursor=pointer]:
+            - img [ref=e244]
+            - generic [ref=e246]:
+              - img [ref=e250]
+              - img [ref=e255]
+              - img [ref=e260]
+              - img [ref=e263]
+            - generic [ref=e268]: More
+        - generic [ref=e272]:
+          - button "Invite" [ref=e277] [cursor=pointer]:
+            - img [ref=e279]
+            - generic [ref=e281]: Invite
+          - button "Upgrade" [ref=e283] [cursor=pointer]:
+            - generic [ref=e285]: Upgrade
+    - main [ref=e286]:
+      - generic [ref=e289]:
+        - generic [ref=e296]:
+          - generic [ref=e297]:
+            - generic [ref=e298]: Home
+            - generic [ref=e299]:
+              - link "Number of unseen notifications":
+                - /url: https://app.clickup.com/90121813699/inbox
+                - generic:
+                  - generic:
+                    - note
+                    - generic: Number of unseen notifications
+                - generic:
+                  - img
+              - generic [ref=e307] [cursor=pointer]:
+                - textbox "Search sidebar..."
+                - img [ref=e309]
+              - button [ref=e312] [cursor=pointer]:
+                - img [ref=e314]
+              - button "Close sidebar" [ref=e317] [cursor=pointer]:
+                - img [ref=e319]
+              - button "Create" [ref=e321]:
+                - button "Create" [ref=e322] [cursor=pointer]:
+                  - img [ref=e324]
+                  - paragraph [ref=e326]: Create
+          - generic [ref=e327]:
+            - tree [ref=e330]:
+              - treeitem [level=1] [ref=e331]
+              - treeitem "Inbox" [level=1] [ref=e333]:
+                - link "Inbox" [ref=e335] [cursor=pointer]:
+                  - /url: https://app.clickup.com/90121813699/inbox
+                  - img [ref=e337]
+                  - generic [ref=e339]: Inbox
+              - treeitem "Replies" [level=1] [ref=e340]:
+                - link "Replies" [ref=e342] [cursor=pointer]:
+                  - /url: https://app.clickup.com/90121813699/chat/r/threads
+                  - img [ref=e344]
+                  - generic [ref=e346]: Replies
+              - treeitem "Assigned Comments" [level=1] [ref=e347]:
+                - link "Assigned Comments" [ref=e349] [cursor=pointer]:
+                  - /url: https://app.clickup.com/90121813699/chat/r/assigned
+                  - img [ref=e351]
+                  - generic [ref=e353]: Assigned Comments
+              - treeitem "My Tasks" [level=2] [ref=e354]:
+                - generic [ref=e356]:
+                  - img [ref=e360]
+                  - link "My Tasks" [ref=e362] [cursor=pointer]:
+                    - /url: https://app.clickup.com/90121813699/my-work
+                    - generic [ref=e364]: My Tasks
+              - treeitem "More" [level=1] [ref=e365]:
+                - button "More" [ref=e367] [cursor=pointer]:
+                  - img [ref=e369]
+                  - generic [ref=e371]: More
+              - treeitem [level=1] [ref=e372]
+              - treeitem "Favorites Dropdown menu" [expanded] [level=1] [ref=e374]:
+                - generic [ref=e376]:
+                  - button "Favorites" [ref=e377] [cursor=pointer]:
+                    - generic [ref=e378]: Favorites
+                  - generic [ref=e380]:
+                    - button [ref=e382] [cursor=pointer]:
+                      - img [ref=e384]
+                    - button "Dropdown menu" [ref=e387] [cursor=pointer]:
+                      - img [ref=e389]
+              - treeitem "Add to your sidebar" [level=1] [ref=e391]:
+                - button "Add to your sidebar" [ref=e393] [cursor=pointer]:
+                  - img [ref=e395]
+                  - generic [ref=e397]: Add to your sidebar
+              - treeitem [level=1] [ref=e398]
+              - treeitem "Spaces Spaces settings" [expanded] [level=1] [ref=e400]:
+                - generic [ref=e402]:
+                  - button "Spaces" [ref=e403] [cursor=pointer]:
+                    - generic [ref=e404]: Spaces
+                  - generic [ref=e406]:
+                    - button "Spaces settings" [ref=e409] [cursor=pointer]:
+                      - img [ref=e411]
+                      - generic [ref=e413]: Spaces settings
+                    - button [ref=e415] [cursor=pointer]:
+                      - img [ref=e417]
+              - treeitem "All Tasks - Lee" [level=2] [ref=e419]:
+                - generic [ref=e421]:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                  - link "All Tasks - Lee" [ref=e422] [cursor=pointer]:
+                    - /url: https://app.clickup.com/90121813699/v/t/90121813699
+                    - generic [ref=e423]: All Tasks - Lee
+              - treeitem "Team Space, , Team Space" [expanded] [level=2] [ref=e424]:
+                - generic [ref=e426]:
+                  - generic "Team Space, ," [ref=e430]:
+                    - img [ref=e432]
+                  - link "Team Space" [ref=e434] [cursor=pointer]:
+                    - /url: https://app.clickup.com/90121813699/v/s/90127901813
+                    - generic [ref=e436]: Team Space
+                  - generic [ref=e438]:
+                    - button [ref=e439] [cursor=pointer]:
+                      - img [ref=e441]
+                    - button [ref=e443] [cursor=pointer]:
+                      - img [ref=e445]
+              - treeitem "Project 1 4" [level=3] [ref=e447]:
+                - generic [ref=e449]:
+                  - button [ref=e452] [cursor=pointer]:
+                    - img [ref=e454]
+                  - link "Project 1" [ref=e456] [cursor=pointer]:
+                    - /url: https://app.clickup.com/90121813699/v/li/901218688909/901211671865?pr=90127901813
+                    - generic [ref=e458]: Project 1
+                  - generic [ref=e459]: "4"
+              - treeitem "Project 2 3" [level=3] [ref=e460]:
+                - generic [ref=e462]:
+                  - button [ref=e465] [cursor=pointer]:
+                    - img [ref=e467]
+                  - link "Project 2" [ref=e469] [cursor=pointer]:
+                    - /url: https://app.clickup.com/90121813699/v/li/901218688908/901211671866?pr=90127901813
+                    - generic [ref=e471]: Project 2
+                  - generic [ref=e472]: "3"
+              - treeitem "Get Started with ClickUp 6" [level=3] [ref=e473]:
+                - generic [ref=e475]:
+                  - button [ref=e478] [cursor=pointer]:
+                    - img [ref=e480]
+                  - link "Get Started with ClickUp" [ref=e482] [cursor=pointer]:
+                    - /url: https://app.clickup.com/90121813699/v/li/901218688911/901211671868?pr=90127901813
+                    - generic [ref=e484]: Get Started with ClickUp
+                  - generic [ref=e485]: "6"
+              - treeitem "FileIT 1.0.9 9" [level=3] [ref=e486]:
+                - generic [ref=e488]:
+                  - button [ref=e491] [cursor=pointer]:
+                    - img [ref=e493]
+                  - link "FileIT 1.0.9" [ref=e495]:
+                    - /url: https://app.clickup.com/90121813699/v/li/901218688991/901211671925?pr=90127901813
+                    - generic [ref=e497]: FileIT 1.0.9
+                  - generic [ref=e498]: "9"
+              - treeitem "Team Docs" [level=3] [ref=e499]:
+                - generic [ref=e501]:
+                  - img [ref=e507]
+                  - link "Team Docs" [ref=e509] [cursor=pointer]:
+                    - /url: https://app.clickup.com/90121813699/v/dc/2kxuvfp3-72
+                    - generic [ref=e511]: Team Docs
+              - treeitem "New Space" [level=2] [ref=e512]:
+                - generic [ref=e514] [cursor=pointer]:
+                  - img [ref=e518]
+                  - generic [ref=e522]: New Space
+              - treeitem [level=1] [ref=e523]
+              - treeitem "Channels" [expanded] [level=1] [ref=e525]:
+                - generic [ref=e527]:
+                  - button "Channels" [ref=e528] [cursor=pointer]:
+                    - generic [ref=e529]: Channels
+                  - generic [ref=e531]:
+                    - button [ref=e533] [cursor=pointer]:
+                      - img [ref=e535]
+                    - button [ref=e538] [cursor=pointer]:
+                      - img [ref=e540]
+              - treeitem "Lee, , General - Lee" [level=2] [ref=e542]:
+                - generic [ref=e544]:
+                  - generic [ref=e553]:
+                    - img [ref=e555]
+                    - generic "Lee, ," [ref=e559]:
+                      - generic [ref=e560]: L
+                  - link "General - Lee" [ref=e561] [cursor=pointer]:
+                    - /url: https://app.clickup.com/90121813699/v/cn/7-90121813699-8
+                    - generic [ref=e563]:
+                      - generic [ref=e565]: General
+                      - generic [ref=e567]: "- Lee"
+              - treeitem "Welcome" [level=2] [ref=e568]:
+                - generic [ref=e570]:
+                  - img [ref=e581]
+                  - link "Welcome" [ref=e583] [cursor=pointer]:
+                    - /url: https://app.clickup.com/90121813699/chat/r/2kxuvfp3-32
+                    - generic [ref=e587]: Welcome
+              - treeitem "Add Channel" [level=2] [ref=e588]:
+                - link "Add Channel" [ref=e590] [cursor=pointer]:
+                  - /url: https://app.clickup.com/90121813699/chat/r/channels
+                  - img [ref=e592]
+                  - generic [ref=e594]: Add Channel
+              - treeitem [level=1] [ref=e595]
+              - treeitem "Direct Messages" [expanded] [level=1] [ref=e597]:
+                - generic [ref=e599]:
+                  - button "Direct Messages" [ref=e600] [cursor=pointer]:
+                    - generic [ref=e601]: Direct Messages
+                  - generic [ref=e603]:
+                    - button [ref=e605] [cursor=pointer]:
+                      - img [ref=e607]
+                    - button [ref=e610] [cursor=pointer]:
+                      - img [ref=e612]
+              - treeitem "Onboarding Assistant, , online Onboarding Assistant 1" [level=2] [ref=e614]:
+                - generic [ref=e616]:
+                  - generic "Onboarding Assistant, , online" [ref=e625]:
+                    - img [ref=e627]
+                  - link "Onboarding Assistant" [ref=e629] [cursor=pointer]:
+                    - /url: https://app.clickup.com/90121813699/chat/r/2kxuvfp3-492
+                    - generic [ref=e633]: Onboarding Assistant
+                  - generic [ref=e639]: "1"
+              - treeitem "Jarda Karlik, , online Jarda Karlik — You" [level=2] [ref=e640]:
+                - generic [ref=e642]:
+                  - generic "Jarda Karlik, , online" [ref=e651]:
+                    - generic [ref=e652]: J
+                    - img [ref=e654]
+                  - link "Jarda Karlik — You" [ref=e656] [cursor=pointer]:
+                    - /url: https://app.clickup.com/90121813699/chat/r/2kxuvfp3-52
+                    - generic [ref=e659]:
+                      - generic [ref=e660]: Jarda Karlik
+                      - generic [ref=e661]: — You
+              - treeitem "New message" [level=2] [ref=e662]:
+                - link "New message" [ref=e664] [cursor=pointer]:
+                  - /url: https://app.clickup.com/90121813699/chat/r/launchpad
+                  - img [ref=e666]
+                  - generic [ref=e668]: New message
+              - treeitem [level=1] [ref=e669]
+              - treeitem [level=1] [ref=e671]
+            - generic:
+              - generic:
+                - button "Space settings"
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - button "Folder settings"
+            - generic [ref=e677]:
+              - button "List settings"
+            - generic:
+              - generic:
+                - button "Dropdown menu"
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - button
+        - generic [ref=e680]:
+          - generic [ref=e682]:
+            - generic [ref=e684]:
+              - generic [ref=e686]:
+                - generic [ref=e687]:
+                  - link "Team Space, , Team Space" [ref=e689] [cursor=pointer]:
+                    - /url: https://app.clickup.com/90121813699/v/s/90127901813/1
+                    - generic "Team Space, ," [ref=e691]:
+                      - img [ref=e693]
+                    - generic [ref=e695]: Team Space
+                  - generic [ref=e696]: /
+                  - button "Dropdown menu" [ref=e700] [cursor=pointer]:
+                    - generic [ref=e702]:
+                      - img [ref=e704]
+                      - generic [ref=e709]: FileIT 1.0.9
+                    - img [ref=e711]
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - button "FileIT 1.0.9 List settings"
+                - button "Dropdown menu" [ref=e715] [cursor=pointer]:
+                  - img [ref=e717]
+                  - generic [ref=e719]: Favorite
+                - generic [ref=e720]:
+                  - button "View description" [ref=e723] [cursor=pointer]:
+                    - img [ref=e725]
+                    - generic [ref=e727]: View description
+                  - generic [ref=e728]:
+                    - button "Add List assignee" [ref=e732] [cursor=pointer]:
+                      - button "Add List assignee" [ref=e735]:
+                        - img [ref=e737]
+                        - generic [ref=e739]: Add List assignee
+                    - generic [ref=e742]:
+                      - button "Add List priority" [ref=e743] [cursor=pointer]:
+                        - button "Add List priority" [ref=e746]:
+                          - img [ref=e748]
+                          - generic [ref=e750]: Add List priority
+                      - generic [ref=e751]: Change priority
+                    - generic [ref=e754]:
+                      - button "Add List dates" [ref=e755] [cursor=pointer]:
+                        - button "Add List dates" [ref=e757]:
+                          - img [ref=e759]
+                          - generic [ref=e761]: Add List dates
+                      - generic [ref=e762]: Change start and due dates
+              - generic [ref=e763]:
+                - generic [ref=e765]:
+                  - button "Add Channel and Start SyncUp" [ref=e766] [cursor=pointer]:
+                    - img [ref=e768]
+                  - button [ref=e770] [cursor=pointer]:
+                    - img [ref=e772]
+                - button "Dropdown menu" [ref=e776] [cursor=pointer]:
+                  - button [ref=e778]:
+                    - img [ref=e780]
+                - button "Dropdown menu" [ref=e784] [cursor=pointer]:
+                  - button [ref=e786]:
+                    - img [ref=e789]
+                - button "Ask AI about this Board" [ref=e793] [cursor=pointer]
+                - button [ref=e798] [cursor=pointer]:
+                  - img [ref=e800]
+            - generic [ref=e802]:
+              - generic [ref=e805]:
+                - generic [ref=e806]:
+                  - button "Add Channel" [ref=e809] [cursor=pointer]
+                  - generic [ref=e811]:
+                    - generic [ref=e813]:
+                      - link [ref=e814] [cursor=pointer]:
+                        - /url: https://app.clickup.com/90121813699/v/l/li/901218688991
+                        - img [ref=e820]
+                      - link "List" [ref=e822] [cursor=pointer]:
+                        - /url: https://app.clickup.com/90121813699/v/l/li/901218688991
+                        - generic [ref=e824]: List
+                    - generic [ref=e826]:
+                      - link [ref=e827] [cursor=pointer]:
+                        - /url: https://app.clickup.com/90121813699/v/b/li/901218688991
+                        - img [ref=e833]
+                      - link "Board" [ref=e835] [cursor=pointer]:
+                        - /url: https://app.clickup.com/90121813699/v/b/li/901218688991
+                        - generic [ref=e837]: Board
+                - button "View Add View" [ref=e842] [cursor=pointer]:
+                  - button "View Add View" [ref=e844]:
+                    - img [ref=e846]
+                    - generic [ref=e848]: View
+                    - generic [ref=e849]: Add View
+              - generic [ref=e852]:
+                - generic [ref=e854]:
+                  - button "Dropdown menu" [ref=e858] [cursor=pointer]:
+                    - button "Group" [ref=e860]:
+                      - img [ref=e862]
+                      - generic [ref=e865]:
+                        - generic [ref=e866]: "Grouping by:"
+                        - text: Status
+                  - button "Subtasks" [ref=e868] [cursor=pointer]:
+                    - img [ref=e870]
+                    - generic [ref=e872]: "Subtasks: Collapsed"
+                  - button "Dropdown menu" [ref=e875] [cursor=pointer]:
+                    - button "Sort" [ref=e877]:
+                      - img [ref=e879]
+                      - generic [ref=e881]: Sorting by None
+                  - button "Filter" [ref=e885] [cursor=pointer]:
+                    - button "Filter" [ref=e887]:
+                      - img [ref=e889]
+                  - button "Closed" [disabled] [ref=e892]:
+                    - img [ref=e894]
+                    - generic [ref=e896]: Adjust your status filter to show closed tasks
+                  - button "Assignee" [ref=e898] [cursor=pointer]:
+                    - img [ref=e900]
+                  - button "Jarda Karlik, ," [ref=e903] [cursor=pointer]:
+                    - generic "Jarda Karlik, ," [ref=e905]:
+                      - generic [ref=e906]: J
+                - generic [ref=e909]:
+                  - button [ref=e911] [cursor=pointer]:
+                    - img [ref=e913]
+                  - generic:
+                    - generic:
+                      - generic:
+                        - textbox "Search..."
+                      - button "Search settings":
+                        - generic:
+                          - img
+                - button [ref=e915] [cursor=pointer]:
+                  - img [ref=e917]
+                - generic [ref=e922]:
+                  - button [ref=e923] [cursor=pointer]:
+                    - img [ref=e925]
+                  - button "Choose task type" [ref=e928] [cursor=pointer]:
+                    - button [ref=e929]:
+                      - img [ref=e931]
+          - generic [ref=e938]:
+            - generic [ref=e939]:
+              - list [ref=e940]:
+                - listitem [ref=e941]:
+                  - generic [ref=e943]:
+                    - generic [ref=e944]:
+                      - generic [ref=e946]:
+                        - img [ref=e952]
+                        - generic [ref=e954]: to do
+                      - generic [ref=e959]: "9"
+                    - generic [ref=e1483]:
+                      - button "Collapse group" [ref=e1484] [cursor=pointer]:
+                        - generic [ref=e1485]: Collapse group
+                        - img [ref=e1487]
+                      - button "Dropdown menu" [ref=e1490] [cursor=pointer]:
+                        - generic [ref=e1491]: Group options
+                        - img [ref=e1493]
+                      - button "Add Task" [ref=e1495] [cursor=pointer]:
+                        - generic [ref=e1496]: Add Task
+                        - img [ref=e1498]
+                - listitem [ref=e960]:
+                  - generic [ref=e963]:
+                    - generic [ref=e965]:
+                      - img [ref=e971]
+                      - generic [ref=e973]: In progress
+                    - generic [ref=e978]: "0"
+                - listitem [ref=e979]:
+                  - generic [ref=e982]:
+                    - generic [ref=e984]:
+                      - img [ref=e990]
+                      - generic [ref=e992]: Complete
+                    - generic [ref=e997]: "0"
+              - button "Add group" [ref=e1000] [cursor=pointer]:
+                - img [ref=e1002]
+                - text: Add group
+            - list [ref=e1005]:
+              - listitem [ref=e1006]:
+                - generic [ref=e1011]:
+                  - list [ref=e1012]:
+                    - listitem [ref=e1013]:
+                      - generic [ref=e1015]:
+                        - 'button "Open Phase 2: OCR Integration (High Priority)" [ref=e1016] [cursor=pointer]':
+                          - generic [ref=e1017]: "Open Phase 2: OCR Integration (High Priority)"
+                        - generic [ref=e1018]:
+                          - button [ref=e1019] [cursor=pointer]
+                          - 'link "Phase 2: OCR Integration (High Priority)" [ref=e1022] [cursor=pointer]':
+                            - /url: https://app.clickup.com/t/90121813699/869dm1pve
+                        - button [ref=e1025] [cursor=pointer]:
+                          - img [ref=e1027]
+                        - generic [ref=e1029]:
+                          - generic [ref=e1030]:
+                            - img [ref=e1032]
+                            - generic [ref=e1034]:
+                              - img [ref=e1036]
+                              - button [ref=e1040] [cursor=pointer]
+                          - generic [ref=e1042]:
+                            - img [ref=e1044]
+                            - generic [ref=e1046]:
+                              - img [ref=e1048]
+                              - generic [ref=e1052]:
+                                - button [ref=e1053] [cursor=pointer]
+                                - generic [ref=e1055]: Change start and due dates
+                          - generic [ref=e1056]:
+                            - img [ref=e1058]
+                            - generic [ref=e1062]:
+                              - button "High" [ref=e1063] [cursor=pointer]:
+                                - generic [ref=e1065]:
+                                  - img [ref=e1067]
+                                  - generic [ref=e1070]: High
+                              - generic [ref=e1071]: Change priority
+                          - generic [ref=e1072]:
+                            - img [ref=e1074]
+                            - generic [ref=e1076]:
+                              - img [ref=e1078]
+                              - button [ref=e1083] [cursor=pointer]
+                    - listitem [ref=e1085]:
+                      - generic [ref=e1087]:
+                        - 'button "Open Phase 1: Backup Robustness (Critical)" [ref=e1088] [cursor=pointer]':
+                          - generic [ref=e1089]: "Open Phase 1: Backup Robustness (Critical)"
+                        - generic [ref=e1090]:
+                          - button [ref=e1091] [cursor=pointer]
+                          - 'link "Phase 1: Backup Robustness (Critical)" [ref=e1094] [cursor=pointer]':
+                            - /url: https://app.clickup.com/t/90121813699/869dm1pvd
+                        - button [ref=e1097] [cursor=pointer]:
+                          - img [ref=e1099]
+                        - generic [ref=e1101]:
+                          - generic [ref=e1102]:
+                            - img [ref=e1104]
+                            - generic [ref=e1106]:
+                              - img [ref=e1108]
+                              - button [ref=e1112] [cursor=pointer]
+                          - generic [ref=e1114]:
+                            - img [ref=e1116]
+                            - generic [ref=e1118]:
+                              - img [ref=e1120]
+                              - generic [ref=e1124]:
+                                - button [ref=e1125] [cursor=pointer]
+                                - generic [ref=e1127]: Change start and due dates
+                          - generic [ref=e1128]:
+                            - img [ref=e1130]
+                            - generic [ref=e1134]:
+                              - button "Urgent" [ref=e1135] [cursor=pointer]:
+                                - generic [ref=e1137]:
+                                  - img [ref=e1139]
+                                  - generic [ref=e1142]: Urgent
+                              - generic [ref=e1143]: Change priority
+                          - generic [ref=e1144]:
+                            - img [ref=e1146]
+                            - generic [ref=e1148]:
+                              - img [ref=e1150]
+                              - button [ref=e1155] [cursor=pointer]
+                    - listitem [ref=e1157]:
+                      - generic [ref=e1159]:
+                        - 'button "Open Phase 0: Source Path Selection (Testing Infrastructure)" [ref=e1160] [cursor=pointer]':
+                          - generic [ref=e1161]: "Open Phase 0: Source Path Selection (Testing Infrastructure)"
+                        - generic [ref=e1162]:
+                          - button [ref=e1163] [cursor=pointer]
+                          - 'link "Phase 0: Source Path Selection (Testing Infrastructure)" [active] [ref=e1166] [cursor=pointer]':
+                            - /url: https://app.clickup.com/t/90121813699/869dm1pvf
+                        - generic [ref=e1501]:
+                          - button "Mark complete" [ref=e1502] [cursor=pointer]:
+                            - img [ref=e1504]
+                            - generic [ref=e1506]: Mark complete
+                          - button "Add subtask" [ref=e1507] [cursor=pointer]:
+                            - img [ref=e1509]
+                            - generic [ref=e1511]: Add subtask
+                          - button "Rename" [ref=e1512] [cursor=pointer]:
+                            - img [ref=e1514]
+                            - generic [ref=e1516]: Rename
+                          - button "More actions" [ref=e1519] [cursor=pointer]:
+                            - generic [ref=e1520]: More actions
+                            - img [ref=e1522]
+                        - button [ref=e1169] [cursor=pointer]:
+                          - img [ref=e1171]
+                        - generic [ref=e1173]:
+                          - generic [ref=e1174]:
+                            - img [ref=e1176]
+                            - generic [ref=e1178]:
+                              - img [ref=e1180]
+                              - button [ref=e1184] [cursor=pointer]
+                          - generic [ref=e1186]:
+                            - img [ref=e1188]
+                            - generic [ref=e1190]:
+                              - img [ref=e1192]
+                              - generic [ref=e1196]:
+                                - button [ref=e1197] [cursor=pointer]
+                                - generic [ref=e1199]: Change start and due dates
+                          - generic [ref=e1200]:
+                            - img [ref=e1202]
+                            - generic [ref=e1206]:
+                              - button "High" [ref=e1207] [cursor=pointer]:
+                                - generic [ref=e1209]:
+                                  - img [ref=e1211]
+                                  - generic [ref=e1214]: High
+                              - generic [ref=e1215]: Change priority
+                          - generic [ref=e1216]:
+                            - img [ref=e1218]
+                            - generic [ref=e1220]:
+                              - img [ref=e1222]
+                              - button [ref=e1227] [cursor=pointer]
+                    - listitem [ref=e1229]:
+                      - generic [ref=e1231]:
+                        - button "Open timeline on scan result screen shows last year only. it should be er year and not month" [ref=e1232] [cursor=pointer]:
+                          - generic [ref=e1233]: Open timeline on scan result screen shows last year only. it should be er year and not month
+                        - button "Open timeline on scan result screen shows last year only. it should be er year and not month" [ref=e1235] [cursor=pointer]
+                        - generic [ref=e1236]:
+                          - button [ref=e1237] [cursor=pointer]
+                          - link "timeline on scan result screen shows last year only. it should be er year and not month" [ref=e1240] [cursor=pointer]:
+                            - /url: https://app.clickup.com/t/90121813699/869dm1q96
+                        - button "1" [ref=e1243] [cursor=pointer]:
+                          - img [ref=e1245]
+                          - generic [ref=e1247]: "1"
+                        - generic [ref=e1248]:
+                          - generic [ref=e1249]:
+                            - img [ref=e1251]
+                            - generic [ref=e1253]:
+                              - img [ref=e1255]
+                              - button [ref=e1259] [cursor=pointer]
+                          - generic [ref=e1261]:
+                            - img [ref=e1263]
+                            - generic [ref=e1265]:
+                              - img [ref=e1267]
+                              - generic [ref=e1271]:
+                                - button [ref=e1272] [cursor=pointer]
+                                - generic [ref=e1274]: Change start and due dates
+                          - generic [ref=e1275]:
+                            - img [ref=e1277]
+                            - generic [ref=e1281]:
+                              - button [ref=e1282] [cursor=pointer]:
+                                - img [ref=e1286]
+                              - generic [ref=e1288]: Change priority
+                          - generic [ref=e1289]:
+                            - img [ref=e1291]
+                            - generic [ref=e1293]:
+                              - img [ref=e1295]
+                              - button [ref=e1300] [cursor=pointer]
+                    - listitem [ref=e1302]:
+                      - generic [ref=e1304]:
+                        - button "Open zaloha nefunguje - fix needed. whole process check too" [ref=e1305] [cursor=pointer]:
+                          - generic [ref=e1306]: Open zaloha nefunguje - fix needed. whole process check too
+                        - button "Open zaloha nefunguje - fix needed. whole process check too" [ref=e1308] [cursor=pointer]
+                        - generic [ref=e1309]:
+                          - button [ref=e1310] [cursor=pointer]
+                          - link "zaloha nefunguje - fix needed. whole process check too" [ref=e1313] [cursor=pointer]:
+                            - /url: https://app.clickup.com/t/90121813699/869dm1qc4
+                        - button "1" [ref=e1316] [cursor=pointer]:
+                          - img [ref=e1318]
+                          - generic [ref=e1320]: "1"
+                        - generic [ref=e1321]:
+                          - generic [ref=e1322]:
+                            - img [ref=e1324]
+                            - generic [ref=e1326]:
+                              - img [ref=e1328]
+                              - button [ref=e1332] [cursor=pointer]
+                          - generic [ref=e1334]:
+                            - img [ref=e1336]
+                            - generic [ref=e1338]:
+                              - img [ref=e1340]
+                              - generic [ref=e1344]:
+                                - button [ref=e1345] [cursor=pointer]
+                                - generic [ref=e1347]: Change start and due dates
+                          - generic [ref=e1348]:
+                            - img [ref=e1350]
+                            - generic [ref=e1354]:
+                              - button [ref=e1355] [cursor=pointer]:
+                                - img [ref=e1359]
+                              - generic [ref=e1361]: Change priority
+                          - generic [ref=e1362]:
+                            - img [ref=e1364]
+                            - generic [ref=e1366]:
+                              - img [ref=e1368]
+                              - button [ref=e1373] [cursor=pointer]
+                    - listitem [ref=e1375]:
+                      - generic [ref=e1377]:
+                        - button "Open for LOCAL ONLY the defauth path should on C:\\ReOrganized and not to cloud location" [ref=e1378] [cursor=pointer]:
+                          - generic [ref=e1379]: Open for LOCAL ONLY the defauth path should on C:\ReOrganized and not to cloud location
+                        - button "Open for LOCAL ONLY the defauth path should on C:\\ReOrganized and not to cloud location" [ref=e1381] [cursor=pointer]
+                        - generic [ref=e1382]:
+                          - button [ref=e1383] [cursor=pointer]
+                          - link "for LOCAL ONLY the defauth path should on C:\\ReOrganized and not to cloud location" [ref=e1386] [cursor=pointer]:
+                            - /url: https://app.clickup.com/t/90121813699/869dm1qex
+                        - button "1" [ref=e1389] [cursor=pointer]:
+                          - img [ref=e1391]
+                          - generic [ref=e1393]: "1"
+                        - generic [ref=e1394]:
+                          - generic [ref=e1395]:
+                            - img [ref=e1397]
+                            - generic [ref=e1399]:
+                              - img [ref=e1401]
+                              - button [ref=e1405] [cursor=pointer]
+                          - generic [ref=e1407]:
+                            - img [ref=e1409]
+                            - generic [ref=e1411]:
+                              - img [ref=e1413]
+                              - generic [ref=e1417]:
+                                - button [ref=e1418] [cursor=pointer]
+                                - generic [ref=e1420]: Change start and due dates
+                          - generic [ref=e1421]:
+                            - img [ref=e1423]
+                            - generic [ref=e1427]:
+                              - button [ref=e1428] [cursor=pointer]:
+                                - img [ref=e1432]
+                              - generic [ref=e1434]: Change priority
+                          - generic [ref=e1435]:
+                            - img [ref=e1437]
+                            - generic [ref=e1439]:
+                              - img [ref=e1441]
+                              - button [ref=e1446] [cursor=pointer]
+                  - button "Add Task" [ref=e1448] [cursor=pointer]:
+                    - img [ref=e1450]
+                    - text: Add Task
+              - listitem [ref=e1453]:
+                - button "Add Task" [ref=e1459] [cursor=pointer]:
+                  - img [ref=e1461]
+                  - text: Add Task
+              - listitem [ref=e1465]:
+                - button "Add Task" [ref=e1471] [cursor=pointer]:
+                  - img [ref=e1473]
+                  - text: Add Task
+  - generic:
+    - generic:
+      - generic:
+        - status
+    - generic:
+      - generic:
+        - status

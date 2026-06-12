@@ -65,6 +65,9 @@ export const api = {
   runRestructure: (backupEnabled: boolean) =>
     invoke<RestructureResult>('run_restructure', { request: { backup_enabled: backupEnabled } }),
 
+  /** Create a standalone backup ZIP of all scanned files. Returns ZIP path. */
+  createStandaloneBackup: () => invoke<string>('create_standalone_backup'),
+
   /** Confirm the restructure result. */
   confirmRestructure: () => invoke<void>('confirm_restructure'),
 
@@ -160,6 +163,9 @@ function devMock(cmd: string, _args?: Record<string, unknown>): unknown {
         backup_zip_path: 'C:\\AppData\\FileIT\\backups\\backup_2026-04-17_143300.zip',
         target_path: 'C:\\FileIT\\Organized\\',
       } satisfies RestructureResult;
+
+    case 'create_standalone_backup':
+      return 'C:\\Users\\dev\\AppData\\Roaming\\cz.fileit.app\\backups\\backup_2026-06-12_120000.zip';
 
     case 'confirm_restructure':
     case 'restore_restructure':
