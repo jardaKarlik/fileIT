@@ -296,19 +296,6 @@ pub async fn run_restructure(
         )
     };
 
-    let backup_zip_path = if request.backup_enabled {
-        let temp_manifest = BackupManifest::new(&session_id, vec![]);
-        match backup::create_backup(&classified_files, &temp_manifest, &state.app_data_dir) {
-            Ok(path) => Some(path),
-            Err(e) => {
-                warn!("Backup creation failed (continuing without): {}", e);
-                None
-            }
-        }
-    } else {
-        None
-    };
-
     let (manifest_entries, folders_created, duration_secs) =
         restructure::execute(&app, &planned_moves, &session_id)
             .await
@@ -319,6 +306,20 @@ pub async fn run_restructure(
         .iter()
         .filter(|m| m.destination.to_string_lossy().contains("Neznámý klient"))
         .count();
+
+    // Create backup AFTER restructure completes, with the actual manifest
+    let backup_zip_path = if request.backup_enabled {
+        let manifest = BackupManifest::new(&session_id, manifest_entries.clone());
+        match backup::create_backup(&classified_files, &manifest, &state.app_data_dir) {
+            Ok(path) => Some(path),
+            Err(e) => {
+                warn!("Backup creation failed (continuing without): {}", e);
+                None
+            }
+        }
+    } else {
+        None
+    };
 
     let manifest = BackupManifest::new(&session_id, manifest_entries);
     let _ = backup::save_manifest_sidecar(&manifest, &state.app_data_dir);
@@ -359,6 +360,37 @@ pub async fn run_restructure(
         backup_zip_path: backup_zip_path.map(|p| p.to_string_lossy().to_string()),
         target_path: target_path_str,
     })
+}
+
+/// Standalone backup — creates a ZIP of all currently classified files
+/// without restructuring anything. Called from Dashboard "Zálohovat".
+#[tauri::command]
+pub async fn create_standalone_backup(
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    let (classified_files, session_id) = {
+        let session = state.session.lock().map_err(|e| e.to_string())?;
+        if session.classified_files.is_empty() {
+            return Err("Nejsou žádné naskenované soubory. Spusťte nejprve skenování.".to_string());
+        }
+        (session.classified_files.clone(), session.id.clone())
+    };
+
+    // Build a manifest with no moves — just file records for the ZIP
+    let manifest_entries: Vec<ManifestEntry> = classified_files.iter().map(|f| {
+        ManifestEntry {
+            original_path: f.record.path.clone(),
+            new_path: f.record.path.clone(), // same path — no restructure
+            sha256: f.record.sha256.clone().unwrap_or_else(|| "unknown".to_string()),
+        }
+    }).collect();
+
+    let manifest = BackupManifest::new(&session_id, manifest_entries);
+
+    match backup::create_backup(&classified_files, &manifest, &state.app_data_dir) {
+        Ok(zip_path) => Ok(zip_path.to_string_lossy().to_string()),
+        Err(e) => Err(format!("Záloha selhala: {}", e)),
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

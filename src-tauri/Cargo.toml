@@ -1,6 +1,6 @@
 [package]
 name = "fileit"
-version = "1.0.9"
+version = "1.0.10"
 description = "FileIT — Smart file organiser for Czech financial advisory agents"
 authors = ["FileIT Team"]
 license = "UNLICENSED"
