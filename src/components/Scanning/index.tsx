@@ -23,10 +23,9 @@ export function Scanning() {
 
   // ── Real Tauri path ──────────────────────────────────────────────────────
   async function runRealScan() {
-    const username = (window as any).__USERNAME__ as string | undefined;
     const roots = scanRoots.length > 0
       ? scanRoots
-      : ['C:\\Users\\' + (username ?? 'User') + '\\Documents'];
+      : [];
 
     appendLine({ cls: '', text: '$ fileit scan --inicializace' });
 
