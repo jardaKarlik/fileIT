@@ -39,7 +39,7 @@ walkdir = "2"
 # PDF text extraction
 pdf-extract = "0.7"
 
-# DOCX text extraction (via zip + XML parsing)
+# DOCX/XLSX text extraction (via zip + XML parsing)
 zip = "2"
 quick-xml = "0.36"
 

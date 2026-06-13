@@ -494,6 +494,16 @@ fn institution_hint_from_filename(lower: &str) -> Option<String> {
     } else if lower.contains("dpfdp") || lower.contains("dphdp")
            || lower.contains("dphkh") || lower.contains("dpfo") {
         Some("Finanční úřad".to_string())
+    } else if lower.contains("mbank") || lower.contains("mkonto") {
+        Some("mBank".to_string())
+    } else if lower.contains("moneta") {
+        Some("Moneta Money Bank".to_string())
+    } else if lower.contains("allianz") {
+        Some("Allianz".to_string())
+    } else if lower.contains("generali") {
+        Some("Generali".to_string())
+    } else if lower.contains("uniqa") {
+        Some("UNIQA".to_string())
     } else {
         None
     }
@@ -517,6 +527,11 @@ fn detect_institution_from_filename(lower: &str) -> Option<InstitutionMatch> {
         Rule { keywords: &["csob", "čsob"], name: "ČSOB", category: InstitutionCategory::Bank, confidence: 0.90 },
         Rule { keywords: &["cpp", "čpp"], name: "ČPP", category: InstitutionCategory::Insurance, confidence: 0.90 },
         Rule { keywords: &["cez", "čez"], name: "ČEZ", category: InstitutionCategory::Utility, confidence: 0.90 },
+        Rule { keywords: &["mbank", "mkonto"], name: "mBank", category: InstitutionCategory::Bank, confidence: 0.92 },
+        Rule { keywords: &["moneta"], name: "Moneta Money Bank", category: InstitutionCategory::Bank, confidence: 0.90 },
+        Rule { keywords: &["allianz"], name: "Allianz", category: InstitutionCategory::Insurance, confidence: 0.90 },
+        Rule { keywords: &["generali"], name: "Generali", category: InstitutionCategory::Insurance, confidence: 0.90 },
+        Rule { keywords: &["uniqa"], name: "UNIQA", category: InstitutionCategory::Insurance, confidence: 0.90 },
     ];
 
     // Also check for _RB_ pattern (Raiffeisenbank)

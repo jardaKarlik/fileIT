@@ -314,16 +314,36 @@ pub async fn run_restructure(
         }
     }).collect();
 
-    let backup_zip_path = if request.backup_enabled {
-        info!("[run_restructure] Creating pre-restructure backup of {} files", classified_files.len());
+    let total_files = planned_moves.len();
+
+    let backup_manifest_path = if request.backup_enabled {
+        info!("[run_restructure] Creating pre-restructure manifest for {} files", classified_files.len());
+        let _ = app.emit("restructure_progress", RestructureProgress {
+            files_moved: 0, total_files,
+            current_file: "Vytváříme manifest zálohy…".to_string(),
+            log_line: "→ Vytváříme manifest zálohy…".to_string(),
+            done: false, error: None,
+        });
         let pre_manifest = BackupManifest::new(&session_id, pre_manifest_entries);
         match backup::create_backup(&classified_files, &pre_manifest, &state.app_data_dir) {
             Ok(path) => {
-                info!("[run_restructure] Backup ZIP created: {:?}", path);
+                info!("[run_restructure] Backup manifest created: {:?}", path);
+                let _ = app.emit("restructure_progress", RestructureProgress {
+                    files_moved: 0, total_files,
+                    current_file: "Manifest vytvořen".to_string(),
+                    log_line: "✓ Manifest zálohy vytvořen".to_string(),
+                    done: false, error: None,
+                });
                 Some(path)
             }
             Err(e) => {
-                warn!("[run_restructure] Backup creation failed (continuing without): {}", e);
+                warn!("[run_restructure] Manifest creation failed (continuing without): {}", e);
+                let _ = app.emit("restructure_progress", RestructureProgress {
+                    files_moved: 0, total_files,
+                    current_file: "Manifest se nepodařil — pokračujeme".to_string(),
+                    log_line: format!("⚠ Manifest selhal: {} — pokračujeme bez zálohy", e),
+                    done: false, error: None,
+                });
                 None
             }
         }
@@ -368,7 +388,7 @@ pub async fn run_restructure(
             folders_created,
             unknown_count,
             target_path: target,
-            backup_zip_path: backup_zip_path.clone().unwrap_or_default(),
+            backup_manifest_path: backup_manifest_path.clone().unwrap_or_default(),
             manifest,
             confirmation_status: ConfirmationStatus::Pending,
             auto_confirm_at: Utc::now() + chrono::Duration::days(30),
@@ -387,12 +407,12 @@ pub async fn run_restructure(
         folders_created,
         unknown_count,
         duration_seconds: duration_secs,
-        backup_zip_path: backup_zip_path.map(|p| p.to_string_lossy().to_string()),
+        backup_manifest_path: backup_manifest_path.map(|p| p.to_string_lossy().to_string()),
         target_path: target_path_str,
     })
 }
 
-/// Standalone backup — creates a ZIP of all currently classified files
+/// Standalone backup — creates a JSON manifest of all currently classified files
 /// without restructuring anything. Called from Dashboard "Zálohovat".
 #[tauri::command]
 pub async fn create_standalone_backup(
@@ -406,19 +426,8 @@ pub async fn create_standalone_backup(
         (session.classified_files.clone(), session.id.clone())
     };
 
-    // Build a manifest with no moves — just file records for the ZIP
-    let manifest_entries: Vec<ManifestEntry> = classified_files.iter().map(|f| {
-        ManifestEntry {
-            original_path: f.record.path.clone(),
-            new_path: f.record.path.clone(), // same path — no restructure
-            sha256: f.record.sha256.clone().unwrap_or_else(|| "unknown".to_string()),
-        }
-    }).collect();
-
-    let manifest = BackupManifest::new(&session_id, manifest_entries);
-
-    match backup::create_backup(&classified_files, &manifest, &state.app_data_dir) {
-        Ok(zip_path) => Ok(zip_path.to_string_lossy().to_string()),
+    match backup::create_standalone_manifest(&classified_files, &session_id, &state.app_data_dir) {
+        Ok(path) => Ok(path.to_string_lossy().to_string()),
         Err(e) => Err(format!("Záloha selhala: {}", e)),
     }
 }
@@ -464,9 +473,9 @@ pub async fn restore_restructure(
         .map_err(|e| e.to_string())?;
     info!("[restore] Restore complete: {}/{} files restored", restored, run.manifest.moves.len());
 
-    if run.backup_zip_path.as_os_str().len() > 0 {
-        info!("[restore] Deleting backup ZIP: {:?}", run.backup_zip_path);
-        let _ = backup::delete_backup_zip(&run.backup_zip_path);
+    if run.backup_manifest_path.as_os_str().len() > 0 {
+        info!("[restore] Deleting backup manifest: {:?}", run.backup_manifest_path);
+        let _ = backup::delete_backup_manifest(&run.backup_manifest_path);
     }
     let _ = backup::delete_completed_run(&state.app_data_dir);
     let _ = backup::delete_manifest_sidecar(&state.app_data_dir);

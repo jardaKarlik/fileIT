@@ -230,7 +230,7 @@ pub struct RestructurePreview {
 // Backup / Restore
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Manifest written into the backup ZIP — enables precise restore.
+/// Backup manifest — records source→destination moves for precise restore.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BackupManifest {
     pub id: String,
@@ -286,7 +286,7 @@ pub struct CompletedRun {
     pub folders_created: usize,
     pub unknown_count: usize,
     pub target_path: PathBuf,
-    pub backup_zip_path: PathBuf,
+    pub backup_manifest_path: PathBuf,
     pub manifest: BackupManifest,
     pub confirmation_status: ConfirmationStatus,
     /// Auto-confirm deadline — 30 days after completion.
@@ -381,7 +381,7 @@ pub struct RestructureResult {
     pub folders_created: usize,
     pub unknown_count: usize,
     pub duration_seconds: u64,
-    pub backup_zip_path: Option<String>,
+    pub backup_manifest_path: Option<String>,
     /// The actual destination root used — returned so the frontend never
     /// needs to guess or read from local state.
     pub target_path: String,

@@ -1,163 +1,92 @@
 // src-tauri/src/backup/mod.rs
 //
-// FileIT safe-side backup.
+// FileIT manifest-based backup.
 //
-// Before any restructure run, if backup_enabled is true:
-//   1. Creates a ZIP archive containing all source files
-//   2. Writes a manifest.json into the ZIP describing every planned move
-//   3. Stores the ZIP in a hidden AppData location
-//
-// After user confirms restructure:
-//   - ZIP auto-deletes after 7 days
-//
-// After user clicks Restore:
-//   - restructure::restore() reads the manifest and moves files back
-//   - ZIP is deleted immediately after successful restore
+// Instead of copying files into a ZIP, we write a lightweight JSON manifest
+// that records every file's original path, planned destination, and SHA-256.
+// Since restructure uses fs::rename (move), files are never duplicated —
+// restore simply reverses the moves using the manifest.
 
 use crate::types::*;
 use anyhow::{Context, Result};
 use chrono::Utc;
 use log::{info, warn, debug};
-use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
-use zip::{write::FileOptions, ZipWriter};
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Backup creation
+// Manifest backup creation
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Estimate backup size before creating (rough calculation: total file sizes * 1.1 for ZIP overhead).
-pub fn estimate_backup_size(files: &[ClassifiedFile]) -> u64 {
-    let total_bytes: u64 = files
-        .iter()
-        .map(|f| f.record.size_bytes)
-        .sum();
-
-    // Add ~10% for ZIP metadata and Deflate compression headers
-    (total_bytes as f64 * 1.1) as u64
-}
-
-/// Create the safe-side backup ZIP.
-/// Returns the path to the created ZIP.
+/// Create a manifest-only backup: writes a JSON file recording all file paths
+/// and metadata so moves can be reversed. No file copying.
+/// Returns the path to the created manifest JSON.
 pub fn create_backup(
     files: &[ClassifiedFile],
     manifest: &BackupManifest,
     app_data_dir: &Path,
 ) -> Result<PathBuf> {
-    // Create the backup directory if needed
     let backup_dir = app_data_dir.join("backups");
     std::fs::create_dir_all(&backup_dir)
         .with_context(|| format!("Creating backup dir: {:?}", backup_dir))?;
 
     let timestamp = Utc::now().format("%Y-%m-%d_%H%M%S");
-    let zip_name = format!("backup_{}.zip", timestamp);
-    let zip_path = backup_dir.join(&zip_name);
+    let manifest_name = format!("manifest_{}.json", timestamp);
+    let manifest_path = backup_dir.join(&manifest_name);
 
-    info!("[backup] Creating ZIP: {:?} for {} files", zip_path, files.len());
+    info!("[backup] Creating manifest: {:?} for {} files ({} moves)",
+        manifest_path, files.len(), manifest.moves.len());
 
-    let zip_file = std::fs::File::create(&zip_path)
-        .with_context(|| format!("Creating ZIP file: {:?}", zip_path))?;
-
-    let mut zip = ZipWriter::new(zip_file);
-    let options = FileOptions::<()>::default()
-        .compression_method(zip::CompressionMethod::Deflated);
-
-    let manifest_json = serde_json::to_string_pretty(manifest)
+    let json = serde_json::to_string_pretty(manifest)
         .with_context(|| "Serialising manifest")?;
-    zip.start_file("manifest.json", options)
-        .with_context(|| "Starting manifest.json in ZIP")?;
-    zip.write_all(manifest_json.as_bytes())
-        .with_context(|| "Writing manifest.json")?;
-    debug!("[backup] Manifest written ({} moves, {} bytes)", manifest.moves.len(), manifest_json.len());
+    std::fs::write(&manifest_path, &json)
+        .with_context(|| format!("Writing manifest: {:?}", manifest_path))?;
 
-    let mut added_count = 0usize;
-    let mut skipped_count = 0usize;
-    for file in files {
-        let source_exists = file.record.path.exists();
-        if !source_exists {
-            skipped_count += 1;
-            warn!("[backup] Source file MISSING (already moved?): {:?}", file.record.path);
-            continue;
-        }
+    info!("[backup] Manifest saved: {:?} ({} bytes, {} moves)",
+        manifest_path, json.len(), manifest.moves.len());
 
-        let archive_name = archive_entry_name(file);
-        match add_file_to_zip(&mut zip, &file.record.path, &archive_name, options) {
-            Ok(_) => {
-                added_count += 1;
-            }
-            Err(e) => {
-                skipped_count += 1;
-                warn!("[backup] Skipped {:?}: {}", file.record.path, e);
-            }
-        }
-    }
-
-    info!("[backup] ZIP contents: {} files added, {} skipped", added_count, skipped_count);
-
-    if added_count == 0 && !files.is_empty() {
-        warn!("[backup] WARNING: Zero files backed up out of {}! Source files may have already been moved.", files.len());
-    }
-
-    zip.finish().with_context(|| "Finalising ZIP")?;
-
-    let zip_size = std::fs::metadata(&zip_path)?.len();
-    info!("[backup] ZIP finalised: {:?} ({} bytes, {} files)", zip_path, zip_size, added_count);
-
-    Ok(zip_path)
+    Ok(manifest_path)
 }
 
-fn archive_entry_name(file: &ClassifiedFile) -> String {
-    // Use a short hash prefix to avoid collisions for same-named files
-    let hash_prefix = file.record.sha256
-        .as_deref()
-        .map(|h| &h[..8])
-        .unwrap_or("00000000");
-    format!("files/{}_{}", hash_prefix, file.record.name)
-}
+/// Create a standalone manifest listing all scanned files and their metadata.
+/// Used from Dashboard "Zálohovat" — records file inventory without moving anything.
+pub fn create_standalone_manifest(
+    files: &[ClassifiedFile],
+    session_id: &str,
+    app_data_dir: &Path,
+) -> Result<PathBuf> {
+    let backup_dir = app_data_dir.join("backups");
+    std::fs::create_dir_all(&backup_dir)
+        .with_context(|| format!("Creating backup dir: {:?}", backup_dir))?;
 
-fn add_file_to_zip(
-    zip: &mut ZipWriter<std::fs::File>,
-    path: &Path,
-    archive_name: &str,
-    options: FileOptions<()>,
-) -> Result<()> {
-    // Verify archive_name is valid UTF-8 before writing
-    // This ensures proper encoding of Czech characters and other non-ASCII names
-    if archive_name.as_bytes().is_empty() {
-        anyhow::bail!("Archive entry name cannot be empty");
-    }
+    let entries: Vec<ManifestEntry> = files.iter().map(|f| {
+        ManifestEntry {
+            original_path: f.record.path.clone(),
+            new_path: f.record.path.clone(),
+            sha256: f.record.sha256.clone().unwrap_or_else(|| "unknown".to_string()),
+        }
+    }).collect();
 
-    let mut file = std::fs::File::open(path)
-        .with_context(|| format!("Opening for backup: {:?}", path))?;
+    let manifest = BackupManifest::new(session_id, entries);
 
-    // Start ZIP entry with UTF-8 filename encoding
-    // The zip crate v2 now properly handles UTF-8 encoding when names contain non-ASCII characters
-    zip.start_file(archive_name, options)
-        .with_context(|| {
-            format!(
-                "Adding file to ZIP archive. Entry: '{}' (source: {:?}). \
-                 This typically fails with non-ASCII names if UTF-8 encoding is not handled correctly.",
-                archive_name, path
-            )
-        })?;
+    let timestamp = Utc::now().format("%Y-%m-%d_%H%M%S");
+    let manifest_name = format!("inventory_{}.json", timestamp);
+    let manifest_path = backup_dir.join(&manifest_name);
 
-    let mut buffer = Vec::new();
-    file.read_to_end(&mut buffer)
-        .with_context(|| format!("Reading file content for backup: {:?}", path))?;
+    let json = serde_json::to_string_pretty(&manifest)
+        .with_context(|| "Serialising standalone manifest")?;
+    std::fs::write(&manifest_path, &json)
+        .with_context(|| format!("Writing standalone manifest: {:?}", manifest_path))?;
 
-    zip.write_all(&buffer)
-        .with_context(|| format!("Writing file to ZIP archive: {}", archive_name))?;
+    info!("[backup] Standalone manifest saved: {:?} ({} files)", manifest_path, files.len());
 
-    Ok(())
+    Ok(manifest_path)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Manifest persistence (separate from the ZIP — for quick access)
+// Manifest persistence (for quick access across app restarts)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Write the manifest to a sidecar JSON file in AppData.
-/// This allows the app to load the pending confirmation state on next launch
-/// without unzipping the backup.
 pub fn save_manifest_sidecar(
     manifest: &BackupManifest,
     app_data_dir: &Path,
@@ -206,8 +135,8 @@ pub fn save_completed_run(run: &CompletedRun, app_data_dir: &Path) -> Result<()>
     std::fs::create_dir_all(path.parent().unwrap())?;
     let json = serde_json::to_string_pretty(run)?;
     std::fs::write(&path, &json)?;
-    info!("[backup] CompletedRun saved: session={}, {} files moved, status={:?}, zip={:?}",
-        run.session_id, run.files_moved, run.confirmation_status, run.backup_zip_path);
+    info!("[backup] CompletedRun saved: session={}, {} files moved, status={:?}, manifest={:?}",
+        run.session_id, run.files_moved, run.confirmation_status, run.backup_manifest_path);
     Ok(())
 }
 
@@ -235,49 +164,19 @@ pub fn delete_completed_run(app_data_dir: &Path) -> Result<()> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ZIP Integrity Validation
-// ─────────────────────────────────────────────────────────────────────────────
-
-/// Validate ZIP integrity and return the manifest.
-/// Returns Err if ZIP is corrupted or manifest is missing/invalid.
-pub fn validate_backup_zip(zip_path: &Path) -> Result<BackupManifest> {
-    use zip::ZipArchive;
-
-    let zip_file = std::fs::File::open(zip_path)
-        .with_context(|| format!("Opening backup ZIP: {:?}", zip_path))?;
-
-    let mut archive = ZipArchive::new(zip_file)
-        .with_context(|| format!("ZIP archive corrupted or invalid: {:?}", zip_path))?;
-
-    // Try to read manifest.json
-    let mut manifest_file = archive.by_name("manifest.json")
-        .with_context(|| "Manifest not found in backup ZIP")?;
-
-    let mut manifest_json = String::new();
-    std::io::Read::read_to_string(&mut manifest_file, &mut manifest_json)
-        .with_context(|| "Failed to read manifest.json from ZIP")?;
-
-    let manifest: BackupManifest = serde_json::from_str(&manifest_json)
-        .with_context(|| "Manifest JSON invalid or corrupted")?;
-
-    info!("Backup ZIP validated: {:?} ({} files)", zip_path, manifest.moves.len());
-    Ok(manifest)
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Cleanup
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Delete the backup ZIP — called 7 days after user confirms.
-pub fn delete_backup_zip(zip_path: &Path) -> Result<()> {
-    if zip_path.exists() {
-        std::fs::remove_file(zip_path)?;
-        info!("Deleted backup ZIP: {:?}", zip_path);
+/// Delete a backup manifest file.
+pub fn delete_backup_manifest(manifest_path: &Path) -> Result<()> {
+    if manifest_path.exists() {
+        std::fs::remove_file(manifest_path)?;
+        info!("Deleted backup manifest: {:?}", manifest_path);
     }
     Ok(())
 }
 
-/// Check for any backup ZIPs past their delete deadline and remove them.
+/// Check for any backup manifests past their delete deadline and remove them.
 pub fn cleanup_expired_backups(app_data_dir: &Path) -> Result<()> {
     let backup_dir = app_data_dir.join("backups");
     if !backup_dir.exists() {
@@ -290,18 +189,22 @@ pub fn cleanup_expired_backups(app_data_dir: &Path) -> Result<()> {
         let entry = entry?;
         let path = entry.path();
 
-        if path.extension().and_then(|e| e.to_str()) != Some("zip") {
+        if path.extension().and_then(|e| e.to_str()) != Some("json") {
+            // Also clean up any legacy ZIP files
+            if path.extension().and_then(|e| e.to_str()) == Some("zip") {
+                let _ = std::fs::remove_file(&path);
+                info!("Removed legacy ZIP backup: {:?}", path);
+            }
             continue;
         }
 
-        // If the file is older than 37 days (30 day confirm window + 7 day delete window)
-        // it's safe to remove regardless of confirmation state
+        // If the manifest is older than 37 days, safe to remove
         if let Ok(metadata) = std::fs::metadata(&path) {
             if let Ok(modified) = metadata.modified() {
                 let age = now - chrono::DateTime::<Utc>::from(modified);
                 if age.num_days() > 37 {
                     let _ = std::fs::remove_file(&path);
-                    info!("Expired backup removed: {:?}", path);
+                    info!("Expired backup manifest removed: {:?}", path);
                 }
             }
         }

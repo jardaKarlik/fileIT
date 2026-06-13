@@ -92,7 +92,7 @@ export interface RestructureResult {
   folders_created: number;
   unknown_count: number;
   duration_seconds: number;
-  backup_zip_path: string | null;
+  backup_manifest_path: string | null;
   /** Actual destination root used — authoritative source for done screen. */
   target_path: string;
 }
@@ -118,7 +118,7 @@ export interface CompletedRun {
   folders_created: number;
   unknown_count: number;
   target_path: string;
-  backup_zip_path: string;
+  backup_manifest_path: string;
   manifest: BackupManifest;
   confirmation_status: ConfirmationStatus;
   auto_confirm_at: string;

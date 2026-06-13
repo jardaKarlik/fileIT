@@ -142,9 +142,9 @@ export function Confirmation() {
         <span>🛟</span>
         <div>
           <strong>Bezpečnostní záloha je stále aktivní.</strong>{' '}
-          Záloha souborů je uložena v{' '}
+          Manifest přesunů je uložen v{' '}
           <code className="conf-backup-filename">
-            {run.backup_zip_path.split('\\').pop()}
+            {run.backup_manifest_path.split('\\').pop()}
           </code>
           . Po potvrzení ji automaticky smažeme za 7 dní.
         </div>

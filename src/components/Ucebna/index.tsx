@@ -234,7 +234,7 @@ export function Ucebna() {
             </div>
 
             <p className="teach-hint">
-              {activePattern.file_count} souborů — vyberte instituce a typ dokumentu
+              {activePattern.file_count} souborů — vyberte instituce
             </p>
 
             {/* Privacy note */}
@@ -276,7 +276,7 @@ export function Ucebna() {
 
             {/* Document type */}
             <div className="teach-section">
-              <label className="teach-label">Typ dokumentu</label>
+              <label className="teach-label">Instituce</label>
               <div className="doctype-list">
                 {DOC_TYPES.map(dt => (
                   <button

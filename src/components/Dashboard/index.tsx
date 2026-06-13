@@ -47,10 +47,17 @@ function getYearsAndCounts(files: any[]) {
   return { years, vals };
 }
 
-const CUSTOMERS = [
-  ['Novák Pavel',22],['Horáková Jana',18],['Müller Thomas',15],
-  ['Svoboda Lucie',12],['Kratochvíl P.',9],['Dvořák Martin',7],
-] as [string,number][];
+// Derive top customers from real scan data
+function getTopCustomers(files: any[]): [string, number][] {
+  const counts: Record<string, number> = {};
+  files.forEach(f => {
+    const name = f.customer?.name;
+    if (name) counts[name] = (counts[name] ?? 0) + 1;
+  });
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6) as [string, number][];
+}
 
 export function Dashboard() {
   const { setScreen, scanResult } = useStore();
@@ -59,10 +66,10 @@ export function Dashboard() {
   const [, setBackupPath] = useState<string>('');
   const [exportState, setExportState] = useState<'idle' | 'loading' | 'done'>('idle');
 
-  const totalFiles = scanResult?.total_files ?? 284;
-  const totalGB   = ((scanResult?.total_size_bytes ?? 2_576_351_232) / 1e9).toFixed(1).replace('.', ',');
-  const customers = scanResult?.customers_found ?? 38;
-  const dupes     = scanResult?.duplicates_found ?? 24;
+  const totalFiles = scanResult?.total_files ?? 0;
+  const totalGB   = ((scanResult?.total_size_bytes ?? 0) / 1e9).toFixed(1).replace('.', ',');
+  const customers = scanResult?.customers_found ?? 0;
+  const dupes     = scanResult?.duplicates_found ?? 0;
 
   // Count unclassified files for the Učebna badge
   const unclassifiedCount = scanResult?.files
@@ -71,7 +78,10 @@ export function Dashboard() {
 
   // Get years and file counts for timeline
   const { years: YEARS, vals: VALS } = getYearsAndCounts(scanResult?.files ?? []);
-  const MAX = Math.max(...VALS, 1); // Ensure MAX is at least 1 to avoid divide by zero
+  const MAX = Math.max(...VALS, 1);
+
+  const topCustomers = getTopCustomers(scanResult?.files ?? []);
+  const maxCustCount = topCustomers.length > 0 ? topCustomers[0][1] : 1;
 
   async function handleBackup() {
     if (backupState === 'loading') return;
@@ -92,7 +102,7 @@ export function Dashboard() {
     setExportState('loading');
 
     try {
-      const headers = ['Soubor', 'Cesta', 'Klient', 'Instituce', 'Typ dokumentu', 'Datum dokumentu', 'Shoda %', 'Duplicita'];
+      const headers = ['Soubor', 'Cesta', 'Klient', 'Instituce', 'Instituce (typ)', 'Datum dokumentu', 'Shoda %', 'Duplicita'];
       const rows = scanResult.files.map(f => [
         f.record.name,
         f.record.path,
@@ -223,10 +233,13 @@ export function Dashboard() {
 
           <div className="chart-card">
             <div className="chart-title">Soubory podle klientů</div>
-            {CUSTOMERS.map(([name, count]) => (
+            {topCustomers.length === 0 && (
+              <div className="cust-row"><div className="cust-name" style={{ color: 'var(--ink3)' }}>Žádní klienti nenalezeni</div></div>
+            )}
+            {topCustomers.map(([name, count]) => (
               <div key={name} className="cust-row">
                 <div className="cust-name">{name}</div>
-                <div className="cust-bar-wrap"><div className="cust-bar" style={{ width: `${Math.round(count/22*100)}%` }} /></div>
+                <div className="cust-bar-wrap"><div className="cust-bar" style={{ width: `${Math.round(count/maxCustCount*100)}%` }} /></div>
                 <div className="cust-count">{count}</div>
               </div>
             ))}

@@ -17,7 +17,7 @@ const DIMENSIONS: Record<GroupDimension, { name: string; icon: string; iconClass
   customer: { name: 'Jméno klienta',       icon: '👤', iconClass: 'i-customer', coverageText: '',                    coverage: 1.0 },
   date:     { name: 'Měsíc a rok',         icon: '📅', iconClass: 'i-date',     coverageText: '',                    coverage: 1.0 },
   inst:     { name: 'Vydávající instituce', icon: '🏦', iconClass: 'i-inst',     coverageText: '242 souborů (85 %)',  coverage: 0.85 },
-  doc:      { name: 'Typ dokumentu',        icon: '📑', iconClass: 'i-doc',      coverageText: '198 souborů (70 %)',  coverage: 0.70 },
+  doc:      { name: 'Instituce',             icon: '📑', iconClass: 'i-doc',      coverageText: '198 souborů (70 %)',  coverage: 0.70 },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
