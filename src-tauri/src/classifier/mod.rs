@@ -96,13 +96,14 @@ impl Classifier {
         let content_doc_type = self.ner.find_document_type(&text_lower);
         let document_date = self.ner.find_date(&raw_text);
 
-        // Merge: content wins → hint wins → filename fills gap
+        // Merge: content wins → hint wins → filename dictionary → filename direct
         let institution = content_institution
             .or(hint_institution)
             .or_else(|| {
                 filename_signals.institution_name.as_deref()
                     .and_then(|n| self.ner.find_institution_by_name(n))
-            });
+            })
+            .or(filename_signals.institution_direct);
 
         let document_type = if content_doc_type != DocumentType::Unknown {
             content_doc_type

@@ -61,6 +61,8 @@ pub struct FilenameSignals {
     pub doc_type: Option<DocumentType>,
     /// Canonical institution name hint (matches institution_dictionary.json).
     pub institution_name: Option<String>,
+    /// Direct institution match from filename keywords (with confidence).
+    pub institution_direct: Option<InstitutionMatch>,
     /// Customer name found in the filename via name regex.
     pub customer_name: Option<String>,
 }
@@ -382,7 +384,7 @@ impl NerEngine {
         FilenameSignals {
             doc_type: doc_type_from_filename(&lower),
             institution_name: institution_hint_from_filename(&lower),
-            // Name regex needs original case (requires capital letters)
+            institution_direct: detect_institution_from_filename(&lower),
             customer_name: self.name_re
                 .find(&normalized)
                 .map(|m| m.as_str().to_string()),
@@ -472,11 +474,22 @@ fn doc_type_from_filename(lower: &str) -> Option<DocumentType> {
 /// Map unambiguous filename abbreviations to institution canonical names.
 /// Deliberately conservative — only patterns unique to Czech financial documents.
 fn institution_hint_from_filename(lower: &str) -> Option<String> {
-    if lower.contains("rbcz") {
+    if lower.contains("koop") {
+        Some("Kooperativa".to_string())
+    } else if lower.contains("airbank") || lower.contains("air_bank") || lower.contains("air bank") {
+        Some("Air Bank".to_string())
+    } else if lower.contains("raiffeis") || lower.contains(" rb ") || lower.starts_with("rb ")
+           || lower.ends_with(" rb") || lower.contains("rbcz") {
         Some("Raiffeisenbank".to_string())
-    } else if lower.contains("csob") {
+    } else if lower.contains("sporitelna") || lower.contains("spořitelna") {
+        Some("Česká spořitelna".to_string())
+    } else if lower.contains("csob") || lower.contains("čsob") {
         Some("ČSOB".to_string())
-    } else if lower.contains("cssz") {
+    } else if lower.contains("cpp") || lower.contains("čpp") {
+        Some("ČPP".to_string())
+    } else if lower.contains("cez") || lower.contains("čez") {
+        Some("ČEZ".to_string())
+    } else if lower.contains("cssz") || lower.contains("čssz") {
         Some("ČSSZ".to_string())
     } else if lower.contains("dpfdp") || lower.contains("dphdp")
            || lower.contains("dphkh") || lower.contains("dpfo") {
@@ -484,4 +497,46 @@ fn institution_hint_from_filename(lower: &str) -> Option<String> {
     } else {
         None
     }
+}
+
+/// Detect institution from filename keywords with specific confidence scores.
+/// Returns an InstitutionMatch directly without requiring dictionary lookup.
+fn detect_institution_from_filename(lower: &str) -> Option<InstitutionMatch> {
+    struct Rule {
+        keywords: &'static [&'static str],
+        name: &'static str,
+        category: InstitutionCategory,
+        confidence: f32,
+    }
+
+    static RULES: &[Rule] = &[
+        Rule { keywords: &["koop"], name: "Kooperativa", category: InstitutionCategory::Insurance, confidence: 0.95 },
+        Rule { keywords: &["airbank", "air_bank", "air bank"], name: "Air Bank", category: InstitutionCategory::Bank, confidence: 0.92 },
+        Rule { keywords: &["raiffeis", "rbcz"], name: "Raiffeisenbank", category: InstitutionCategory::Bank, confidence: 0.92 },
+        Rule { keywords: &["sporitelna", "spořitelna"], name: "Česká spořitelna", category: InstitutionCategory::Bank, confidence: 0.88 },
+        Rule { keywords: &["csob", "čsob"], name: "ČSOB", category: InstitutionCategory::Bank, confidence: 0.90 },
+        Rule { keywords: &["cpp", "čpp"], name: "ČPP", category: InstitutionCategory::Insurance, confidence: 0.90 },
+        Rule { keywords: &["cez", "čez"], name: "ČEZ", category: InstitutionCategory::Utility, confidence: 0.90 },
+    ];
+
+    // Also check for _RB_ pattern (Raiffeisenbank)
+    if lower.contains(" rb ") || lower.starts_with("rb ") || lower.ends_with(" rb") {
+        return Some(InstitutionMatch {
+            canonical_name: "Raiffeisenbank".to_string(),
+            category: InstitutionCategory::Bank,
+            confidence: 0.92,
+        });
+    }
+
+    for rule in RULES {
+        if rule.keywords.iter().any(|kw| lower.contains(kw)) {
+            return Some(InstitutionMatch {
+                canonical_name: rule.name.to_string(),
+                category: rule.category.clone(),
+                confidence: rule.confidence,
+            });
+        }
+    }
+
+    None
 }
