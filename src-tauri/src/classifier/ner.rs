@@ -41,6 +41,9 @@ pub struct NerEngine {
     ico_re: Regex,
     dic_re: Regex,
     date_re: Regex,
+    date_iso_re: Regex,
+    date_czech_month_re: Regex,
+    date_month_year_re: Regex,
     name_re: Regex,
     institutions: Vec<CompiledInstitution>,
     doc_type_triggers: Vec<(DocumentType, Vec<String>)>,
@@ -73,7 +76,22 @@ impl NerEngine {
 
         // Czech date patterns: dd.mm.yyyy, dd. mm. yyyy, dd/mm/yyyy
         let date_re = Regex::new(
-            r"(?:^|\s)(\d{1,2})[.\s/](\d{1,2})[.\s/](20\d{2})(?:\s|$)"
+            r"(\d{1,2})\s*\.\s*(\d{1,2})\s*\.\s*(\d{4})"
+        )?;
+
+        // ISO date: YYYY-MM-DD
+        let date_iso_re = Regex::new(
+            r"(\d{4})-(\d{2})-(\d{2})"
+        )?;
+
+        // Czech month name: D. leden YYYY, 5. března 2024, etc.
+        let date_czech_month_re = Regex::new(
+            r"(\d{1,2})\.\s*(ledna|února|března|dubna|května|června|července|srpna|září|října|listopadu|prosince|leden|únor|březen|duben|květen|červen|červenec|srpen|září|říjen|listopad|prosinec)\s+(\d{4})"
+        )?;
+
+        // Month/year only: M/YYYY or MM/YYYY
+        let date_month_year_re = Regex::new(
+            r"(\d{1,2})/(\d{4})"
         )?;
 
         // Czech name pattern: Capitalized Surname, Title? Firstname? (very loose)
@@ -125,6 +143,9 @@ impl NerEngine {
             ico_re,
             dic_re,
             date_re,
+            date_iso_re,
+            date_czech_month_re,
+            date_month_year_re,
             name_re,
             institutions,
             doc_type_triggers,
@@ -288,6 +309,7 @@ impl NerEngine {
     // ─────────────────────────────────────────────────────────────────────────
 
     pub fn find_date(&self, text: &str) -> Option<DateTime<Utc>> {
+        // DD.MM.YYYY with optional spaces around dots
         for cap in self.date_re.captures_iter(text) {
             let (Ok(day), Ok(month), Ok(year)): (Result<u32, _>, Result<u32, _>, Result<i32, _>) = (
                 cap[1].parse(),
@@ -296,12 +318,50 @@ impl NerEngine {
             ) else {
                 continue;
             };
-            if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
-                if let Some(dt) = date.and_hms_opt(0, 0, 0) {
-                    return Some(Utc.from_utc_datetime(&dt));
+            if let Some(dt) = make_utc(year, month, day) {
+                return Some(dt);
+            }
+        }
+
+        // YYYY-MM-DD (ISO)
+        for cap in self.date_iso_re.captures_iter(text) {
+            let (Ok(year), Ok(month), Ok(day)): (Result<i32, _>, Result<u32, _>, Result<u32, _>) = (
+                cap[1].parse(),
+                cap[2].parse(),
+                cap[3].parse(),
+            ) else {
+                continue;
+            };
+            if let Some(dt) = make_utc(year, month, day) {
+                return Some(dt);
+            }
+        }
+
+        // D. <czech month name> YYYY
+        for cap in self.date_czech_month_re.captures_iter(text) {
+            let Ok(day): Result<u32, _> = cap[1].parse() else { continue };
+            let month = czech_month_to_number(&cap[2]);
+            let Ok(year): Result<i32, _> = cap[3].parse() else { continue };
+            if month > 0 {
+                if let Some(dt) = make_utc(year, month, day) {
+                    return Some(dt);
                 }
             }
         }
+
+        // M/YYYY or MM/YYYY — day defaults to 1
+        for cap in self.date_month_year_re.captures_iter(text) {
+            let (Ok(month), Ok(year)): (Result<u32, _>, Result<i32, _>) = (
+                cap[1].parse(),
+                cap[2].parse(),
+            ) else {
+                continue;
+            };
+            if let Some(dt) = make_utc(year, month, 1) {
+                return Some(dt);
+            }
+        }
+
         None
     }
 
@@ -341,6 +401,34 @@ impl NerEngine {
                 category: i.category.clone(),
                 confidence: 0.65,
             })
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Date helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+fn make_utc(year: i32, month: u32, day: u32) -> Option<DateTime<Utc>> {
+    NaiveDate::from_ymd_opt(year, month, day)
+        .and_then(|d| d.and_hms_opt(0, 0, 0))
+        .map(|dt| Utc.from_utc_datetime(&dt))
+}
+
+fn czech_month_to_number(name: &str) -> u32 {
+    match name {
+        "leden" | "ledna" => 1,
+        "únor" | "února" => 2,
+        "březen" | "března" => 3,
+        "duben" | "dubna" => 4,
+        "květen" | "května" => 5,
+        "červen" | "června" => 6,
+        "červenec" | "července" => 7,
+        "srpen" | "srpna" => 8,
+        "září" => 9,
+        "říjen" | "října" => 10,
+        "listopad" | "listopadu" => 11,
+        "prosinec" | "prosince" => 12,
+        _ => 0,
     }
 }
 
