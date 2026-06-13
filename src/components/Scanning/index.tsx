@@ -25,7 +25,7 @@ export function Scanning() {
   async function runRealScan() {
     const roots = scanRoots.length > 0
       ? scanRoots
-      : [];
+      : ['C:\\_temp'];
 
     appendLine({ cls: '', text: '$ fileit scan --inicializace' });
 
