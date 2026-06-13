@@ -52,6 +52,9 @@ pub async fn scan_directories(
     let mut hash_map: HashMap<String, PathBuf> = HashMap::new(); // sha256 → first_path
     let mut files_seen = 0usize;
 
+    info!("Scanner: {} roots, {} allowed categories ({:?})",
+        roots.len(), allowed_categories.len(), allowed_categories);
+
     for root in &roots {
         info!("Scanning root: {:?} (exists={})", root, root.exists());
         if !root.exists() {
@@ -87,7 +90,7 @@ pub async fn scan_directories(
 
             // Check if this extension is in the allowed categories
             let category = FileCategory::from_extension(&ext);
-            if !allowed_categories.contains(&category) {
+            if !allowed_categories.is_empty() && !allowed_categories.contains(&category) {
                 debug!("Skip (category): {:?}", path.file_name().unwrap_or_default());
                 continue;
             }

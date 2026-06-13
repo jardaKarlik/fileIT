@@ -84,6 +84,7 @@ pub async fn start_scan(
             "image" => Some(FileCategory::Image),
             "email" => Some(FileCategory::Email),
             "text" => Some(FileCategory::Text),
+            "other" => Some(FileCategory::Other),
             _ => None,
         })
         .collect();
@@ -110,9 +111,9 @@ pub async fn start_scan(
     let scan_roots: Vec<PathBuf> = if !request.roots.is_empty() {
         request.roots.clone()
     } else {
-        let dev_scan_root = std::path::Path::new("C:\\temp");
+        let dev_scan_root = std::path::Path::new("C:\\_temp");
         if dev_scan_root.exists() {
-            info!("No scan roots provided — using fallback: C:\\temp");
+            info!("No scan roots provided — using fallback: C:\\_temp");
             vec![dev_scan_root.to_path_buf()]
         } else {
             let user_profile = std::env::var("USERPROFILE")
