@@ -102,7 +102,7 @@ export const useStore = create<FileITState>((set) => ({
   // ── Scan config ───────────────────────────────────────────────────────────
   lastSourcePath: '',
   setLastSourcePath: (path) => set({ lastSourcePath: path }),
-  scanRoots: [],
+  scanRoots: ['C:\\_temp'],
   setScanRoots: (roots) => set({ scanRoots: roots }),
   selectedCategories: ['pdf', 'word', 'excel', 'image'],
   toggleCategory: (cat) => set((s) => {
