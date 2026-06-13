@@ -17,7 +17,7 @@
 use crate::types::*;
 use anyhow::{Context, Result};
 use chrono::Utc;
-use log::info;
+use log::{info, warn, debug};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use zip::{write::FileOptions, ZipWriter};
@@ -53,7 +53,7 @@ pub fn create_backup(
     let zip_name = format!("backup_{}.zip", timestamp);
     let zip_path = backup_dir.join(&zip_name);
 
-    info!("Creating backup ZIP: {:?}", zip_path);
+    info!("[backup] Creating ZIP: {:?} for {} files", zip_path, files.len());
 
     let zip_file = std::fs::File::create(&zip_path)
         .with_context(|| format!("Creating ZIP file: {:?}", zip_path))?;
@@ -62,37 +62,46 @@ pub fn create_backup(
     let options = FileOptions::<()>::default()
         .compression_method(zip::CompressionMethod::Deflated);
 
-    // Write manifest.json first — it's the recovery tool
     let manifest_json = serde_json::to_string_pretty(manifest)
         .with_context(|| "Serialising manifest")?;
     zip.start_file("manifest.json", options)
         .with_context(|| "Starting manifest.json in ZIP")?;
     zip.write_all(manifest_json.as_bytes())
         .with_context(|| "Writing manifest.json")?;
+    debug!("[backup] Manifest written ({} moves, {} bytes)", manifest.moves.len(), manifest_json.len());
 
-    // Add all source files to the ZIP
-    // We preserve a flat structure using sha256-prefixed names to avoid collisions
-    let mut skipped_count = 0;
+    let mut added_count = 0usize;
+    let mut skipped_count = 0usize;
     for file in files {
+        let source_exists = file.record.path.exists();
+        if !source_exists {
+            skipped_count += 1;
+            warn!("[backup] Source file MISSING (already moved?): {:?}", file.record.path);
+            continue;
+        }
+
         let archive_name = archive_entry_name(file);
         match add_file_to_zip(&mut zip, &file.record.path, &archive_name, options) {
-            Ok(_) => {}
+            Ok(_) => {
+                added_count += 1;
+            }
             Err(e) => {
-                // Log but continue — a partial backup is better than no backup
                 skipped_count += 1;
-                log::warn!("Skipped backup of {:?}: {} (may have special characters in filename)", file.record.path, e);
+                warn!("[backup] Skipped {:?}: {}", file.record.path, e);
             }
         }
     }
 
-    if skipped_count > 0 {
-        info!("Backup: {} files skipped due to encoding or access issues", skipped_count);
+    info!("[backup] ZIP contents: {} files added, {} skipped", added_count, skipped_count);
+
+    if added_count == 0 && !files.is_empty() {
+        warn!("[backup] WARNING: Zero files backed up out of {}! Source files may have already been moved.", files.len());
     }
 
     zip.finish().with_context(|| "Finalising ZIP")?;
 
     let zip_size = std::fs::metadata(&zip_path)?.len();
-    info!("Backup created: {:?} ({} bytes)", zip_path, zip_size);
+    info!("[backup] ZIP finalised: {:?} ({} bytes, {} files)", zip_path, zip_size, added_count);
 
     Ok(zip_path)
 }
@@ -158,7 +167,8 @@ pub fn save_manifest_sidecar(
 
     let path = sidecar_dir.join("pending_confirmation.json");
     let json = serde_json::to_string_pretty(manifest)?;
-    std::fs::write(&path, json)?;
+    std::fs::write(&path, &json)?;
+    info!("[backup] Manifest sidecar saved: {:?} ({} moves, {} bytes)", path, manifest.moves.len(), json.len());
 
     Ok(path)
 }
@@ -167,11 +177,14 @@ pub fn save_manifest_sidecar(
 pub fn load_manifest_sidecar(app_data_dir: &Path) -> Option<BackupManifest> {
     let path = app_data_dir.join("state").join("pending_confirmation.json");
     if !path.exists() {
+        debug!("[backup] No manifest sidecar at {:?}", path);
         return None;
     }
 
     let json = std::fs::read_to_string(&path).ok()?;
-    serde_json::from_str(&json).ok()
+    let manifest: BackupManifest = serde_json::from_str(&json).ok()?;
+    info!("[backup] Loaded manifest sidecar: {} moves, session {}", manifest.moves.len(), manifest.session_id);
+    Some(manifest)
 }
 
 /// Delete the sidecar manifest — called after user confirms or restores.
@@ -192,7 +205,9 @@ pub fn save_completed_run(run: &CompletedRun, app_data_dir: &Path) -> Result<()>
     let path = app_data_dir.join("state").join("last_run.json");
     std::fs::create_dir_all(path.parent().unwrap())?;
     let json = serde_json::to_string_pretty(run)?;
-    std::fs::write(path, json)?;
+    std::fs::write(&path, &json)?;
+    info!("[backup] CompletedRun saved: session={}, {} files moved, status={:?}, zip={:?}",
+        run.session_id, run.files_moved, run.confirmation_status, run.backup_zip_path);
     Ok(())
 }
 
@@ -200,10 +215,14 @@ pub fn save_completed_run(run: &CompletedRun, app_data_dir: &Path) -> Result<()>
 pub fn load_completed_run(app_data_dir: &Path) -> Option<CompletedRun> {
     let path = app_data_dir.join("state").join("last_run.json");
     if !path.exists() {
+        debug!("[backup] No completed run at {:?}", path);
         return None;
     }
-    let json = std::fs::read_to_string(path).ok()?;
-    serde_json::from_str(&json).ok()
+    let json = std::fs::read_to_string(&path).ok()?;
+    let run: CompletedRun = serde_json::from_str(&json).ok()?;
+    info!("[backup] Loaded CompletedRun: session={}, {} files, status={:?}",
+        run.session_id, run.files_moved, run.confirmation_status);
+    Some(run)
 }
 
 /// Delete the completed run record — called after auto-confirm or restore.

@@ -175,3 +175,111 @@
 .modal-footer-row { display: flex; gap: 8px; }
 .modal-btn-back    { background: white; color: var(--ink2); border: 1px solid var(--border2); border-radius: 10px; padding: 10px 16px; font-size: 12px; cursor: pointer; }
 .modal-btn-confirm { flex: 1; background: linear-gradient(135deg, var(--pink), var(--coral)); color: white; border: none; border-radius: 10px; padding: 10px 16px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+
+
+
+/* ───────────────────────────────────────────────────────────────────────────
+   ANALYSIS WARNING MODAL (NEW)
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.analysis-warning { max-width: 420px; }
+.analysis-warning .modal-head { 
+  display: flex; 
+  gap: 14px; 
+  align-items: flex-start;
+}
+.analysis-warning .modal-icon.warning { 
+  font-size: 28px; 
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.modal-content.analysis-warning-content { 
+  margin: 16px 0 20px;
+  padding: 0;
+}
+.warning-box { 
+  background: #FFF9E6; 
+  border: 1px solid #FFD966; 
+  border-radius: 8px; 
+  padding: 12px 14px; 
+  display: flex; 
+  gap: 10px;
+}
+.warning-box .warning-icon { 
+  font-size: 16px; 
+  flex-shrink: 0;
+}
+.warning-box .warning-text { 
+  font-size: 11px; 
+  color: #5F4A0F;
+  line-height: 1.5;
+}
+.warning-box strong { 
+  color: #3D3008; 
+  font-weight: 600;
+}
+.warning-box ul { 
+  margin: 6px 0 0; 
+  padding-left: 18px; 
+  list-style-type: disc;
+}
+.warning-box li { 
+  margin: 3px 0; 
+}
+
+.modal-actions.analysis-warning-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.modal-actions.analysis-warning-actions .modal-btn-primary {
+  width: 100%;
+}
+
+
+/* ───────────────────────────────────────────────────────────────────────────
+   ANALYSIS AGE BADGE (NEW)
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.analysis-age-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  margin-bottom: 18px;
+  background: #EAF3DE;
+  border: 1px solid #97C459;
+}
+.analysis-age-badge.fresh {
+  background: #EAF3DE;
+  border: 1px solid #97C459;
+  color: #27500A;
+}
+.analysis-age-badge.fresh .age-icon {
+  color: #3B6D11;
+  font-weight: 700;
+}
+.analysis-age-badge.old {
+  background: #FAEEDA;
+  border: 1px solid #BA7517;
+  color: #5F4A0F;
+}
+.analysis-age-badge.old .age-icon {
+  color: #854F0B;
+  font-weight: 700;
+  animation: pulse-warning 2s infinite;
+}
+
+@keyframes pulse-warning {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.analysis-age-badge .age-text {
+  letter-spacing: 0;
+}
