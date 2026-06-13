@@ -110,16 +110,22 @@ pub async fn start_scan(
     let scan_roots: Vec<PathBuf> = if !request.roots.is_empty() {
         request.roots.clone()
     } else {
-        let user_profile = std::env::var("USERPROFILE")
-            .or_else(|_| std::env::var("HOME"))
-            .unwrap_or_else(|_| "C:\\Users\\User".to_string());
-        info!("No scan roots provided — using USERPROFILE: {}", user_profile);
-        let base = std::path::Path::new(&user_profile);
-        vec![
-            base.join("Documents"),
-            base.join("Desktop"),
-            base.join("Downloads"),
-        ]
+        let dev_scan_root = std::path::Path::new("C:\\temp");
+        if dev_scan_root.exists() {
+            info!("No scan roots provided — using fallback: C:\\temp");
+            vec![dev_scan_root.to_path_buf()]
+        } else {
+            let user_profile = std::env::var("USERPROFILE")
+                .or_else(|_| std::env::var("HOME"))
+                .unwrap_or_else(|_| "C:\\Users\\User".to_string());
+            info!("No scan roots provided — using USERPROFILE: {}", user_profile);
+            let base = std::path::Path::new(&user_profile);
+            vec![
+                base.join("Documents"),
+                base.join("Desktop"),
+                base.join("Downloads"),
+            ]
+        }
     };
 
     let records = scanner::scan_directories(&app, scan_roots, &categories, &[])
@@ -289,6 +295,8 @@ pub async fn run_restructure(
         let session = state.session.lock().map_err(|e| e.to_string())?;
         let preview = session.preview.as_ref()
             .ok_or("No preview computed. Call build_preview first.")?;
+        info!("[run_restructure] Session {} — {} files, backup_enabled={}",
+            session.id, session.classified_files.len(), request.backup_enabled);
         (
             preview.planned_moves.clone(),
             session.id.clone(),
@@ -296,6 +304,35 @@ pub async fn run_restructure(
         )
     };
 
+    // Step 1: Create backup BEFORE restructure — files are still at original paths
+    let pre_manifest_entries: Vec<ManifestEntry> = planned_moves.iter().map(|m| {
+        ManifestEntry {
+            original_path: m.source.clone(),
+            new_path: m.destination.clone(),
+            sha256: "pending".to_string(),
+        }
+    }).collect();
+
+    let backup_zip_path = if request.backup_enabled {
+        info!("[run_restructure] Creating pre-restructure backup of {} files", classified_files.len());
+        let pre_manifest = BackupManifest::new(&session_id, pre_manifest_entries);
+        match backup::create_backup(&classified_files, &pre_manifest, &state.app_data_dir) {
+            Ok(path) => {
+                info!("[run_restructure] Backup ZIP created: {:?}", path);
+                Some(path)
+            }
+            Err(e) => {
+                warn!("[run_restructure] Backup creation failed (continuing without): {}", e);
+                None
+            }
+        }
+    } else {
+        info!("[run_restructure] Backup disabled by user");
+        None
+    };
+
+    // Step 2: Execute the restructure (moves files from source → destination)
+    info!("[run_restructure] Starting restructure: {} planned moves", planned_moves.len());
     let (manifest_entries, folders_created, duration_secs) =
         restructure::execute(&app, &planned_moves, &session_id)
             .await
@@ -306,24 +343,15 @@ pub async fn run_restructure(
         .iter()
         .filter(|m| m.destination.to_string_lossy().contains("Neznámý klient"))
         .count();
+    info!("[run_restructure] Restructure done: {} moved, {} folders, {} unknown",
+        files_moved, folders_created, unknown_count);
 
-    // Create backup AFTER restructure completes, with the actual manifest
-    let backup_zip_path = if request.backup_enabled {
-        let manifest = BackupManifest::new(&session_id, manifest_entries.clone());
-        match backup::create_backup(&classified_files, &manifest, &state.app_data_dir) {
-            Ok(path) => Some(path),
-            Err(e) => {
-                warn!("Backup creation failed (continuing without): {}", e);
-                None
-            }
-        }
-    } else {
-        None
-    };
-
+    // Step 3: Save manifest sidecar (with actual SHA-256 hashes from the move)
     let manifest = BackupManifest::new(&session_id, manifest_entries);
     let _ = backup::save_manifest_sidecar(&manifest, &state.app_data_dir);
+    info!("[run_restructure] Manifest sidecar saved");
 
+    // Step 4: Persist CompletedRun for restore/confirm
     let completed_run = {
         let session = state.session.lock().map_err(|e| e.to_string())?;
         let target = session.preview
@@ -348,6 +376,7 @@ pub async fn run_restructure(
     };
 
     let _ = backup::save_completed_run(&completed_run, &state.app_data_dir);
+    info!("[run_restructure] CompletedRun saved to last_run.json");
 
     let target_path_str = completed_run.target_path.to_string_lossy().to_string();
 
@@ -401,11 +430,13 @@ pub async fn create_standalone_backup(
 pub async fn confirm_restructure(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
+    info!("[confirm] User confirming restructure");
     let mut run = backup::load_completed_run(&state.app_data_dir)
         .ok_or("No completed run found")?;
 
     run.confirmation_status = ConfirmationStatus::Confirmed;
     run.backup_delete_at = Some(Utc::now() + chrono::Duration::days(7));
+    info!("[confirm] Status → Confirmed, ZIP delete scheduled for +7 days");
 
     backup::save_completed_run(&run, &state.app_data_dir)
         .map_err(|e| e.to_string())?;
@@ -413,6 +444,7 @@ pub async fn confirm_restructure(
     backup::delete_manifest_sidecar(&state.app_data_dir)
         .map_err(|e| e.to_string())?;
 
+    info!("[confirm] Done — sidecar deleted");
     Ok(())
 }
 
@@ -421,18 +453,23 @@ pub async fn restore_restructure(
     app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<usize, String> {
+    info!("[restore] User initiating restore");
     let run = backup::load_completed_run(&state.app_data_dir)
         .ok_or("No completed run found")?;
+    info!("[restore] Restoring session {} — {} files to move back", run.session_id, run.manifest.moves.len());
 
     let restored = restructure::restore(&app, &run.manifest)
         .await
         .map_err(|e| e.to_string())?;
+    info!("[restore] Restore complete: {}/{} files restored", restored, run.manifest.moves.len());
 
     if run.backup_zip_path.as_os_str().len() > 0 {
+        info!("[restore] Deleting backup ZIP: {:?}", run.backup_zip_path);
         let _ = backup::delete_backup_zip(&run.backup_zip_path);
     }
     let _ = backup::delete_completed_run(&state.app_data_dir);
     let _ = backup::delete_manifest_sidecar(&state.app_data_dir);
+    info!("[restore] Cleanup done — run and sidecar deleted");
 
     Ok(restored)
 }
