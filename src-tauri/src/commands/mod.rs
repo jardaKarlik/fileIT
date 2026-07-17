@@ -111,22 +111,13 @@ pub async fn start_scan(
     let scan_roots: Vec<PathBuf> = if !request.roots.is_empty() {
         request.roots.clone()
     } else {
-        let dev_scan_root = std::path::Path::new("C:\\_temp");
-        if dev_scan_root.exists() {
-            info!("No scan roots provided — using fallback: C:\\_temp");
-            vec![dev_scan_root.to_path_buf()]
-        } else {
-            let user_profile = std::env::var("USERPROFILE")
-                .or_else(|_| std::env::var("HOME"))
-                .unwrap_or_else(|_| "C:\\Users\\User".to_string());
-            info!("No scan roots provided — using USERPROFILE: {}", user_profile);
-            let base = std::path::Path::new(&user_profile);
-            vec![
-                base.join("Documents"),
-                base.join("Desktop"),
-                base.join("Downloads"),
-            ]
-        }
+        // Scan the entire system drive so we catch documents everywhere —
+        // not just USERPROFILE. The scanner's SKIP_DIRS list keeps us out
+        // of Windows, Program Files, and other non-document directories.
+        let drive = std::env::var("SystemDrive").unwrap_or_else(|_| "C:".to_string());
+        let root = PathBuf::from(format!("{}\\", drive));
+        info!("No scan roots provided — scanning entire drive: {:?}", root);
+        vec![root]
     };
 
     let records = scanner::scan_directories(&app, scan_roots, &categories, &[])

@@ -17,33 +17,15 @@ export function analyzeAnalysisState(scanResult: ScanResult | null) {
     };
   }
 
-  // Check if analysis has a timestamp.
-  // For now, use the most recent file's modified date as proxy.
-  // In production, scanResult should include a timestamp field.
-  const fileDates = scanResult.files
-    .map(f => {
-      try {
-        return new Date(f.document_date || f.record.modified).getTime();
-      } catch {
-        return null;
-      }
-    })
-    .filter((d): d is number => d !== null);
+  // The scan was performed in the current session, so the analysis is fresh.
+  // Use the scan_timestamp if the backend provides one; otherwise treat as "now".
+  const scanTime = (scanResult as any).scan_timestamp
+    ? new Date((scanResult as any).scan_timestamp).getTime()
+    : Date.now();
 
-  if (fileDates.length === 0) {
-    return {
-      scenario: 'no_analysis' as const,
-      hasAnalysis: false,
-      isOldAnalysis: false,
-      ageText: null,
-    };
-  }
+  const analysisAgeMs = Date.now() - scanTime;
+  const analysisAgeDays = Math.max(0, Math.floor(analysisAgeMs / (1000 * 60 * 60 * 24)));
 
-  const mostRecentFileTime = Math.max(...fileDates);
-  const analysisAgeMs = Date.now() - mostRecentFileTime;
-  const analysisAgeDays = Math.floor(analysisAgeMs / (1000 * 60 * 60 * 24));
-
-  // Define threshold: 30 days = "old"
   const ANALYSIS_OLD_THRESHOLD_DAYS = 30;
   const isOld = analysisAgeDays >= ANALYSIS_OLD_THRESHOLD_DAYS;
 

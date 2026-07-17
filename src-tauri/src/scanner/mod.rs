@@ -27,12 +27,29 @@ const SUPPORTED_EXTENSIONS: &[&str] = &[
     "msg", "eml", "txt", "rtf",
 ];
 
-// Directories to always skip — system, hidden, OEM restore partitions
+// Directories to always skip when scanning.
+// Comprehensive list for whole-drive scanning — system, dev tooling,
+// package caches, game assets, and runtime data that never contain
+// user financial documents.
 const SKIP_DIRS: &[&str] = &[
+    // Windows system
     "Windows", "Program Files", "Program Files (x86)",
-    "ProgramData", "AppData", "$Recycle.Bin", "System Volume Information",
+    "ProgramData", "$Recycle.Bin", "System Volume Information",
     "Recovery", "RECOVERY", "$SysReset", "MSOCache",
-    "node_modules", ".git", ".svn",
+    "$WinREAgent", "PerfLogs", "Intel", "AMD",
+    // User profile noise
+    "AppData", ".cache", ".local", ".config",
+    // Dev tooling & package managers
+    "node_modules", ".git", ".svn", ".hg",
+    ".cargo", ".rustup", ".npm", ".yarn", ".pnpm-store",
+    ".nuget", ".gradle", ".m2", ".pub-cache",
+    "target", "dist", "build", "__pycache__", ".venv", "venv",
+    // IDE / editor data
+    ".vscode", ".idea", ".vs",
+    // Game & app caches
+    "Steam", "SteamLibrary", "Epic Games",
+    // Tauri / Electron build output
+    "src-tauri",
 ];
 
 /// Public hash helper used by the restructure module before moves.
