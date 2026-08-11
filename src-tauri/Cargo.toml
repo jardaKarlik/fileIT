@@ -75,6 +75,13 @@ reqwest = { version = "0.11", features = ["json", "rustls-tls"], default-feature
 # Windows registry access — used for OneDrive path detection
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"
+windows = { version = "0.58", features = [
+    "Data_Pdf",
+    "Graphics_Imaging",
+    "Media_Ocr",
+    "Storage",
+    "Storage_Streams",
+] }
 
 [features]
 default = ["custom-protocol"]

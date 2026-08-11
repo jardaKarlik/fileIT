@@ -210,7 +210,7 @@ export function Dashboard() {
                 {backupState === 'error' && '⚠ Záloha selhala — zkuste to znovu'}
               </div>
             </div>
-            <div className="cta-arrow">
+            <div className={`cta-arrow${backupState === 'idle' ? ' idle' : ''}`}>
               {backupState === 'loading' ? '…' : backupState === 'done' ? '✓' : '→'}
             </div>
           </div>

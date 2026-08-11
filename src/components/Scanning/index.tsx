@@ -7,6 +7,13 @@ import './Scanning.css';
 // True when running inside a compiled Tauri window (not browser dev mode)
 const IS_TAURI = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
+const CLASSIFY_VERBS = [
+  'Analyzuji', 'Skenuji', 'Přemýšlím', 'Rozvažuji', 'Prohlížím',
+  'Nahlížím', 'Označuji', 'Třídím', 'Zkoumám', 'Vyhodnocuji',
+  'Identifikuji', 'Rozpoznávám', 'Porovnávám', 'Čtu', 'Hodnotím',
+  'Škatulkuji', 'Pátrám', 'Stopuji', 'Odhaduji', 'Luštím',
+];
+
 type LogLine = { cls: string; text: string };
 
 export function Scanning() {
@@ -44,7 +51,8 @@ export function Scanning() {
         if (p.current) appendLine({ cls: 'found', text: `✓ ${p.current}` });
         const classifyPct = 45 + Math.round((p.done / Math.max(p.total, 1)) * 50);
         setPct(Math.min(95, classifyPct));
-        setStatusText(`Klasifikuji ${p.done} / ${p.total}…`);
+        const verb = CLASSIFY_VERBS[Math.floor(Math.random() * CLASSIFY_VERBS.length)];
+        setStatusText(`${verb} ${p.done} / ${p.total}…`);
       }),
     ]);
 

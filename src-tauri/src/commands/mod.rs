@@ -139,8 +139,8 @@ pub async fn start_scan(
             }),
         );
 
-        // ── Stage 1: PDF metadata fast-read + CM registry match ──────────────
-        let hints = if record.extension == "pdf" {
+        // ── Stage 1: Format-specific metadata fast-read + path analysis ─────
+        let mut hints: Option<ClassificationHints> = if record.extension == "pdf" {
             // spawn_blocking + 2s timeout: prevents cloud-only PDFs (OneDrive placeholders)
             // from hanging the classify loop indefinitely with blocking file I/O.
             let path_clone = record.path.clone();
@@ -177,9 +177,72 @@ pub async fn start_scan(
                 pdf_producer: meta.producer,
                 pdf_creator: meta.creator,
             })
+        } else if matches!(record.extension.as_str(), "docx" | "doc" | "xlsx" | "xls") {
+            // Office Open XML — docProps/core.xml (creator, title, keywords)
+            //                 + docProps/app.xml  (Company — strongest signal)
+            let path_clone = record.path.clone();
+            let office = tokio::task::spawn_blocking(move || {
+                metadata_reader::read_office_metadata(&path_clone)
+            })
+            .await
+            .unwrap_or_default();
+
+            let company_text  = office.company.as_deref().unwrap_or("").to_lowercase();
+            let creator_text  = office.creator.as_deref().unwrap_or("").to_lowercase();
+            let keywords_text = office.keywords.as_deref().unwrap_or("").to_lowercase();
+
+            // Company is the issuing institution's name — try it first
+            let company_inst = if !company_text.is_empty() {
+                state.classifier.ner.find_institution(&company_text)
+            } else {
+                None
+            };
+            let has_company_match = company_inst.is_some();
+
+            // Fall back to creator + keywords if Company didn't match
+            let inst = company_inst.or_else(|| {
+                let combined = format!("{} {}", creator_text, keywords_text);
+                state.classifier.ner.find_institution(&combined)
+            });
+
+            inst.map(|i| {
+                info!("Office metadata match for {:?}: {} (company={})", record.name, i.canonical_name, has_company_match);
+                ClassificationHints {
+                    institution_name: Some(i.canonical_name),
+                    // Company = definitive institution field → skip content extraction
+                    confidence_boost: if has_company_match { 0.55 } else { 0.30 },
+                    skip_extraction: has_company_match,
+                    pdf_producer: None,
+                    pdf_creator: office.creator,
+                }
+            })
         } else {
             None
         };
+
+        // ── Path analysis — all file types, only if not already definitive ───
+        // Folder names (e.g. "Raiffeisenbank\2024\") are a free, reliable signal.
+        if !hints.as_ref().map_or(false, |h| h.skip_extraction) {
+            let tokens = metadata_reader::path_institution_tokens(&record.path);
+            if let Some(inst) = state.classifier.ner.find_institution(&tokens.to_lowercase()) {
+                match hints.as_mut() {
+                    Some(h) if h.institution_name.is_none() => {
+                        h.institution_name = Some(inst.canonical_name);
+                        h.confidence_boost += 0.20;
+                    }
+                    None => {
+                        hints = Some(ClassificationHints {
+                            institution_name: Some(inst.canonical_name),
+                            confidence_boost: 0.20,
+                            skip_extraction: false,
+                            pdf_producer: None,
+                            pdf_creator: None,
+                        });
+                    }
+                    _ => {} // stronger hint already present
+                }
+            }
+        }
         // ─────────────────────────────────────────────────────────────────────
 
         let sha = record.sha256.clone();

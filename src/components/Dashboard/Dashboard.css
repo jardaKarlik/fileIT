@@ -54,6 +54,7 @@
 .cta-card-desc  { font-size: 11px; color: rgba(255,255,255,0.85); line-height: 1.4; max-width: 300px; }
 .cta-arrow { width: 36px; height: 36px; border-radius: 50%; background: var(--pink); color: white; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
 .cta-card.backup .cta-arrow { background: var(--pink); color: white; }
+.cta-card.backup .cta-arrow.idle { background: #d1d5db; color: #9ca3af; }
 
 .charts-row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; }
 .chart-card { background: white; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; }

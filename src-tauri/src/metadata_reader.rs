@@ -220,6 +220,81 @@ fn apply_hardcoded_fingerprints(meta: &mut PdfMetadata) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Office Open XML metadata (DOCX / XLSX) — both are ZIP archives
+// ─────────────────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Default)]
+pub struct OfficeMetadata {
+    /// dc:creator from docProps/core.xml — typically author / signing person
+    pub creator: Option<String>,
+    /// cp:lastModifiedBy
+    pub last_modified_by: Option<String>,
+    /// dc:title
+    pub title: Option<String>,
+    /// cp:keywords
+    pub keywords: Option<String>,
+    /// Company from docProps/app.xml — usually the *issuing* institution
+    pub company: Option<String>,
+    /// Manager from docProps/app.xml
+    pub manager: Option<String>,
+}
+
+/// Read Office Open XML metadata. Always returns a valid struct; never panics.
+pub fn read_office_metadata(path: &Path) -> OfficeMetadata {
+    read_office_inner(path).unwrap_or_default()
+}
+
+fn read_office_inner(path: &Path) -> anyhow::Result<OfficeMetadata> {
+    use std::io::Read;
+    let file = std::fs::File::open(path)?;
+    let mut zip = zip::ZipArchive::new(file)?;
+    let mut meta = OfficeMetadata::default();
+
+    if let Ok(mut entry) = zip.by_name("docProps/core.xml") {
+        let mut xml = String::new();
+        let _ = entry.read_to_string(&mut xml);
+        meta.creator          = xml_tag_text(&xml, "dc:creator");
+        meta.last_modified_by = xml_tag_text(&xml, "cp:lastModifiedBy");
+        meta.title            = xml_tag_text(&xml, "dc:title");
+        meta.keywords         = xml_tag_text(&xml, "cp:keywords");
+    }
+
+    if let Ok(mut entry) = zip.by_name("docProps/app.xml") {
+        let mut xml = String::new();
+        let _ = entry.read_to_string(&mut xml);
+        meta.company = xml_tag_text(&xml, "Company");
+        meta.manager = xml_tag_text(&xml, "Manager");
+    }
+
+    Ok(meta)
+}
+
+/// Extract text between the first `<tag>…</tag>` pair, including namespace-prefixed tags.
+fn xml_tag_text(xml: &str, tag: &str) -> Option<String> {
+    let open  = format!("<{}>", tag);
+    let close = format!("</{}>", tag);
+    let start = xml.find(&open)? + open.len();
+    let end   = xml[start..].find(&close)? + start;
+    let text  = xml[start..end].trim().to_string();
+    if text.is_empty() { None } else { Some(text) }
+}
+
+/// Collect meaningful path components as a space-joined string for NER keyword search.
+/// Skips OS/system directory names that would produce false positives.
+pub fn path_institution_tokens(path: &Path) -> String {
+    const SKIP: &[&str] = &[
+        "Users", "Documents", "Desktop", "Downloads", "OneDrive", "Dropbox",
+        "AppData", "Roaming", "Local", "Windows", "Program Files", "Program Files (x86)",
+        "System32", "SysWOW64", "Temp", "C:", "D:", "E:",
+    ];
+    path.components()
+        .filter_map(|c| c.as_os_str().to_str())
+        .filter(|s| s.len() >= 3 && !SKIP.contains(s))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Color extraction — stub pending pdfium-render integration
 // ─────────────────────────────────────────────────────────────────────────────
 
