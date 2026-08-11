@@ -11,6 +11,7 @@ use crate::backup;
 use crate::classifier::{Classifier, ClassificationHints};
 use crate::cm_registry::CmRegistry;
 use crate::metadata_reader;
+use crate::scan_manifest;
 use crate::scanner;
 use crate::restructure;
 use crate::types::*;
@@ -27,6 +28,7 @@ pub struct AppState {
     pub classifier: Classifier,
     pub app_data_dir: PathBuf,
     pub cm_registry: RwLock<CmRegistry>,
+    pub cnb_registry: crate::cnb_registry::CnbRegistry,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -124,7 +126,32 @@ pub async fn start_scan(
         .await
         .map_err(|e| e.to_string())?;
 
+    // Load previous scan manifest for incremental classification
+    let prev_manifest = scan_manifest::ScanManifest::load_latest(&state.app_data_dir);
+
+    // Build lookup map of unchanged files from previous scan
+    let mut unchanged_lookup: std::collections::HashMap<String, scan_manifest::ManifestEntry> =
+        std::collections::HashMap::new();
+
+    if let Some(ref manifest) = prev_manifest {
+        let diff = manifest.diff(&records);
+        let reused_count = diff.unchanged_files.len();
+        for entry in diff.unchanged_files {
+            unchanged_lookup.insert(entry.path.clone(), entry);
+        }
+        info!(
+            "Re-scan diff: {} unchanged, {} modified, {} new, {} deleted",
+            reused_count,
+            diff.modified_files.len(),
+            diff.new_files.len(),
+            diff.deleted_files.len()
+        );
+    }
+
     let mut classified: Vec<ClassifiedFile> = Vec::new();
+    let mut reused_count = 0usize;
+    let mut extracted_count = 0usize;
+    let mut skipped_extraction_count = 0usize;
     let total = records.len();
     let mut seen_hashes: std::collections::HashMap<String, std::path::PathBuf> =
         std::collections::HashMap::new();
@@ -138,6 +165,32 @@ pub async fn start_scan(
                 "current": record.name
             }),
         );
+
+        // Reuse classification from previous scan if file is unchanged
+        let path_key = record.path.to_string_lossy().to_string();
+        if let Some(prev_entry) = unchanged_lookup.get(&path_key) {
+            if let Some(ref clf_json) = prev_entry.classification {
+                if let Ok(prev_cf) = serde_json::from_str::<ClassifiedFile>(clf_json) {
+                    log::debug!("Reusing previous classification for: {}", record.name);
+                    reused_count += 1;
+                    let sha = record.sha256.clone();
+                    if let Some(ref hash) = sha {
+                        if let Some(first_path) = seen_hashes.get(hash) {
+                            let mut prev_cf = prev_cf;
+                            prev_cf.is_duplicate = true;
+                            prev_cf.duplicate_of = Some(first_path.clone());
+                            classified.push(prev_cf);
+                        } else {
+                            seen_hashes.insert(hash.clone(), record.path.clone());
+                            classified.push(prev_cf);
+                        }
+                    } else {
+                        classified.push(prev_cf);
+                    }
+                    continue;
+                }
+            }
+        }
 
         // ── Stage 1: Format-specific metadata fast-read + path analysis ─────
         let mut hints: Option<ClassificationHints> = if record.extension == "pdf" {
@@ -161,10 +214,17 @@ pub async fn start_scan(
 
             let (institution_name, confidence_boost, skip_extraction) = if let Some(cm) = cm_result {
                 info!(
-                    "CM match for {:?}: {} (score={:.2}, skip={})",
-                    record.name, cm.institution, cm.score, cm.skip_extraction
+                    "CM match for {:?}: {} [{}] (score={:.2}, cm_skip={}, metadata_skip={})",
+                    record.name, cm.institution, cm.category, cm.score, cm.skip_extraction, meta.skip_extraction
                 );
-                (Some(cm.institution), cm.confidence_boost, cm.skip_extraction)
+                // A strong metadata rule must not be weakened by a broader CM
+                // match. Once Stage 1 proves that content extraction is
+                // unnecessary, keep the flag sticky through the merge.
+                (
+                    Some(cm.institution),
+                    cm.confidence_boost.max(meta.confidence_boost),
+                    cm.skip_extraction || meta.skip_extraction,
+                )
             } else {
                 // Fall back to hardcoded fingerprints
                 (meta.institution_hint, meta.confidence_boost, meta.skip_extraction)
@@ -223,8 +283,11 @@ pub async fn start_scan(
         // ── Path analysis — all file types, only if not already definitive ───
         // Folder names (e.g. "Raiffeisenbank\2024\") are a free, reliable signal.
         if !hints.as_ref().map_or(false, |h| h.skip_extraction) {
+            // Signal 1: NER dictionary over normalized path tokens (primary).
+            let mut path_resolved = false;
             let tokens = metadata_reader::path_institution_tokens(&record.path);
             if let Some(inst) = state.classifier.ner.find_institution(&tokens.to_lowercase()) {
+                path_resolved = true;
                 match hints.as_mut() {
                     Some(h) if h.institution_name.is_none() => {
                         h.institution_name = Some(inst.canonical_name);
@@ -242,10 +305,49 @@ pub async fn start_scan(
                     _ => {} // stronger hint already present
                 }
             }
+
+            // Signal 2: CNB registry (authoritative ~50k Czech institutions)
+            // — only consulted when NER found nothing definitive on the path.
+            if !path_resolved {
+                if let Some((inst, conf)) = state.cnb_registry.detect_from_path(&record.path) {
+                    // Only use the CNB result when it resolves to the curated
+                    // classifier dictionary. The full CNB registry contains
+                    // many bound reps and generic companies; an unresolved
+                    // result must never affect the final confidence.
+                    if let Some(ner_match) = state.classifier.ner.find_institution_by_name(&inst.name) {
+                        let boost: f32 = if conf >= 0.9 { 0.30 } else { 0.15 };
+                        info!(
+                            "CNB path match for {:?}: {} (conf={:.2})",
+                            record.name, inst.name, conf
+                        );
+                        match hints.as_mut() {
+                            Some(h) if h.institution_name.is_none() => {
+                                h.institution_name = Some(ner_match.canonical_name);
+                                h.confidence_boost += boost;
+                            }
+                            None => {
+                                hints = Some(ClassificationHints {
+                                    institution_name: Some(ner_match.canonical_name),
+                                    confidence_boost: boost,
+                                    skip_extraction: false,
+                                    pdf_producer: None,
+                                    pdf_creator: None,
+                                });
+                            }
+                            _ => {} // stronger hint already present
+                        }
+                    }
+                }
+            }
         }
         // ─────────────────────────────────────────────────────────────────────
 
         let sha = record.sha256.clone();
+        if hints.as_ref().map_or(false, |h| h.skip_extraction) {
+            skipped_extraction_count += 1;
+        } else {
+            extracted_count += 1;
+        }
         let mut cf = state.classifier.classify_with_hints(record, hints).await;
 
         if let Some(ref hash) = sha {
@@ -277,6 +379,10 @@ pub async fn start_scan(
 
     let duplicates_found = classified.iter().filter(|f| f.is_duplicate).count();
     let total_size: u64 = classified.iter().map(|f| f.record.size_bytes).sum();
+    info!(
+        "Classification summary: {} total, {} reused, {} extracted, {} extraction-skipped, {} duplicates",
+        classified.len(), reused_count, extracted_count, skipped_extraction_count, duplicates_found
+    );
 
     let result = ScanResult {
         total_files: classified.len(),
@@ -288,7 +394,17 @@ pub async fn start_scan(
 
     {
         let mut session = state.session.lock().map_err(|e| e.to_string())?;
+        let scan_id = session.id.clone();
         session.classified_files = classified;
+
+        // Persist the scan manifest so the next scan can reuse classifications
+        // for unchanged files (incremental re-scan speed-up).
+        let manifest =
+            scan_manifest::ScanManifest::from_scan_results(&scan_id, &session.classified_files, Utc::now());
+        match manifest.save(&state.app_data_dir) {
+            Ok(p) => info!("Saved scan manifest to {:?}", p),
+            Err(e) => warn!("Failed to save scan manifest: {}", e),
+        }
     }
 
     Ok(result)

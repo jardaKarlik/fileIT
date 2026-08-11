@@ -21,7 +21,6 @@ struct DictionaryJson {
     document_type_triggers: HashMap<String, Vec<String>>,
     rodne_cislo_pattern: String,
     ico_pattern: String,
-    dic_pattern: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -39,7 +38,6 @@ struct InstitutionEntry {
 pub struct NerEngine {
     rodne_cislo_re: Regex,
     ico_re: Regex,
-    dic_re: Regex,
     date_re: Regex,
     date_iso_re: Regex,
     date_czech_month_re: Regex,
@@ -74,7 +72,6 @@ impl NerEngine {
 
         let rodne_cislo_re = Regex::new(&dict.rodne_cislo_pattern)?;
         let ico_re = Regex::new(&dict.ico_pattern)?;
-        let dic_re = Regex::new(&dict.dic_pattern)?;
 
         // Czech date patterns: dd.mm.yyyy, dd. mm. yyyy, dd/mm/yyyy
         let date_re = Regex::new(
@@ -143,7 +140,6 @@ impl NerEngine {
         Ok(Self {
             rodne_cislo_re,
             ico_re,
-            dic_re,
             date_re,
             date_iso_re,
             date_czech_month_re,
@@ -228,7 +224,7 @@ impl NerEngine {
             return false;
         }
 
-        let yy: u32 = digits[..2].parse().unwrap_or(0);
+        let _yy: u32 = digits[..2].parse().unwrap_or(0);
         let mm: u32 = digits[2..4].parse().unwrap_or(0);
         let dd: u32 = digits[4..6].parse().unwrap_or(0);
 

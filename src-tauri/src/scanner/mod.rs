@@ -20,13 +20,6 @@ use std::time::SystemTime;
 use tauri::{AppHandle, Emitter};
 use walkdir::WalkDir;
 
-// Extensions we will process — mapped to FileCategory
-const SUPPORTED_EXTENSIONS: &[&str] = &[
-    "pdf", "doc", "docx", "xls", "xlsx", "csv",
-    "jpg", "jpeg", "png", "bmp", "tif", "tiff",
-    "msg", "eml", "txt", "rtf",
-];
-
 // Directories to always skip when scanning.
 // Comprehensive list for whole-drive scanning — system, dev tooling,
 // package caches, game assets, and runtime data that never contain
@@ -46,8 +39,11 @@ const SKIP_DIRS: &[&str] = &[
     "target", "dist", "build", "__pycache__", ".venv", "venv",
     // IDE / editor data
     ".vscode", ".idea", ".vs",
-    // Game & app caches
-    "Steam", "SteamLibrary", "Epic Games",
+    // Specific software/content folders requested for exclusion under
+    // Documents. Matching is case-insensitive below. Keep this list narrow:
+    // ordinary work folders must remain scannable.
+    "Native Instruments", "Samples", "Claude", "iZotope", "Lexicon",
+    "League of Legends", "Magda", "Madga", "McAfee",
     // Tauri / Electron build output
     "src-tauri",
 ];
@@ -209,7 +205,7 @@ fn mark_duplicates(records: &mut Vec<FileRecord>) {
     // We already detect dups during scanning; this is a second pass
     // to ensure the Vec accurately reflects duplicates even if
     // scan order was non-deterministic.
-    let mut seen: HashMap<String, usize> = HashMap::new(); // hash → first index
+    let seen: HashMap<String, usize> = HashMap::new(); // hash → first index
 
     // Collect hashes first to avoid borrow issues
     let hashes: Vec<Option<String>> = records.iter()
@@ -232,8 +228,9 @@ fn should_skip(path: &Path, extra_skip_dirs: &[PathBuf]) -> bool {
         if name.starts_with('.') {
             return true;
         }
-        // Skip known system directories
-        if SKIP_DIRS.contains(&name) {
+        // Skip known system/software directories. Windows paths are
+        // case-insensitive, so normalize both sides before comparing.
+        if SKIP_DIRS.iter().any(|skip| name.eq_ignore_ascii_case(skip)) {
             return true;
         }
     }
@@ -322,4 +319,42 @@ fn is_sync_client_running(cloud_name: &str) -> bool {
 #[cfg(not(target_os = "windows"))]
 fn is_sync_client_running(_cloud_name: &str) -> bool {
     false
+}
+
+#[cfg(test)]
+mod tests {
+    use super::should_skip;
+    use std::path::Path;
+
+    #[test]
+    fn skips_software_folders_case_insensitively() {
+        assert!(should_skip(
+            Path::new(r"C:\Users\jaros\Documents\Native Instruments"),
+            &[]
+        ));
+        assert!(should_skip(
+            Path::new(r"C:\Users\jaros\Documents\mcafee"),
+            &[]
+        ));
+        assert!(should_skip(
+            Path::new(r"C:\Users\jaros\Documents\League of Legends"),
+            &[]
+        ));
+    }
+
+    #[test]
+    fn keeps_normal_document_folders() {
+        assert!(!should_skip(
+            Path::new(r"C:\Users\jaros\Documents\Kooperativa\2024"),
+            &[]
+        ));
+        assert!(!should_skip(
+            Path::new(r"C:\Users\jaros\Documents\Ableton Projects"),
+            &[]
+        ));
+        assert!(!should_skip(
+            Path::new(r"C:\Users\jaros\Documents\Work\Client Files"),
+            &[]
+        ));
+    }
 }

@@ -10,6 +10,12 @@ use std::io::Read;
 use std::path::Path;
 
 const MAX_TEXT_BYTES: usize = 16_384; // 16KB — enough for classification
+const MAX_OCR_FILE_BYTES: u64 = 25 * 1024 * 1024;
+const MAX_OCR_PAGES: u32 = 3;
+// WinRT PDF rendering/OCR can terminate the host process on some malformed
+// PDFs. Keep it disabled in the in-process classifier until it is isolated in
+// a helper process. Native PDF text extraction remains enabled.
+const ENABLE_PDF_OCR: bool = false;
 
 /// Extract text from a file. Returns (extracted_text, ocr_was_used).
 pub async fn extract_text(path: &Path, category: &FileCategory) -> Result<(String, bool)> {
@@ -29,6 +35,7 @@ pub async fn extract_text(path: &Path, category: &FileCategory) -> Result<(Strin
 // as a JoinError instead of aborting the whole process.
 // If native text layer is empty/sparse, fall back to Windows OCR.
 async fn extract_pdf(path: &Path) -> Result<(String, bool)> {
+    log::info!("PDF extraction start: {:?}", path);
     let path_buf = path.to_path_buf();
     let handle = tokio::task::spawn_blocking(move || {
         let bytes = std::fs::read(&path_buf)
@@ -40,13 +47,16 @@ async fn extract_pdf(path: &Path) -> Result<(String, bool)> {
     });
 
     let native = match tokio::time::timeout(std::time::Duration::from_secs(10), handle).await {
-        Ok(Ok(Ok(text))) => text,
+        Ok(Ok(Ok(text))) => {
+            log::info!("PDF native extraction complete: {:?} ({} chars)", path, text.len());
+            text
+        }
         Ok(Ok(Err(_))) | Ok(Err(_)) => {
-            warn!("pdf-extract failed or panicked for {:?} — trying Windows OCR", path);
+            warn!("pdf-extract failed or panicked for {:?}", path);
             String::new()
         }
         Err(_) => {
-            warn!("pdf-extract timed out for {:?} — trying Windows OCR", path);
+            warn!("pdf-extract timed out for {:?}", path);
             String::new()
         }
     };
@@ -56,13 +66,28 @@ async fn extract_pdf(path: &Path) -> Result<(String, bool)> {
         return Ok((truncate_text(native), false));
     }
 
-    // Sparse/empty text layer → likely a scanned PDF. Try Windows OCR.
+    // Sparse/empty text layer → likely a scanned PDF. OCR is deliberately
+    // guarded because Windows PDF/WinRT calls can terminate the native process
+    // on malformed, huge, or unusual PDFs rather than returning a Rust error.
+    let file_size = std::fs::metadata(path).map(|m| m.len()).unwrap_or(u64::MAX);
+    if file_size > MAX_OCR_FILE_BYTES {
+        warn!("Skipping OCR for {:?}: PDF is {} bytes (> {} bytes)", path, file_size, MAX_OCR_FILE_BYTES);
+        return Ok((truncate_text(native), false));
+    }
+
+    if !ENABLE_PDF_OCR {
+        warn!("Skipping Windows OCR for {:?}: in-process PDF OCR is disabled for stability", path);
+        return Ok((truncate_text(native), false));
+    }
+
+    log::info!("PDF OCR start: {:?} ({} bytes, max {} pages)", path, file_size, MAX_OCR_PAGES);
     let path_buf = path.to_path_buf();
-    let ocr = tokio::task::spawn_blocking(move || try_windows_ocr_pdf(&path_buf))
+    let ocr = tokio::task::spawn_blocking(move || try_windows_ocr_pdf(&path_buf, MAX_OCR_PAGES))
         .await
         .ok()
         .flatten()
         .unwrap_or_default();
+    log::info!("PDF OCR complete: {:?} ({} chars)", path, ocr.len());
 
     if ocr.split_whitespace().count() > native.split_whitespace().count() {
         Ok((truncate_text(ocr), true))
@@ -91,7 +116,7 @@ async fn extract_image_ocr(path: &Path) -> Result<(String, bool)> {
 /// Render each PDF page via Windows.Data.Pdf and OCR with Windows.Media.Ocr.
 /// Returns None if Windows OCR is unavailable or the PDF yields no text.
 #[cfg(target_os = "windows")]
-fn try_windows_ocr_pdf(path: &Path) -> Option<String> {
+fn try_windows_ocr_pdf(path: &Path, max_pages: u32) -> Option<String> {
     use windows::{
         core::{Interface, HSTRING},
         Data::Pdf::PdfDocument,
@@ -101,6 +126,7 @@ fn try_windows_ocr_pdf(path: &Path) -> Option<String> {
         Storage::Streams::{IRandomAccessStream, InMemoryRandomAccessStream},
     };
 
+    log::info!("Windows OCR open start: {:?}", path);
     let abs = std::fs::canonicalize(path).ok()?;
     let h   = HSTRING::from(abs.to_str()?);
 
@@ -111,8 +137,10 @@ fn try_windows_ocr_pdf(path: &Path) -> Option<String> {
 
     let mut text  = String::new();
     let count     = doc.PageCount().ok()?;
+    log::info!("Windows OCR PDF opened: {:?} ({} pages)", path, count);
 
-    for i in 0..count.min(5) {
+    for i in 0..count.min(max_pages) {
+        log::debug!("Windows OCR page start: {:?} page={}", path, i + 1);
         let page   = doc.GetPage(i).ok()?;
         let stream = InMemoryRandomAccessStream::new().ok()?;
         // RenderToStreamAsync writes PNG into the stream
@@ -136,13 +164,14 @@ fn try_windows_ocr_pdf(path: &Path) -> Option<String> {
             text.push_str(&page_text);
             text.push(' ');
         }
+        log::debug!("Windows OCR page complete: {:?} page={}", path, i + 1);
     }
 
     if text.split_whitespace().count() >= 3 { Some(text) } else { None }
 }
 
 #[cfg(not(target_os = "windows"))]
-fn try_windows_ocr_pdf(_path: &Path) -> Option<String> { None }
+fn try_windows_ocr_pdf(_path: &Path, _max_pages: u32) -> Option<String> { None }
 
 /// OCR an image file (JPG, PNG, TIFF, BMP) via Windows.Media.Ocr.
 #[cfg(target_os = "windows")]

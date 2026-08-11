@@ -179,6 +179,7 @@ impl Classifier {
     }
 
     /// Classify without hints — preserves backward compatibility.
+    #[allow(dead_code)]
     pub async fn classify(&self, record: FileRecord) -> ClassifiedFile {
         self.classify_with_hints(record, None).await
     }

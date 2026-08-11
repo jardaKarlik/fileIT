@@ -26,3 +26,10 @@ src-tauri/Cargo.lock
 # Logs
 *.log
 npm-debug.log*
+
+# Python generated cache
+__pycache__/
+*.py[cod]
+
+# Generated local CNB registry (do not commit; regenerate from C:\_temp\xml)
+src-tauri/resources/cnb_registry.json

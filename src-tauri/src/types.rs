@@ -148,6 +148,7 @@ pub struct ClassifiedFile {
 
 impl ClassifiedFile {
     /// Returns true if confidence is in the "review required" band (0.40–0.84).
+    #[allow(dead_code)]
     pub fn needs_review(&self) -> bool {
         self.confidence >= 0.40 && self.confidence < 0.85
     }
@@ -299,6 +300,7 @@ pub struct CompletedRun {
 /// Created fresh on each scan run. Never persisted to disk except for
 /// CompletedRun (which uses a small JSON sidecar in AppData).
 #[derive(Debug, Default)]
+#[allow(dead_code)]
 pub struct SessionState {
     pub id: String,
     pub scan_roots: Vec<PathBuf>,
@@ -353,6 +355,7 @@ pub struct ScanResult {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct PreviewRequest {
     pub structure: Vec<String>,
     pub target_path: PathBuf,
