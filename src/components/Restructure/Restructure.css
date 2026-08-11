@@ -283,3 +283,102 @@
 .analysis-age-badge .age-text {
   letter-spacing: 0;
 }
+
+/* ── Scan status bar (Bug #4 — always-visible, 1-click load) ─────────────── */
+.scan-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  font-size: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.scan-status-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  color: #0369a1;
+}
+
+.scan-status-icon.warn {
+  color: #d97706;
+}
+
+.scan-status-text {
+  flex: 1;
+  color: #0c4a6e;
+  min-width: 160px;
+}
+
+.scan-status-action {
+  background: none;
+  border: 1px solid #7dd3fc;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #0369a1;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+
+.scan-status-action:hover {
+  background: #e0f2fe;
+}
+
+.scan-status-action.primary {
+  background: #0369a1;
+  border-color: #0369a1;
+  color: white;
+}
+
+.scan-status-action.primary:hover {
+  background: #0284c7;
+}
+
+.scan-status-question {
+  font-weight: 700;
+  color: #0c4a6e;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.scan-status-age {
+  color: #64748b;
+}
+
+.scan-status-yn {
+  border: none;
+  border-radius: 6px;
+  padding: 4px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+  transition: background 0.12s;
+}
+
+.scan-status-yn.yes {
+  background: #0369a1;
+  color: white;
+}
+
+.scan-status-yn.yes:hover {
+  background: #0284c7;
+}
+
+.scan-status-yn.no {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.scan-status-yn.no:hover {
+  background: #cbd5e1;
+}

@@ -345,18 +345,19 @@ pub async fn run_restructure(
 
     // Step 2: Execute the restructure (moves files from source → destination)
     info!("[run_restructure] Starting restructure: {} planned moves", planned_moves.len());
-    let (manifest_entries, folders_created, duration_secs) =
-        restructure::execute(&app, &planned_moves, &session_id)
+    let (manifest_entries, folders_created, duration_secs, move_errors) =
+        restructure::execute(&app, &planned_moves, &session_id, &state.app_data_dir)
             .await
             .map_err(|e| e.to_string())?;
 
     let files_moved = manifest_entries.len();
+    let failed_count = move_errors.len();
     let unknown_count = planned_moves
         .iter()
         .filter(|m| m.destination.to_string_lossy().contains("Neznámý klient"))
         .count();
-    info!("[run_restructure] Restructure done: {} moved, {} folders, {} unknown",
-        files_moved, folders_created, unknown_count);
+    info!("[run_restructure] Restructure done: {} moved, {} failed, {} folders, {} unknown",
+        files_moved, failed_count, folders_created, unknown_count);
 
     // Step 3: Save manifest sidecar (with actual SHA-256 hashes from the move)
     let manifest = BackupManifest::new(&session_id, manifest_entries);
@@ -400,6 +401,8 @@ pub async fn run_restructure(
         duration_seconds: duration_secs,
         backup_manifest_path: backup_manifest_path.map(|p| p.to_string_lossy().to_string()),
         target_path: target_path_str,
+        failed_count,
+        errors: move_errors,
     })
 }
 

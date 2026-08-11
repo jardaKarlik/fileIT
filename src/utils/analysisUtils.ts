@@ -29,12 +29,17 @@ export function analyzeAnalysisState(scanResult: ScanResult | null) {
   const ANALYSIS_OLD_THRESHOLD_DAYS = 30;
   const isOld = analysisAgeDays >= ANALYSIS_OLD_THRESHOLD_DAYS;
 
+  const d = new Date(scanTime);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const scanDateFormatted = `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
   return {
     scenario: isOld ? ('old_analysis' as const) : ('has_analysis' as const),
     hasAnalysis: true,
     isOldAnalysis: isOld,
     ageText: formatAnalysisAge(analysisAgeDays),
     ageDays: analysisAgeDays,
+    scanDateFormatted,
   };
 }
 

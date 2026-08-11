@@ -385,6 +385,20 @@ pub struct RestructureResult {
     /// The actual destination root used — returned so the frontend never
     /// needs to guess or read from local state.
     pub target_path: String,
+    /// Number of files that failed to move (0 = all succeeded).
+    pub failed_count: usize,
+    /// Individual move errors — source path, destination, and reason.
+    pub errors: Vec<FileError>,
+}
+
+/// Describes a single failed file operation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileError {
+    pub timestamp: String,
+    pub operation: String,
+    pub source: String,
+    pub destination: String,
+    pub error_message: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

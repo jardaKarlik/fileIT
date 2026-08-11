@@ -86,6 +86,14 @@ export interface ScanResult {
   files: ClassifiedFile[];
 }
 
+export interface FileError {
+  timestamp: string;
+  operation: string;
+  source: string;
+  destination: string;
+  error_message: string;
+}
+
 export interface RestructureResult {
   session_id: string;
   files_moved: number;
@@ -95,6 +103,8 @@ export interface RestructureResult {
   backup_manifest_path: string | null;
   /** Actual destination root used — authoritative source for done screen. */
   target_path: string;
+  failed_count: number;
+  errors: FileError[];
 }
 
 export interface ManifestEntry {

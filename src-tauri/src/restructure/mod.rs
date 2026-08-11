@@ -10,6 +10,7 @@
 
 use crate::types::*;
 use anyhow::{Context, Result};
+use chrono::Utc;
 use log::{debug, info, warn};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -100,17 +101,19 @@ pub fn preview(
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Execute the planned moves. Emits "restructure_progress" events.
-/// Returns (manifest_entries, folders_created, duration_seconds).
+/// Returns (manifest_entries, folders_created, duration_seconds, errors).
 pub async fn execute(
     app: &AppHandle,
     planned_moves: &[PlannedMove],
     session_id: &str,
-) -> Result<(Vec<ManifestEntry>, usize, u64)> {
+    app_data_dir: &Path,
+) -> Result<(Vec<ManifestEntry>, usize, u64, Vec<FileError>)> {
     let start = std::time::Instant::now();
     let total = planned_moves.len();
     let mut manifest_entries: Vec<ManifestEntry> = Vec::new();
     let mut folders_created = 0usize;
     let mut moved = 0usize;
+    let mut errors: Vec<FileError> = Vec::new();
 
     info!("Starting restructure: {} files to move", total);
 
@@ -147,12 +150,23 @@ pub async fn execute(
                 debug!("Moved {}/{}: {:?}", moved, total, plan.file_name);
             }
             Err(e) => {
-                warn!("Failed to move {:?}: {}", plan.source, e);
+                let error_msg = e.to_string();
+                warn!("Failed to move {:?}: {}", plan.source, error_msg);
+
+                let file_error = FileError {
+                    timestamp: Utc::now().to_rfc3339(),
+                    operation: "file_move".to_string(),
+                    source: plan.source.to_string_lossy().to_string(),
+                    destination: plan.destination.to_string_lossy().to_string(),
+                    error_message: error_msg.clone(),
+                };
+                errors.push(file_error);
+
                 emit_progress(
                     app, moved, total, &plan.file_name,
                     &format!("⚠ Chyba: {} — přeskakujeme", plan.file_name),
                     false,
-                    Some(e.to_string()),
+                    Some(error_msg),
                 );
             }
         }
@@ -160,9 +174,28 @@ pub async fn execute(
 
     let duration = start.elapsed().as_secs();
     emit_progress(app, moved, total, "", "✓ Uspořádání dokončeno", true, None);
-    info!("Restructure complete: {} files moved in {}s", moved, duration);
+    info!("Restructure complete: {} moved, {} errors in {}s", moved, errors.len(), duration);
 
-    Ok((manifest_entries, folders_created, duration))
+    // Write structured error log if any errors occurred
+    if !errors.is_empty() {
+        write_error_log(app_data_dir, session_id, &errors);
+    }
+
+    Ok((manifest_entries, folders_created, duration, errors))
+}
+
+/// Write structured error log to AppData for audit trail.
+fn write_error_log(app_data_dir: &Path, session_id: &str, errors: &[FileError]) {
+    let log_dir = app_data_dir.join("error_logs");
+    if std::fs::create_dir_all(&log_dir).is_err() {
+        return;
+    }
+    let filename = format!("errors_{}.json", &session_id[..session_id.len().min(36)]);
+    let path = log_dir.join(filename);
+    if let Ok(json) = serde_json::to_string_pretty(errors) {
+        let _ = std::fs::write(&path, json);
+        warn!("[restructure] {} file error(s) logged to {:?}", errors.len(), path);
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

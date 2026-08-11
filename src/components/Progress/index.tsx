@@ -1,8 +1,8 @@
 // src/components/Progress/index.tsx
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../utils/tauriApi';
-import { CompletedRun } from '../../types';
+import { CompletedRun, FileError } from '../../types';
 import './Progress.css';
 
 const IS_TAURI = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
@@ -18,6 +18,8 @@ export function Progress() {
   const logRef = useRef<HTMLDivElement>(null);
   const unlistenRef = useRef<(() => void) | null>(null);
   const didStart = useRef(false);
+  const [moveErrors, setMoveErrors] = useState<FileError[]>([]);
+  const [showErrors, setShowErrors] = useState(false);
 
   useEffect(() => {
     if (didStart.current) return;
@@ -66,6 +68,11 @@ export function Progress() {
 
       setProgressPct(100);
       setProgressCurrent('Dokončeno');
+
+      if (result.failed_count > 0) {
+        setMoveErrors(result.errors);
+        appendProgressLine(`⚠ ${result.failed_count} soubor(ů) se nepodařilo přesunout — viz přehled níže`);
+      }
 
       const run: CompletedRun = {
         session_id: result.session_id,
@@ -166,13 +173,44 @@ export function Progress() {
 
       <div className="progress-log-pane" ref={logRef}>
         {progressLines.map((line, i) => {
-          const cls = line.startsWith('✓') ? 'found' : line.startsWith('→') ? 'hit' : line.startsWith('$') ? 'cmd' : '';
+          const cls = line.startsWith('✓') ? 'found' : line.startsWith('→') ? 'hit' : line.startsWith('$') ? 'cmd' : line.startsWith('⚠') ? 'hit' : '';
           return (
             <div key={i} className={`progress-log-line ${cls}`}>{line}</div>
           );
         })}
         <div className="progress-cursor" />
       </div>
+
+      {moveErrors.length > 0 && (
+        <div style={{
+          marginTop: 16, padding: '12px 16px',
+          background: 'rgba(255, 80, 80, 0.08)', border: '1px solid rgba(255, 80, 80, 0.3)',
+          borderRadius: 8, fontSize: 13,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <strong style={{ color: '#ff5050' }}>⚠ {moveErrors.length} soubor(ů) se nepodařilo přesunout</strong>
+            <button
+              onClick={() => setShowErrors(v => !v)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: 12, opacity: 0.7 }}
+            >
+              {showErrors ? 'Skrýt ↑' : 'Zobrazit detaily ↓'}
+            </button>
+          </div>
+          {showErrors && (
+            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {moveErrors.map((err, i) => (
+                <div key={i} style={{ fontSize: 11, opacity: 0.85 }}>
+                  <div style={{ fontWeight: 600, wordBreak: 'break-all' }}>{err.source.split('\\').pop()}</div>
+                  <div style={{ opacity: 0.7 }}>{err.error_message}</div>
+                </div>
+              ))}
+              <div style={{ marginTop: 4, opacity: 0.6, fontSize: 11 }}>
+                Chyby jsou zaznamenány v AppData/error_logs/. Ostatní soubory byly úspěšně přesunuty.
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

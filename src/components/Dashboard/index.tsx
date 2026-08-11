@@ -63,7 +63,7 @@ export function Dashboard() {
   const { setScreen, scanResult } = useStore();
 
   const [backupState, setBackupState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
-  const [, setBackupPath] = useState<string>('');
+  const [backupPath, setBackupPath] = useState<string>('');
   const [exportState, setExportState] = useState<'idle' | 'loading' | 'done'>('idle');
 
   const totalFiles = scanResult?.total_files ?? 0;
@@ -202,9 +202,11 @@ export function Dashboard() {
               <div className="cta-card-label">Chraňte svou práci</div>
               <div className="cta-card-title">Zálohovat</div>
               <div className="cta-card-desc">
-                {backupState === 'idle' && 'Bezpečnostní ZIP + volitelně kopie na OneDrive, Google Drive nebo Dropbox.'}
+                {backupState === 'idle' && 'Vytvoříme zálohu souborů — JSON manifest se seznamem všech nalezených souborů. Uložíme do AppData.'}
                 {backupState === 'loading' && 'Vytváříme zálohu…'}
-                {backupState === 'done' && '✓ Záloha uložena'}
+                {backupState === 'done' && (
+                  <span>✓ Záloha uložena{backupPath && <><br /><small style={{ opacity: 0.7, wordBreak: 'break-all' }}>{backupPath}</small></>}</span>
+                )}
                 {backupState === 'error' && '⚠ Záloha selhala — zkuste to znovu'}
               </div>
             </div>

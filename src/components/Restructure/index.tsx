@@ -264,15 +264,45 @@ export function Restructure() {
         <h2 className="rs-title">Jak to máme uspořádat?</h2>
         <p className="rs-sub">Vyberte, kam soubory poputují a jak je chcete seskupit. Nahlédnete, co to udělá, <em>než</em> cokoli přesuneme.</p>
 
-        {/* ANALYSIS AGE INDICATOR */}
-        {useAnalysisData && analysisState.hasAnalysis && (
-          <div className={`analysis-age-badge ${analysisState.isOldAnalysis ? 'old' : 'fresh'}`}>
-            <span className="age-icon">{analysisState.isOldAnalysis ? '⏱' : '✓'}</span>
-            <span className="age-text">
-              Poslední analýza: {analysisState.ageText}
-            </span>
-          </div>
-        )}
+        {/* SCAN STATUS BAR — always visible, 1-click load or re-scan */}
+        <div className="scan-status-bar">
+          {analysisState.hasAnalysis ? (
+            useAnalysisData ? (
+              <>
+                <span className="scan-status-icon">✓</span>
+                <span className="scan-status-text">
+                  {`Analýza načtena — ${scanResult!.total_files} souborů${analysisState.ageText ? ` · ${analysisState.ageText}` : ''}`}
+                </span>
+                <button className="scan-status-action" onClick={handleWarningStartScan}>
+                  ↺ Nový sken
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="scan-status-question">Použít tuto analýzu?</span>
+                <span className="scan-status-text">
+                  {`${analysisState.scanDateFormatted} · ${scanResult!.total_files} souborů`}
+                  {analysisState.ageText && analysisState.ageText !== 'dnes' && (
+                    <span className="scan-status-age"> · {analysisState.ageText}</span>
+                  )}
+                </span>
+                <button className="scan-status-yn yes" onClick={handleWarningProceedAnyway}>ANO</button>
+                <button className="scan-status-yn no" onClick={handleWarningStartScan}>NE</button>
+              </>
+            )
+          ) : (
+            <>
+              <span className="scan-status-icon warn">⚠</span>
+              <span className="scan-status-text">Žádná analýza — pro přesné uspořádání doporučujeme nejprve spustit sken</span>
+              <button className="scan-status-action primary" onClick={handleWarningStartScan}>
+                ↺ Spustit sken
+              </button>
+              <button className="scan-status-action" onClick={handleWarningUseSampleData}>
+                Použít demo data
+              </button>
+            </>
+          )}
+        </div>
 
         {/* 1 / KAM */}
         <div className="rs-section-head">
@@ -481,7 +511,7 @@ export function Restructure() {
             <div className="backup-title">Bezpečnostní záloha — {backupEnabled ? 'zapnuto' : 'vypnuto'}</div>
             <div className="backup-desc">
               {backupEnabled
-                ? <>Před jakýmkoli přesunem vytvoříme zálohu <code className="backup-filename">backup_{new Date().toISOString().slice(0,10)}.zip</code>. Cokoli se nepovede, vrátíme zpět jedním klikem.</>
+                ? <>Před jakýmkoli přesunem vytvoříme zálohu <code className="backup-filename">manifest_{new Date().toISOString().slice(0,10)}.json</code>. Cokoli se nepovede, vrátíme zpět jedním klikem.</>
                 : <><strong>Bez zálohy je uspořádání jednosměrná akce.</strong> Pokud se něco nepovede, obnova souborů bude vyžadovat ruční práci.</>
               }
             </div>
@@ -534,7 +564,7 @@ export function Restructure() {
                   <div className="modal-actions">
                     <button className="modal-btn-primary" onClick={() => primaryCloud && confirmCloud(primaryCloud)}>Ano, použít {primaryCloud?.name}</button>
                     <div className="modal-actions-row">
-                      <button className="modal-btn-secondary" onClick={() => { setShowCloudModal(false); setDestinationMode({ type: 'local_only' }); }}>Ne, zrušit</button>
+                      <button className="modal-btn-secondary" onClick={() => { setShowCloudModal(false); setDestinationMode({ type: 'local_only' }); setTargetPath('C:\\ReOrganized'); }}>Ne, zrušit</button>
                       <button className="modal-btn-alt" onClick={() => setCloudModalVariant('list')}>Zvolit jiný cloud</button>
                     </div>
                   </div>

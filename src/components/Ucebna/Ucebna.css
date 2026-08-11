@@ -10,9 +10,50 @@
 .ucebna-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  gap: 16px;
 }
+
+.ucebna-back-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-secondary, #6b7280);
+  padding: 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ucebna-back-btn:hover { color: var(--text-primary, #1a1a2e); }
+
+.ucebna-header-center {
+  flex: 1;
+  text-align: center;
+}
+
+.ucebna-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.ucebna-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--text-secondary, #6b7280);
+  padding: 4px 6px;
+  line-height: 1;
+}
+.ucebna-close-btn:hover { color: var(--text-primary, #1a1a2e); }
 
 .ucebna-title {
   font-size: 24px;

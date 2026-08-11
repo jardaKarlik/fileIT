@@ -4,6 +4,7 @@
 // No filenames are ever shown. Interaction unit is a pattern (cluster), not a file.
 
 import { useEffect, useState } from 'react';
+import { useStore } from '../../store';
 import { api } from '../../utils/tauriApi';
 import { UnclassifiedPattern } from '../../types';
 import './Ucebna.css';
@@ -41,6 +42,7 @@ interface PendingPayload {
 }
 
 export function Ucebna() {
+  const { setScreen } = useStore();
   const [patterns, setPatterns]       = useState<UnclassifiedPattern[]>([]);
   const [loading, setLoading]         = useState(true);
   const [activeId, setActiveId]       = useState<string | null>(null);
@@ -54,12 +56,23 @@ export function Ucebna() {
   const [uploadMsg, setUploadMsg]     = useState('');
   const [contributions, setContribs]  = useState(0);
   const [todayContribs, setTodayContribs] = useState(0);
-
   useEffect(() => {
     api.groupUnclassifiedPatterns()
       .then(ps => { setPatterns(ps); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  // ESC key → go back to dashboard
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (activeId) closeTeachPanel();
+        else setScreen('dashboard');
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [activeId]);
 
   function openTeachPanel(patternId: string) {
     setActiveId(patternId);
@@ -131,6 +144,9 @@ export function Ucebna() {
   if (patterns.length === 0) {
     return (
       <div className="ucebna-empty">
+        <button className="ucebna-back-btn" onClick={() => setScreen('dashboard')} style={{ marginBottom: 16 }}>
+          ← Zpět na přehled
+        </button>
         <div className="ucebna-empty-icon">✓</div>
         <h2>Všechny soubory jsou klasifikovány</h2>
         <p>Žádné neznámé vzory k rozpoznání.</p>
@@ -142,16 +158,36 @@ export function Ucebna() {
     <div className="ucebna">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="ucebna-header">
-        <div>
+        <button
+          className="ucebna-back-btn"
+          onClick={() => setScreen('dashboard')}
+          title="Zpět na přehled (ESC)"
+        >
+          ← Zpět na přehled
+        </button>
+        <div className="ucebna-header-center">
           <h1 className="ucebna-title">Učebna</h1>
-          <p className="ucebna-subtitle">Pomáháte, jak chcete a kdy chcete</p>
+          <p className="ucebna-subtitle">
+            {taught.size > 0
+              ? `${taught.size} rozpoznáno z ${patterns.length} vzorů`
+              : 'Pomáháte, jak chcete a kdy chcete'}
+          </p>
         </div>
-        <div className="ucebna-counter">
-          <span className="counter-total">{contributions}</span>
-          <span className="counter-label">příspěvků celkem</span>
-          {todayContribs > 0 && (
-            <span className="counter-today">+{todayContribs} dnes</span>
-          )}
+        <div className="ucebna-header-right">
+          <div className="ucebna-counter">
+            <span className="counter-total">{contributions}</span>
+            <span className="counter-label">příspěvků celkem</span>
+            {todayContribs > 0 && (
+              <span className="counter-today">+{todayContribs} dnes</span>
+            )}
+          </div>
+          <button
+            className="ucebna-close-btn"
+            onClick={() => setScreen('dashboard')}
+            title="Zavřít (ESC)"
+          >
+            ✕
+          </button>
         </div>
       </div>
 

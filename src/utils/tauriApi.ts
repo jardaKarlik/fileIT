@@ -162,6 +162,8 @@ function devMock(cmd: string, _args?: Record<string, unknown>): unknown {
         duration_seconds: 252,
         backup_manifest_path: 'C:\\AppData\\FileIT\\backups\\manifest_2026-04-17_143300.json',
         target_path: 'C:\\FileIT\\Organized\\',
+        failed_count: 0,
+        errors: [],
       } satisfies RestructureResult;
 
     case 'create_standalone_backup':
