@@ -22,6 +22,8 @@ pub async fn extract_text(path: &Path, category: &FileCategory) -> Result<(Strin
     match category {
         FileCategory::Pdf   => extract_pdf(path).await,
         FileCategory::Word  => extract_docx(path).map(|t| (t, false)),
+        FileCategory::PowerPoint => extract_pptx(path).map(|t| (t, false)),
+        FileCategory::Csv | FileCategory::Xml => extract_plain(path).map(|t| (t, false)),
         FileCategory::Text  => extract_plain(path).map(|t| (t, false)),
         FileCategory::Image => extract_image_ocr(path).await,
         FileCategory::Excel => extract_xlsx(path).map(|t| (t, false)),
@@ -244,6 +246,30 @@ fn extract_xlsx(path: &Path) -> Result<String> {
         let mut xml = String::new();
         shared.read_to_string(&mut xml)?;
         text = strip_xml_tags(&xml);
+    }
+
+    Ok(truncate_text(text))
+}
+
+fn extract_pptx(path: &Path) -> Result<String> {
+    let file = std::fs::File::open(path)
+        .with_context(|| format!("Opening PPTX: {:?}", path))?;
+    let mut zip = zip::ZipArchive::new(file)
+        .with_context(|| "Parsing PPTX as ZIP")?;
+    let mut text = String::new();
+
+    for i in 0..zip.len() {
+        let mut entry = zip.by_index(i)?;
+        let name = entry.name().to_string();
+        if name.starts_with("ppt/slides/slide") && name.ends_with(".xml") {
+            let mut xml = String::new();
+            entry.read_to_string(&mut xml)?;
+            text.push_str(&strip_xml_tags(&xml));
+            text.push(' ');
+            if text.len() >= MAX_TEXT_BYTES {
+                break;
+            }
+        }
     }
 
     Ok(truncate_text(text))
