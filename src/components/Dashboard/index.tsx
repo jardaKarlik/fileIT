@@ -5,46 +5,49 @@ import { useStore } from '../../store';
 import { api } from '../../utils/tauriApi';
 import './Dashboard.css';
 
-// Helper to get years and file counts for timeline
-function getYearsAndCounts(files: any[]) {
-  const years: string[] = [];
-  const vals: number[] = [];
+const TIMELINE_YEARS = 12;
 
-  // Create map to count files by year
-  const yearCounts: { [key: number]: number } = {};
+type TimelineData = {
+  years: string[];
+  vals: number[];
+  startYear: number;
+  endYear: number;
+  outsideCount: number;
+};
 
-  // Count files by year from document_date or modified date
+// Keep the dashboard timeline bounded. Real-world office data can contain
+// corrupt/default dates (for example year 100), which must not stretch the
+// chart or make recent activity unreadable.
+export function getTimelineData(files: any[], now = new Date()): TimelineData {
+  const endYear = now.getFullYear();
+  const startYear = endYear - TIMELINE_YEARS + 1;
+  const yearCounts: Record<number, number> = {};
+
+  for (let year = startYear; year <= endYear; year += 1) {
+    yearCounts[year] = 0;
+  }
+
+  let outsideCount = 0;
   files.forEach(file => {
-    try {
-      const dateStr = file.document_date || file.record?.modified;
-      if (!dateStr) return;
+    const dateStr = file.document_date || file.record?.modified;
+    const date = dateStr ? new Date(dateStr) : null;
+    const year = date && !Number.isNaN(date.getTime()) ? date.getFullYear() : null;
 
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return;
-
-      const year = date.getFullYear();
-      yearCounts[year] = (yearCounts[year] ?? 0) + 1;
-    } catch (e) {
-      // Ignore parsing errors
+    if (year === null || year < startYear || year > endYear) {
+      outsideCount += 1;
+    } else {
+      yearCounts[year] += 1;
     }
   });
 
-  // Sort years and build display arrays
-  const sortedYears = Object.keys(yearCounts)
-    .map(Number)
-    .sort((a, b) => a - b);
-
-  sortedYears.forEach(year => {
-    years.push(String(year));
-    vals.push(yearCounts[year]);
-  });
-
-  // If no years found, return empty arrays
-  if (years.length === 0) {
-    return { years: [], vals: [] };
-  }
-
-  return { years, vals };
+  const years = Object.keys(yearCounts).map(Number);
+  return {
+    years: years.map(String),
+    vals: years.map(year => yearCounts[year]),
+    startYear,
+    endYear,
+    outsideCount,
+  };
 }
 
 // Derive top customers from real scan data
@@ -77,7 +80,13 @@ export function Dashboard() {
     : 0;
 
   // Get years and file counts for timeline
-  const { years: YEARS, vals: VALS } = getYearsAndCounts(scanResult?.files ?? []);
+  const {
+    years: YEARS,
+    vals: VALS,
+    startYear: timelineStartYear,
+    endYear: timelineEndYear,
+    outsideCount: timelineOutsideCount,
+  } = getTimelineData(scanResult?.files ?? []);
   const MAX = Math.max(...VALS, 1);
 
   const topCustomers = getTopCustomers(scanResult?.files ?? []);
@@ -218,18 +227,27 @@ export function Dashboard() {
 
         {/* Charts row */}
         <div className="charts-row">
-          <div className="chart-card">
-            <div className="chart-title">Aktivita souborů v čase <span className="chart-tag">podle roku vzniku</span></div>
-            <div className="activity-bars">
-              {VALS.map((v,i) => (
-                <div key={i} className="act-bar-wrap">
-                  <div className="act-bar" style={{
-                    height: `${(v/MAX)*90}px`,
-                    background: v===MAX ? 'linear-gradient(180deg,#FF1493,#FE865B)' : v>25 ? 'var(--pink-soft)' : '#E8D4E8'
-                  }} title={`${YEARS[i]}: ${v} souborů`} />
-                  <div className="act-month">{YEARS[i]}</div>
-                </div>
-              ))}
+          <div className="chart-card timeline-card">
+            <div className="chart-title">
+              Aktivita souborů v čase
+              <span className="chart-tag">posledních {TIMELINE_YEARS} let ({timelineStartYear}–{timelineEndYear})</span>
+            </div>
+            <div className="timeline-content">
+              <div className="timeline-outside" title="Soubory mimo zobrazené období">
+                <div className="timeline-outside-count">{timelineOutsideCount}</div>
+                <div className="timeline-outside-label">mimo období</div>
+              </div>
+              <div className="activity-bars">
+                {VALS.map((v, i) => (
+                  <div key={i} className="act-bar-wrap">
+                    <div className="act-bar" style={{
+                      height: `${(v / MAX) * 90}px`,
+                      background: v === MAX ? 'linear-gradient(180deg,#FF1493,#FE865B)' : v > 25 ? 'var(--pink-soft)' : '#E8D4E8'
+                    }} title={`${YEARS[i]}: ${v} souborů`} />
+                    <div className="act-month">{YEARS[i]}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
