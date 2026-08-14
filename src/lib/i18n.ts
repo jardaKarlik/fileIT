@@ -2,7 +2,7 @@
 export type Language = "cs" | "en";
 
 export type Content = {
-  nav: { download: string };
+  nav: { home: string; contact: string; download: string };
   hero: {
     badge: string;
     statements: string[];
@@ -27,11 +27,42 @@ export type Content = {
   };
   audience: { heading: string; text: string; pills: string[] };
   download: { heading: string; text: string; button: string; note: string };
+  contact: {
+    title: string;
+    lead: string;
+    form: {
+      name: string;
+      namePlaceholder: string;
+      email: string;
+      emailPlaceholder: string;
+      subject: string;
+      subjectPlaceholder: string;
+      message: string;
+      messagePlaceholder: string;
+      submit: string;
+      sending: string;
+      success: string;
+      successDetail: string;
+      error: string;
+      errors: {
+        name: string;
+        email: string;
+        message: string;
+      };
+    };
+    info: {
+      heading: string;
+      email: string;
+      github: string;
+      featurebase: string;
+      response: string;
+    };
+  };
   footer: { publisher: string };
 };
 
 const cs: Content = {
-  nav: { download: "Stáhnout FileIT" },
+  nav: { home: "Domů", contact: "Kontakt", download: "Stáhnout FileIT" },
   hero: {
     badge: "Windows desktop · verze 1.0",
     statements: [
@@ -138,11 +169,42 @@ const cs: Content = {
     button: "Stáhnout FileIT pro Windows",
     note: "Připravujeme · verze 1.0",
   },
+  contact: {
+    title: "Kontaktujte nás",
+    lead: "Máte dotaz, nápad nebo potřebujete pomoc s FileIT? Napište nám — rádi se ozveme.",
+    form: {
+      name: "Jméno",
+      namePlaceholder: "Jak vám můžeme říkat?",
+      email: "E-mail",
+      emailPlaceholder: "vas@email.cz",
+      subject: "Předmět",
+      subjectPlaceholder: "O čem je vaše zpráva?",
+      message: "Zpráva",
+      messagePlaceholder: "Napište nám, s čím potřebujete pomoci...",
+      submit: "Odeslat zprávu",
+      sending: "Odesílání...",
+      success: "Zpráva odeslána",
+      successDetail: "Děkujeme. Ozveme se vám co nejdříve.",
+      error: "Odeslání se nezdařilo. Zkuste to prosím znovu.",
+      errors: {
+        name: "Jméno musí mít alespoň 2 znaky.",
+        email: "Zadejte platný e-mail.",
+        message: "Zpráva musí mít alespoň 10 znaků.",
+      },
+    },
+    info: {
+      heading: "Další kontakty",
+      email: "E-mail",
+      github: "GitHub",
+      featurebase: "Hlasování o funkcích",
+      response: "Odpovídáme obvykle do 1–2 pracovních dnů.",
+    },
+  },
   footer: { publisher: "Jaroslav Karlík | FileIT | Czech Republic" },
 };
 
 const en: Content = {
-  nav: { download: "Download FileIT" },
+  nav: { home: "Home", contact: "Contact", download: "Download FileIT" },
   hero: {
     badge: "Windows desktop · version 1.0",
     statements: [
@@ -248,6 +310,37 @@ const en: Content = {
     text: "The installer for Windows 10 and 11 is on the way. The signed release will be available here.",
     button: "Download FileIT for Windows",
     note: "Coming soon · version 1.0",
+  },
+  contact: {
+    title: "Contact us",
+    lead: "Have a question, idea, or need help with FileIT? Drop us a line — we'll get back to you.",
+    form: {
+      name: "Name",
+      namePlaceholder: "What should we call you?",
+      email: "Email",
+      emailPlaceholder: "you@example.com",
+      subject: "Subject",
+      subjectPlaceholder: "What is your message about?",
+      message: "Message",
+      messagePlaceholder: "Tell us how we can help...",
+      submit: "Send message",
+      sending: "Sending...",
+      success: "Message sent",
+      successDetail: "Thank you. We'll be in touch as soon as possible.",
+      error: "Submission failed. Please try again.",
+      errors: {
+        name: "Name must be at least 2 characters.",
+        email: "Please enter a valid email.",
+        message: "Message must be at least 10 characters.",
+      },
+    },
+    info: {
+      heading: "Other contacts",
+      email: "Email",
+      github: "GitHub",
+      featurebase: "Feature voting",
+      response: "We usually respond within 1–2 business days.",
+    },
   },
   footer: { publisher: "Jaroslav Karlík | FileIT | Czech Republic" },
 };
