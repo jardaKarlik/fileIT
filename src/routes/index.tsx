@@ -181,8 +181,9 @@ function LandingPage() {
               <HeroCarousel />
             </div>
             <p className="mt-6 max-w-md text-base text-primary-foreground/80">
-              FileIT je desktopová aplikace pro české finanční poradce. Projde archiv klientských
-              dokumentů, rozpozná jejich obsah a uspořádá je do struktury, které rozumíte a vse zazalohuje
+              FileIT je desktopová aplikace pro české finanční poradce a jejich mladší kolegy. Projde
+              archiv klientských dokumentů, rozpozná jejich obsah a uspořádá je do struktury, které
+              rozumíte a vše zazálohuje.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Button
