@@ -196,8 +196,10 @@
 }
 
 @utility portrait-dissolve {
-  mask-image: radial-gradient(70% 70% at 50% 42%, oklch(0 0 0) 40%, transparent 100%);
-  -webkit-mask-image: radial-gradient(70% 70% at 50% 42%, oklch(0 0 0) 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(65% 62% at 50% 40%, #000 35%, rgba(0, 0, 0, 0) 100%);
+  mask-image: radial-gradient(65% 62% at 50% 40%, #000 35%, rgba(0, 0, 0, 0) 100%);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   mix-blend-mode: screen;
 }
 
