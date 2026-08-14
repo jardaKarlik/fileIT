@@ -128,9 +128,9 @@ const cs: Content = {
     ],
   },
   audience: {
-    heading: "Pro české finanční poradce",
-    text: "FileIT je navržený pro samostatné poradce i poradenské kanceláře, které spravují stovky klientů a roky nahromaděné dokumentace. Znalost českých institucí a typů smluv je součástí aplikace.",
-    pills: ["Samostatní poradci", "Poradenské kanceláře", "Back office týmy"],
+    heading: "Pro každého, kdo chce mít pořádek",
+    text: "FileIT je navržený pro všechny, kdo spravují dokumenty — finanční poradce, malé firmy, ale i méně technicky zdatné uživatele, kteří hledají nástroj, který udělá většinu práce za ně. Znalost českých institucí a typů smluv je součástí aplikace.",
+    pills: ["Finanční poradci", "Malé firmy", "Méně zdatní uživatelé"],
   },
   download: {
     heading: "Ke stažení",
