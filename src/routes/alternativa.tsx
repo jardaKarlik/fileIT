@@ -13,21 +13,21 @@ import {
   Users,
 } from "lucide-react";
 
-import heroPortrait from "@/assets/hero-portrait.jpg";
 import { HeroCarousel } from "@/components/hero-carousel";
 import { HeroShowcase } from "@/components/hero-showcase";
+import { PortraitRotator } from "@/components/portrait-rotator";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/alternativa")({
   head: () => ({
     meta: [
-      { title: "FileIT — Inteligentní správa dokumentů | file-app.uk" },
+      { title: "FileIT — alternativní verze úvodní stránky | file-app.uk" },
       {
         name: "description",
         content:
           "FileIT (file-app.uk) je desktopová aplikace pro Windows, která automaticky roztřídí a uspořádá archiv klientských dokumentů finančních poradců. Lokálně, bezpečně, GDPR-ready.",
       },
-      { property: "og:title", content: "FileIT — Inteligentní správa dokumentů" },
+      { property: "og:title", content: "FileIT — alternativní verze úvodní stránky" },
       {
         property: "og:description",
         content:
@@ -37,9 +37,9 @@ export const Route = createFileRoute("/alternativa")({
       { property: "og:url", content: "https://file-app.uk" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
-    links: [{ rel: "canonical", href: "https://file-app.uk" }],
+    links: [{ rel: "canonical", href: "https://file-app.uk/alternativa" }],
   }),
-  component: LandingPage,
+  component: AlternativeLandingPage,
 });
 
 const aboutCards = [
@@ -144,7 +144,7 @@ function StatusPill({ tone, children }: { tone: "green" | "orange" | "pink"; chi
   );
 }
 
-function LandingPage() {
+function AlternativeLandingPage() {
   return (
     <div className="font-sans">
       {/* Hero with animated mesh gradient */}
@@ -164,15 +164,8 @@ function LandingPage() {
           </Button>
         </nav>
 
-        {/* Portrait as an atmospheric theme layer on the left edge */}
-        <img
-          src={heroPortrait}
-          alt=""
-          aria-hidden="true"
-          width={1024}
-          height={1280}
-          className="portrait-edge pointer-events-none absolute -left-24 top-10 z-0 hidden h-[85%] w-[38%] object-cover object-[30%_25%] lg:block"
-        />
+        {/* Rotating character portraits as an atmospheric theme layer */}
+        <PortraitRotator />
 
         <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-16 px-6 pt-6 pb-28 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
           <div>
