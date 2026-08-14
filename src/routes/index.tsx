@@ -273,10 +273,13 @@ function LandingPage() {
               {t.audience.text}
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <StatusPill tone="green">{t.audience.pills[0]}</StatusPill>
-              <StatusPill tone="pink">{t.audience.pills[1]}</StatusPill>
-              <StatusPill tone="orange">{t.audience.pills[2]}</StatusPill>
+              {t.audience.pills.map((pill, index) => (
+                <StatusPill key={pill} tone={pillTones[index] ?? "pink"}>
+                  {pill}
+                </StatusPill>
+              ))}
             </div>
+
           </div>
         </section>
 
