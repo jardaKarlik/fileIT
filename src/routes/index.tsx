@@ -15,7 +15,7 @@ import {
 
 import heroPortrait from "@/assets/hero-portrait.jpg";
 import { HeroCarousel } from "@/components/hero-carousel";
-import { HeroShowcase } from "@/components/hero-showcase";
+import { HeroVideo } from "@/components/hero-video";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
@@ -206,7 +206,7 @@ function LandingPage() {
 
           {/* Product screenshots are the focal point */}
           <div className="relative pb-28 sm:pb-36 md:pb-44 lg:pb-48">
-            <HeroShowcase />
+            <HeroVideo />
           </div>
         </div>
       </header>
