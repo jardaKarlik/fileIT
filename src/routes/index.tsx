@@ -335,7 +335,12 @@ function LandingPage() {
             </a>
           </div>
           <div className="flex flex-col gap-2 text-sm text-primary-foreground/70 sm:items-end">
-            <a href="https://github.com" className="hover:text-primary-foreground">
+            <a
+              href="https://github.com/jardaKarlik/fileIT"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-primary-foreground"
+            >
               GitHub
             </a>
             <a href="mailto:info@file-app.uk" className="hover:text-primary-foreground">
