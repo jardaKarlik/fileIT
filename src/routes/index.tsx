@@ -10,6 +10,7 @@ import {
   Github,
   GraduationCap,
   Heart,
+  HelpCircle,
   ScanLine,
   ShieldCheck,
   Sparkles,
@@ -25,6 +26,12 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { StatusPill } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { content, type Language } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
@@ -245,6 +252,34 @@ function LandingPage() {
                   {pill}
                 </StatusPill>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section id="faq" className="bg-background py-20">
+          <div className="mx-auto max-w-4xl px-6">
+            <div className="text-center">
+              <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-brand-violet/10 text-brand-violet">
+                <HelpCircle className="h-5 w-5" />
+              </span>
+              <h2 className="mt-6 font-display text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+                {t.faq.heading}
+              </h2>
+            </div>
+            <div className="mt-10 rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)] sm:p-8">
+              <Accordion type="single" collapsible className="w-full">
+                {t.faq.items.map((item, index) => (
+                  <AccordionItem key={index} value={`item-${index}`}>
+                    <AccordionTrigger className="text-base font-semibold text-card-foreground">
+                      {item.q}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
+                      {item.a}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             </div>
           </div>
         </section>
