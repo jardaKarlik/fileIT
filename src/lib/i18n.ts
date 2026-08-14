@@ -59,6 +59,7 @@ export type Content = {
     };
   };
   footer: { publisher: string };
+  faq: { heading: string; items: { q: string; a: string }[] };
 };
 
 const cs: Content = {
