@@ -56,6 +56,8 @@ const aboutIcons: Record<string, LucideIcon> = {
   cloud: CloudUpload,
 };
 
+const pillTones: ("green" | "pink" | "orange")[] = ["green", "pink", "orange"];
+
 const featureIcons: Record<string, LucideIcon> = {
   classification: FileStack,
   institution: Building2,
