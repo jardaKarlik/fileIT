@@ -65,7 +65,7 @@ export type Content = {
 const cs: Content = {
   nav: { home: "Domů", contact: "Kontakt", download: "Stáhnout FileIT" },
   hero: {
-    badge: "Windows desktop · verze 1.0",
+    badge: "Windows desktop · verze 1.0.12",
     statements: [
       "Tisíce dokumentů. Řád za minuty.",
       "Každý klient. Každá smlouva. Na svém místě.",
@@ -168,7 +168,7 @@ const cs: Content = {
     heading: "Ke stažení",
     text: "Instalační balíček pro Windows 10 a 11 připravujeme. Podepsaná verze bude k dispozici zde.",
     button: "Stáhnout FileIT pro Windows",
-    note: "Připravujeme · verze 1.0",
+    note: "Připravujeme · verze 1.0.12",
   },
   contact: {
     title: "Kontaktujte nás",
@@ -236,7 +236,7 @@ const cs: Content = {
 const en: Content = {
   nav: { home: "Home", contact: "Contact", download: "Download FileIT" },
   hero: {
-    badge: "Windows desktop · version 1.0",
+    badge: "Windows desktop · version 1.0.12",
     statements: [
       "Thousands of documents. Order in minutes.",
       "Every client. Every contract. In its place.",
@@ -339,7 +339,7 @@ const en: Content = {
     heading: "Download",
     text: "The installer for Windows 10 and 11 is on the way. The signed release will be available here.",
     button: "Download FileIT for Windows",
-    note: "Coming soon · version 1.0",
+    note: "Coming soon · version 1.0.12",
   },
   contact: {
     title: "Contact us",
