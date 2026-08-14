@@ -198,7 +198,7 @@
 @utility portrait-dissolve {
   mask-image: radial-gradient(70% 70% at 50% 42%, oklch(0 0 0) 40%, transparent 100%);
   -webkit-mask-image: radial-gradient(70% 70% at 50% 42%, oklch(0 0 0) 40%, transparent 100%);
-  mix-blend-mode: luminosity;
+  mix-blend-mode: screen;
 }
 
 @media (prefers-reduced-motion: reduce) {
