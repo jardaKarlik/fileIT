@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Brain,
   Building2,
+  CloudUpload,
   Download,
   FileStack,
   FolderTree,
@@ -12,11 +13,16 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { useState } from "react";
 
 import heroPortrait from "@/assets/hero-portrait.jpg";
 import { HeroCarousel } from "@/components/hero-carousel";
 import { HeroVideo } from "@/components/hero-video";
+import { LanguageSwitch } from "@/components/language-switch";
 import { Button } from "@/components/ui/button";
+import { content, type Language } from "@/lib/i18n";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -42,71 +48,25 @@ export const Route = createFileRoute("/")({
   component: LandingPage,
 });
 
-const aboutCards = [
-  {
-    icon: ScanLine,
-    title: "Naskenuje archiv",
-    text: "Projde tisíce souborů ve vašich složkách a přečte jejich obsah přímo na vašem počítači.",
-  },
-  {
-    icon: Sparkles,
-    title: "Rozpozná dokumenty",
-    text: "Určí typ dokumentu, instituci i klienta — bez ručního přepisování a bez tabulek.",
-  },
-  {
-    icon: FolderTree,
-    title: "Uspořádá strukturu",
-    text: "Navrhne a vytvoří přehlednou složkovou strukturu podle vašich vlastních pravidel.",
-  },
-];
+// Icons are language-independent, matched to dictionary keys
+const aboutIcons: Record<string, LucideIcon> = {
+  scan: ScanLine,
+  recognize: Sparkles,
+  organize: FolderTree,
+  cloud: CloudUpload,
+};
 
-const features = [
-  {
-    icon: FileStack,
-    title: "Automatická klasifikace dokumentů",
-    text: "Smlouvy, výpisy i dodatky se roztřídí samy podle naučených vzorů.",
-  },
-  {
-    icon: Building2,
-    title: "Rozpoznání instituce",
-    text: "Logo, firemní barvy a klíčová slova určí, od koho dokument přišel.",
-  },
-  {
-    icon: GraduationCap,
-    title: "Učebna",
-    text: "Systém doučíte pár kliknutími — vaše korekce se hned promítnou do výsledků.",
-  },
-  {
-    icon: Brain,
-    title: "Centrální Mozek",
-    text: "Sdílené vzory mezi uživateli zvyšují úspěšnost rozpoznání pro všechny.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "GDPR a compliance",
-    text: "Vše probíhá lokálně na vašem zařízení. Žádná data neodcházejí do cloudu.",
-  },
-  {
-    icon: Download,
-    title: "Záloha a auditní log",
-    text: "Každá změna je zaznamenaná a kdykoli vratná do původního stavu.",
-  },
-];
+const pillTones: ("green" | "pink" | "orange")[] = ["green", "pink", "orange"];
 
-const steps = [
-  {
-    label: "Naskenovat",
-    text: "Vyberete složku s archivem. FileIT přečte obsah a připraví přehled nálezů.",
-  },
-  {
-    label: "Klasifikovat",
-    text: "Aplikace přiřadí typ, instituci a klienta. Nejasné případy vám nabídne ke schválení.",
-  },
-  {
-    label: "Uspořádat",
-    text: "Potvrdíte návrh a FileIT přesune dokumenty do finální struktury včetně zálohy.",
-  },
-];
+const featureIcons: Record<string, LucideIcon> = {
+  classification: FileStack,
+  institution: Building2,
+  classroom: GraduationCap,
+  brain: Brain,
+  gdpr: ShieldCheck,
+  cloudBackup: CloudUpload,
+};
+
 
 // Wordmark: "File" adapts to the background, "IT" always in the coral accent
 function Logo({ tone = "light" }: { tone?: "light" | "dark" }) {
@@ -145,8 +105,11 @@ function StatusPill({ tone, children }: { tone: "green" | "orange" | "pink"; chi
 }
 
 function LandingPage() {
+  const [language, setLanguage] = useState<Language>("cs");
+  const t = content[language];
+
   return (
-    <div className="font-sans">
+    <div className="font-sans" lang={language === "cs" ? "cs" : "en"}>
       {/* Hero with animated mesh gradient */}
       <header className="mesh-bg relative overflow-hidden">
         <nav className="relative z-20 mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
@@ -156,12 +119,15 @@ function LandingPage() {
               file-app.uk
             </span>
           </div>
-          <Button
-            asChild
-            className="rounded-full bg-brand-pink px-5 font-semibold text-primary-foreground hover:bg-brand-pink-deep"
-          >
-            <a href="#ke-stazeni">Stáhnout FileIT</a>
-          </Button>
+          <div className="flex items-center gap-3">
+            <LanguageSwitch language={language} onChange={setLanguage} />
+            <Button
+              asChild
+              className="rounded-full bg-brand-pink px-5 font-semibold text-primary-foreground hover:bg-brand-pink-deep"
+            >
+              <a href="#ke-stazeni">{t.nav.download}</a>
+            </Button>
+          </div>
         </nav>
 
         {/* Portrait as an atmospheric theme layer on the left edge */}
@@ -176,15 +142,11 @@ function LandingPage() {
 
         <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-16 px-6 pt-6 pb-28 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
           <div>
-            <StatusPill tone="green">Windows desktop · verze 1.0</StatusPill>
+            <StatusPill tone="green">{t.hero.badge}</StatusPill>
             <div className="mt-6">
-              <HeroCarousel />
+              <HeroCarousel statements={t.hero.statements} />
             </div>
-            <p className="mt-6 max-w-md text-base text-primary-foreground/80">
-              FileIT je desktopová aplikace pro české finanční poradce a jejich mladší kolegy. Projde
-              archiv klientských dokumentů, rozpozná jejich obsah a uspořádá je do struktury, které
-              rozumíte a vše zazálohuje.
-            </p>
+            <p className="mt-6 max-w-md text-base text-primary-foreground/80">{t.hero.lead}</p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Button
                 asChild
@@ -192,14 +154,14 @@ function LandingPage() {
                 className="rounded-full bg-brand-pink px-7 text-base font-bold text-primary-foreground shadow-[var(--shadow-float)] hover:bg-brand-pink-deep"
               >
                 <a href="#ke-stazeni">
-                  Stáhnout FileIT <ArrowRight className="ml-2 h-4 w-4" />
+                  {t.hero.download} <ArrowRight className="ml-2 h-4 w-4" />
                 </a>
               </Button>
               <a
                 href="#o-aplikaci"
                 className="text-sm font-semibold text-primary-foreground/85 underline-offset-4 hover:underline"
               >
-                Jak to funguje
+                {t.hero.secondary}
               </a>
             </div>
           </div>
@@ -215,25 +177,30 @@ function LandingPage() {
         {/* About */}
         <section id="o-aplikaci" className="bg-background py-20">
           <div className="mx-auto max-w-6xl px-6">
-            <StatusPill tone="pink">O aplikaci</StatusPill>
+            <StatusPill tone="pink">{t.about.pill}</StatusPill>
             <h2 className="mt-4 max-w-2xl font-display text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
-              Archiv, který se srovná sám
+              {t.about.heading}
             </h2>
-            <div className="mt-10 grid gap-6 md:grid-cols-3">
-              {aboutCards.map((card) => (
-                <article
-                  key={card.title}
-                  className="rounded-2xl border border-border bg-card p-7 shadow-[var(--shadow-card)]"
-                >
-                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-violet/10 text-brand-violet">
-                    <card.icon className="h-5 w-5" />
-                  </span>
-                  <h3 className="mt-5 font-display text-lg font-bold text-card-foreground">
-                    {card.title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{card.text}</p>
-                </article>
-              ))}
+            <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {t.about.cards.map((card) => {
+                const Icon = aboutIcons[card.key] ?? ScanLine;
+                return (
+                  <article
+                    key={card.key}
+                    className="rounded-2xl border border-border bg-card p-7 shadow-[var(--shadow-card)]"
+                  >
+                    <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-violet/10 text-brand-violet">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <h3 className="mt-5 font-display text-lg font-bold text-card-foreground">
+                      {card.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      {card.text}
+                    </p>
+                  </article>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -242,28 +209,29 @@ function LandingPage() {
         <section id="funkce" className="mesh-bg py-20">
           <div className="mx-auto max-w-6xl px-6">
             <h2 className="max-w-2xl font-display text-3xl font-extrabold tracking-tight text-primary-foreground sm:text-4xl">
-              Klíčové funkce
+              {t.features.heading}
             </h2>
-            <p className="mt-3 max-w-xl text-primary-foreground/80">
-              Vše, co potřebujete pro udržitelný pořádek v klientské dokumentaci.
-            </p>
+            <p className="mt-3 max-w-xl text-primary-foreground/80">{t.features.lead}</p>
             <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {features.map((feature) => (
-                <article
-                  key={feature.title}
-                  className="rounded-2xl bg-card p-7 shadow-[var(--shadow-float)]"
-                >
-                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-pink/12 text-brand-pink-deep">
-                    <feature.icon className="h-5 w-5" />
-                  </span>
-                  <h3 className="mt-5 font-display text-lg font-bold text-card-foreground">
-                    {feature.title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    {feature.text}
-                  </p>
-                </article>
-              ))}
+              {t.features.cards.map((feature) => {
+                const Icon = featureIcons[feature.key] ?? FileStack;
+                return (
+                  <article
+                    key={feature.key}
+                    className="rounded-2xl bg-card p-7 shadow-[var(--shadow-float)]"
+                  >
+                    <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-pink/12 text-brand-pink-deep">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <h3 className="mt-5 font-display text-lg font-bold text-card-foreground">
+                      {feature.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      {feature.text}
+                    </p>
+                  </article>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -271,13 +239,13 @@ function LandingPage() {
         {/* How it works */}
         <section id="jak-to-funguje" className="bg-background py-20">
           <div className="mx-auto max-w-6xl px-6">
-            <StatusPill tone="orange">Jak to funguje</StatusPill>
+            <StatusPill tone="orange">{t.how.pill}</StatusPill>
             <h2 className="mt-4 font-display text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
-              Tři kroky k pořádku
+              {t.how.heading}
             </h2>
             <ol className="mt-12 grid gap-8 md:grid-cols-3">
-              {steps.map((step, index) => (
-                <li key={step.label} className="relative">
+              {t.how.steps.map((step, index) => (
+                <li key={step.key} className="relative">
                   <div className="flex items-center gap-4">
                     <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-brand-violet font-display text-lg font-extrabold text-primary-foreground">
                       {index + 1}
@@ -301,18 +269,19 @@ function LandingPage() {
               <Users className="h-5 w-5" />
             </span>
             <h2 className="mt-6 font-display text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
-              Pro české finanční poradce
+              {t.audience.heading}
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
-              FileIT je navržený pro samostatné poradce i poradenské kanceláře, které spravují
-              stovky klientů a roky nahromaděné dokumentace. Znalost českých institucí a typů
-              smluv je součástí aplikace.
+              {t.audience.text}
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <StatusPill tone="green">Samostatní poradci</StatusPill>
-              <StatusPill tone="pink">Poradenské kanceláře</StatusPill>
-              <StatusPill tone="orange">Back office týmy</StatusPill>
+              {t.audience.pills.map((pill, index) => (
+                <StatusPill key={pill} tone={pillTones[index] ?? "pink"}>
+                  {pill}
+                </StatusPill>
+              ))}
             </div>
+
           </div>
         </section>
 
@@ -321,24 +290,24 @@ function LandingPage() {
           <div className="mx-auto max-w-3xl px-6">
             <div className="rounded-3xl bg-card p-10 text-center shadow-[var(--shadow-float)]">
               <h2 className="font-display text-3xl font-extrabold tracking-tight text-card-foreground">
-                Ke stažení
+                {t.download.heading}
               </h2>
               <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
-                Instalační balíček pro Windows 10 a 11 připravujeme. Podepsaná verze bude
-                k dispozici zde.
+                {t.download.text}
               </p>
               <Button
                 size="lg"
                 disabled
                 className="mt-8 rounded-full bg-brand-pink px-8 text-base font-bold text-primary-foreground hover:bg-brand-pink-deep"
               >
-                <Download className="mr-2 h-4 w-4" /> Stáhnout FileIT pro Windows
+                <Download className="mr-2 h-4 w-4" /> {t.download.button}
               </Button>
-              <p className="mt-4 text-xs text-muted-foreground">Připravujeme · verze 1.0</p>
+              <p className="mt-4 text-xs text-muted-foreground">{t.download.note}</p>
             </div>
           </div>
         </section>
       </main>
+
 
       <footer className="bg-ink py-12">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 sm:flex-row sm:items-center sm:justify-between">
