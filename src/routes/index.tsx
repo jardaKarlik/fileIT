@@ -20,11 +20,11 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "FileIT — Inteligentní správa dokumentů" },
+      { title: "FileIT — Inteligentní správa dokumentů | file-app.uk" },
       {
         name: "description",
         content:
-          "FileIT je desktopová aplikace pro Windows, která automaticky roztřídí a uspořádá archiv klientských dokumentů finančních poradců. Lokálně, bezpečně, GDPR-ready.",
+          "FileIT (file-app.uk) je desktopová aplikace pro Windows, která automaticky roztřídí a uspořádá archiv klientských dokumentů finančních poradců. Lokálně, bezpečně, GDPR-ready.",
       },
       { property: "og:title", content: "FileIT — Inteligentní správa dokumentů" },
       {
@@ -33,8 +33,10 @@ export const Route = createFileRoute("/")({
           "Automatická klasifikace klientských dokumentů pro české finanční poradce. Tisíce dokumentů, řád za minuty.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://file-app.uk" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [{ rel: "canonical", href: "https://file-app.uk" }],
   }),
   component: LandingPage,
 });
@@ -105,14 +107,19 @@ const steps = [
   },
 ];
 
-function Logo() {
+// Wordmark: "File" adapts to the background, "IT" always in the coral accent
+function Logo({ tone = "light" }: { tone?: "light" | "dark" }) {
   return (
     <div className="flex items-center gap-3">
       <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-pink font-display text-lg font-extrabold text-primary-foreground shadow-[var(--shadow-card)]">
         F
       </span>
-      <span className="font-display text-xl font-extrabold tracking-tight text-primary-foreground">
-        file<span className="text-brand-coral">IT</span>
+      <span
+        className={`font-display text-xl font-extrabold tracking-tight ${
+          tone === "dark" ? "text-brand-indigo" : "text-primary-foreground"
+        }`}
+      >
+        File<span className="text-brand-coral">IT</span>
       </span>
     </div>
   );
@@ -142,7 +149,12 @@ function LandingPage() {
       {/* Hero with animated mesh gradient */}
       <header className="mesh-bg relative overflow-hidden">
         <nav className="relative z-20 mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-          <Logo />
+          <div>
+            <Logo />
+            <span className="mt-1 block pl-13 text-xs font-medium tracking-widest text-primary-foreground/55">
+              file-app.uk
+            </span>
+          </div>
           <Button
             asChild
             className="rounded-full bg-brand-pink px-5 font-semibold text-primary-foreground hover:bg-brand-pink-deep"
@@ -327,15 +339,21 @@ function LandingPage() {
           <div>
             <Logo />
             <p className="mt-3 text-sm text-primary-foreground/70">
-              Jaroslav Karlík | fileIT | Czech Republic
+              Jaroslav Karlík | FileIT | Czech Republic
             </p>
+            <a
+              href="https://file-app.uk"
+              className="mt-1 block text-xs tracking-widest text-primary-foreground/50 hover:text-primary-foreground/80"
+            >
+              https://file-app.uk
+            </a>
           </div>
           <div className="flex flex-col gap-2 text-sm text-primary-foreground/70 sm:items-end">
             <a href="https://github.com" className="hover:text-primary-foreground">
               GitHub
             </a>
-            <a href="mailto:info@fileit.cz" className="hover:text-primary-foreground">
-              info@fileit.cz
+            <a href="mailto:info@file-app.uk" className="hover:text-primary-foreground">
+              info@file-app.uk
             </a>
           </div>
         </div>
