@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Brain,
   Building2,
+  CloudUpload,
   Download,
   FileStack,
   FolderTree,
@@ -12,11 +13,16 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { useState } from "react";
 
 import heroPortrait from "@/assets/hero-portrait.jpg";
 import { HeroCarousel } from "@/components/hero-carousel";
 import { HeroVideo } from "@/components/hero-video";
+import { LanguageSwitch } from "@/components/language-switch";
 import { Button } from "@/components/ui/button";
+import { content, type Language } from "@/lib/i18n";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
