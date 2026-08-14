@@ -142,3 +142,67 @@
     color: var(--color-foreground);
   }
 }
+
+/* --- FileIT brand design system --- */
+:root {
+  --ink: oklch(0.22 0.13 300);
+  --brand-indigo: oklch(0.28 0.16 300);
+  --brand-violet: oklch(0.36 0.19 300);
+  --brand-pink: oklch(0.65 0.24 350);
+  --brand-pink-deep: oklch(0.58 0.24 352);
+  --brand-coral: oklch(0.71 0.19 45);
+  --status-green: oklch(0.72 0.18 150);
+
+  --gradient-mesh: radial-gradient(60% 60% at 15% 20%, oklch(0.45 0.22 305) 0%, transparent 60%),
+    radial-gradient(55% 55% at 85% 15%, oklch(0.6 0.25 350) 0%, transparent 62%),
+    radial-gradient(65% 65% at 75% 85%, oklch(0.7 0.19 45) 0%, transparent 60%),
+    radial-gradient(60% 60% at 25% 90%, oklch(0.4 0.2 315) 0%, transparent 62%);
+  --shadow-card: 0 20px 45px -20px oklch(0.22 0.13 300 / 0.35);
+  --shadow-float: 0 30px 70px -25px oklch(0.22 0.13 300 / 0.55);
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-brand-indigo: var(--brand-indigo);
+  --color-brand-violet: var(--brand-violet);
+  --color-brand-pink: var(--brand-pink);
+  --color-brand-pink-deep: var(--brand-pink-deep);
+  --color-brand-coral: var(--brand-coral);
+  --color-status-green: var(--status-green);
+  --font-display: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Animated mesh gradient — pure CSS, no JS libs */
+@keyframes mesh-drift {
+  0% { background-position: 0% 0%, 100% 0%, 100% 100%, 0% 100%; }
+  50% { background-position: 30% 25%, 65% 30%, 60% 70%, 35% 60%; }
+  100% { background-position: 0% 0%, 100% 0%, 100% 100%, 0% 100%; }
+}
+
+@utility mesh-bg {
+  background-color: var(--ink);
+  background-image: var(--gradient-mesh);
+  background-size: 140% 140%, 130% 130%, 150% 150%, 140% 140%;
+  background-repeat: no-repeat;
+  animation: mesh-drift 26s ease-in-out infinite;
+}
+
+@keyframes fade-slide {
+  0% { opacity: 0; transform: translateY(10px); }
+  12% { opacity: 1; transform: translateY(0); }
+  88% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-10px); }
+}
+
+@utility portrait-dissolve {
+  -webkit-mask-image: radial-gradient(52% 48% at 50% 38%, #000 18%, rgba(0, 0, 0, 0.35) 62%, rgba(0, 0, 0, 0) 82%);
+  mask-image: radial-gradient(52% 48% at 50% 38%, #000 18%, rgba(0, 0, 0, 0.35) 62%, rgba(0, 0, 0, 0) 82%);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  mix-blend-mode: screen;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mesh-bg { animation: none; }
+}
