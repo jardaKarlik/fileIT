@@ -9,7 +9,7 @@ export type ContactFormResult =
   | { success: false; error: string };
 
 export const submitContactForm = createServerFn({ method: "POST" })
-  .inputValidator((data) => contactFormSchema.parse(data))
+  .validator((data) => contactFormSchema.parse(data))
   .handler(async ({ data }): Promise<ContactFormResult> => {
     const { error } = await supabase.from("contact_submissions").insert({
       name: data.name,
