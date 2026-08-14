@@ -18,7 +18,7 @@ import { useState } from "react";
 
 import heroPortrait from "@/assets/hero-portrait.jpg";
 import { HeroCarousel } from "@/components/hero-carousel";
-import { HeroVideo } from "@/components/hero-video";
+import { HeroShowcase } from "@/components/hero-showcase";
 import { LanguageSwitch } from "@/components/language-switch";
 import { Button } from "@/components/ui/button";
 import { content, type Language } from "@/lib/i18n";
@@ -168,7 +168,7 @@ function LandingPage() {
 
           {/* Product screenshots are the focal point */}
           <div className="relative pb-28 sm:pb-36 md:pb-44 lg:pb-48">
-            <HeroVideo />
+            <HeroShowcase />
           </div>
         </div>
       </header>
