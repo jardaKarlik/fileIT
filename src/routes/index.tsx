@@ -15,6 +15,7 @@ import {
 
 import heroPortrait from "@/assets/hero-portrait.jpg";
 import { HeroCarousel } from "@/components/hero-carousel";
+import { HeroShowcase } from "@/components/hero-showcase";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
