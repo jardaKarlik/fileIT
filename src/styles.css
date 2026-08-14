@@ -236,9 +236,21 @@
   opacity: 0.55;
 }
 
+/* Slow drift for the rotating character portraits (alternative hero) */
+@keyframes portrait-drift-move {
+  0%, 100% { transform: scale(1.04) translate3d(0, 0, 0); }
+  50% { transform: scale(1.1) translate3d(2%, -2.5%, 0); }
+}
+
+@utility portrait-drift {
+  animation: portrait-drift-move 18s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mesh-bg,
   .float-slow,
   .float-medium,
-  .float-fast { animation: none; }
+  .float-fast,
+  .portrait-drift { animation: none; }
 }
+
