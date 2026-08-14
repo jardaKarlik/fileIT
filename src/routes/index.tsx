@@ -25,7 +25,6 @@ import { PortraitRotator } from "@/components/portrait-rotator";
 import { Button } from "@/components/ui/button";
 import { content, type Language } from "@/lib/i18n";
 
-
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -68,7 +67,6 @@ const featureIcons: Record<string, LucideIcon> = {
   gdpr: ShieldCheck,
   cloudBackup: CloudUpload,
 };
-
 
 // Wordmark: "File" adapts to the background, "IT" always in the coral accent
 function Logo({ tone = "light" }: { tone?: "light" | "dark" }) {
@@ -292,7 +290,6 @@ function LandingPage() {
                 </StatusPill>
               ))}
             </div>
-
           </div>
         </section>
 
@@ -318,7 +315,6 @@ function LandingPage() {
           </div>
         </section>
       </main>
-
 
       <footer className="bg-ink py-12">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 sm:flex-row sm:items-center sm:justify-between">

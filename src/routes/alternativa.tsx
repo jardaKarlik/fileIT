@@ -297,8 +297,8 @@ function AlternativeLandingPage() {
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
               FileIT je navržený pro samostatné poradce i poradenské kanceláře, které spravují
-              stovky klientů a roky nahromaděné dokumentace. Znalost českých institucí a typů
-              smluv je součástí aplikace.
+              stovky klientů a roky nahromaděné dokumentace. Znalost českých institucí a typů smluv
+              je součástí aplikace.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <StatusPill tone="green">Samostatní poradci</StatusPill>
@@ -316,8 +316,8 @@ function AlternativeLandingPage() {
                 Ke stažení
               </h2>
               <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
-                Instalační balíček pro Windows 10 a 11 připravujeme. Podepsaná verze bude
-                k dispozici zde.
+                Instalační balíček pro Windows 10 a 11 připravujeme. Podepsaná verze bude k
+                dispozici zde.
               </p>
               <Button
                 size="lg"
