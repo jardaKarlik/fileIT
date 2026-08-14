@@ -59,6 +59,7 @@ export type Content = {
     };
   };
   footer: { publisher: string };
+  faq: { heading: string; items: { q: string; a: string }[] };
 };
 
 const cs: Content = {
@@ -201,6 +202,35 @@ const cs: Content = {
     },
   },
   footer: { publisher: "Jaroslav Karlík | FileIT | Czech Republic" },
+  faq: {
+    heading: "Časté dotazy",
+    items: [
+      {
+        q: "Co FileIT vlastně dělá?",
+        a: "Projde vaše složky, přečte dokumenty a sám je roztřídí do přehledné struktury. Smlouvy, výpisy, pojistky a další důležité papíry najde bez toho, abyste museli cokoli ručně přepisovat.",
+      },
+      {
+        q: "Je to bezpečné? Kam se dostanou moje dokumenty?",
+        a: "Všechno probíhá přímo na vašem počítači. Dokumenty z něj neodcházejí, pokud je sami nepošlete do cloudu. Zálohu do cloudu provádíte vy, a je šifrovaná, takže ji přečtete jen vy.",
+      },
+      {
+        q: "Musím být zkušený v počítačích?",
+        a: "Vůbec ne. FileIT se ovládá klikáním a každý krok vysvětluje jednoduše. Vyberete složku, aplikace vám ukáže, co našla, a vy jen potvrdíte návrh.",
+      },
+      {
+        q: "Co když FileIT něco roztřídí špatně?",
+        a: "Jednoduše to opravíte. Aplikace se z vaší korekce naučí a příště bude chytřejší. Čím déle ji používáte, tím přesnější je.",
+      },
+      {
+        q: "Jak funguje cloudová záloha?",
+        a: "Roztříděné dokumenty můžete jedním kliknutím zálohovat do svého cloudu. Záloha je šifrovaná a uchovává historii změn, takže nic neztratíte a můžete se kdykoli vrátit zpět.",
+      },
+      {
+        q: "Pro koho je FileIT určený?",
+        a: "Pro každého, kdo chce mít pořádek v dokumentech — finanční poradce, živnostníky, seniory i běžné uživatele, kteří nechtějí trávit hodiny tříděním souborů.",
+      },
+    ],
+  },
 };
 
 const en: Content = {
@@ -343,6 +373,35 @@ const en: Content = {
     },
   },
   footer: { publisher: "Jaroslav Karlík | FileIT | Czech Republic" },
+  faq: {
+    heading: "Frequently asked questions",
+    items: [
+      {
+        q: "What does FileIT actually do?",
+        a: "It scans your folders, reads your documents and sorts them into a clear structure on its own. Contracts, statements, insurance policies and other important papers are found without any manual typing.",
+      },
+      {
+        q: "Is it safe? Where do my documents go?",
+        a: "Everything happens right on your computer. Your documents never leave it unless you choose to back them up to the cloud. Any cloud backup is done by you, encrypted, so only you can read it.",
+      },
+      {
+        q: "Do I need to be good with computers?",
+        a: "Not at all. FileIT is point-and-click and explains every step in plain language. You pick a folder, the app shows you what it found, and you simply confirm the proposal.",
+      },
+      {
+        q: "What if FileIT sorts something wrong?",
+        a: "You can correct it easily. The app learns from your feedback and gets smarter next time. The more you use it, the more accurate it becomes.",
+      },
+      {
+        q: "How does cloud backup work?",
+        a: "With one click, you can back up the sorted documents to your own cloud. The backup is encrypted and keeps a history of changes, so nothing is lost and you can revert at any time.",
+      },
+      {
+        q: "Who is FileIT for?",
+        a: "Anyone who wants their documents in order — financial advisors, self-employed people, seniors and everyday users who don't want to spend hours sorting files.",
+      },
+    ],
+  },
 };
 
 export const content: Record<Language, Content> = { cs, en };
