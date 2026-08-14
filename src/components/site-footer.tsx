@@ -10,9 +10,7 @@ export function SiteFooter({ t }: { t: Content }) {
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <Logo />
-          <p className="mt-3 text-sm text-primary-foreground/70">
-            {t.footer.publisher}
-          </p>
+          <p className="mt-3 text-sm text-primary-foreground/70">{t.footer.publisher}</p>
           <a
             href="https://file-app.uk"
             className="mt-1 block text-xs tracking-widest text-primary-foreground/50 transition-colors hover:text-primary-foreground/80"
@@ -21,10 +19,7 @@ export function SiteFooter({ t }: { t: Content }) {
           </a>
         </div>
         <div className="flex flex-col gap-2 text-sm text-primary-foreground/70 sm:items-end">
-          <Link
-            to="/kontakt"
-            className="transition-colors hover:text-primary-foreground"
-          >
+          <Link to="/kontakt" className="transition-colors hover:text-primary-foreground">
             {t.nav.contact}
           </Link>
           <a

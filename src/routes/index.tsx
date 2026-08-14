@@ -78,11 +78,7 @@ function LandingPage() {
     <div className="font-sans" lang={language === "cs" ? "cs" : "en"}>
       {/* Hero with animated mesh gradient */}
       <header className="mesh-bg relative overflow-hidden">
-        <SiteHeader
-          language={language}
-          onChangeLanguage={setLanguage}
-          t={t}
-        />
+        <SiteHeader language={language} onChangeLanguage={setLanguage} t={t} />
 
         {/* Rotating atmospheric character layer on the left edge */}
         <PortraitRotator />
@@ -93,9 +89,7 @@ function LandingPage() {
             <div className="mt-6">
               <HeroCarousel statements={t.hero.statements} />
             </div>
-            <p className="mt-6 max-w-md text-base text-primary-foreground/80">
-              {t.hero.lead}
-            </p>
+            <p className="mt-6 max-w-md text-base text-primary-foreground/80">{t.hero.lead}</p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Button
                 asChild
@@ -226,9 +220,7 @@ function LandingPage() {
                   <h3 className="mt-5 font-display text-xl font-bold text-foreground">
                     {step.label}
                   </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    {step.text}
-                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.text}</p>
                 </li>
               ))}
             </ol>

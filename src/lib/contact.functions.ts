@@ -4,9 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { contactFormSchema } from "./contact.schema";
 
-export type ContactFormResult =
-  | { success: true }
-  | { success: false; error: string };
+export type ContactFormResult = { success: true } | { success: false; error: string };
 
 export const submitContactForm = createServerFn({ method: "POST" })
   .validator((data) => contactFormSchema.parse(data))

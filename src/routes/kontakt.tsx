@@ -4,14 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  CheckCircle2,
-  Github,
-  Heart,
-  Loader2,
-  Mail,
-  MessageSquare,
-} from "lucide-react";
+import { CheckCircle2, Github, Heart, Loader2, Mail, MessageSquare } from "lucide-react";
 
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
@@ -53,9 +46,7 @@ function ContactPage() {
   const [language, setLanguage] = useState<Language>("cs");
   const t = content[language];
   const submit = useServerFn(submitContactForm);
-  const [status, setStatus] = useState<
-    "idle" | "submitting" | "success" | "error"
-  >("idle");
+  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
 
   const schema = z.object({
     name: z.string().min(2, t.contact.form.errors.name).max(100),
@@ -94,11 +85,7 @@ function ContactPage() {
   return (
     <div className="font-sans" lang={language === "cs" ? "cs" : "en"}>
       <header className="mesh-bg">
-        <SiteHeader
-          language={language}
-          onChangeLanguage={setLanguage}
-          t={t}
-        />
+        <SiteHeader language={language} onChangeLanguage={setLanguage} t={t} />
         <div className="relative z-10 mx-auto max-w-6xl px-6 py-16 text-center sm:py-20">
           <h1 className="font-display text-4xl font-extrabold tracking-tight text-primary-foreground sm:text-5xl">
             {t.contact.title}
@@ -156,9 +143,7 @@ function ContactPage() {
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     {t.contact.info.github}
                   </p>
-                  <p className="font-medium text-foreground">
-                    github.com/jardaKarlik/fileIT
-                  </p>
+                  <p className="font-medium text-foreground">github.com/jardaKarlik/fileIT</p>
                 </div>
               </a>
 
@@ -175,9 +160,7 @@ function ContactPage() {
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     {t.contact.info.featurebase}
                   </p>
-                  <p className="font-medium text-foreground">
-                    fileit.featurebase.app
-                  </p>
+                  <p className="font-medium text-foreground">fileit.featurebase.app</p>
                 </div>
               </a>
             </div>
@@ -205,10 +188,7 @@ function ContactPage() {
                   </Button>
                 </div>
               ) : (
-                <form
-                  onSubmit={form.handleSubmit(onSubmit)}
-                  className="space-y-5"
-                >
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="name">{t.contact.form.name}</Label>
@@ -265,9 +245,7 @@ function ContactPage() {
                   </div>
 
                   {status === "error" && (
-                    <p className="text-sm text-destructive">
-                      {t.contact.form.error}
-                    </p>
+                    <p className="text-sm text-destructive">{t.contact.form.error}</p>
                   )}
 
                   <Button
@@ -278,9 +256,7 @@ function ContactPage() {
                     {status === "submitting" ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    {status === "submitting"
-                      ? t.contact.form.sending
-                      : t.contact.form.submit}
+                    {status === "submitting" ? t.contact.form.sending : t.contact.form.submit}
                   </Button>
                 </form>
               )}
