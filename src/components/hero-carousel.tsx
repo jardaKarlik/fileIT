@@ -14,7 +14,7 @@ export function HeroCarousel() {
   useEffect(() => {
     const timer = window.setInterval(() => {
       setActiveIndex((current) => (current + 1) % statements.length);
-    }, 3800);
+    }, 6500);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -23,7 +23,7 @@ export function HeroCarousel() {
       <p
         key={activeIndex}
         className="font-display text-3xl leading-tight font-extrabold text-primary-foreground sm:text-5xl lg:text-6xl"
-        style={{ animation: "fade-slide 3.8s ease-in-out both" }}
+        style={{ animation: "fade-slide 6.5s ease-in-out both" }}
       >
         {statements[activeIndex]}
       </p>
