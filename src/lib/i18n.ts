@@ -239,9 +239,9 @@ const en: Content = {
     ],
   },
   audience: {
-    heading: "For Czech financial advisors",
-    text: "FileIT is built for solo advisors and advisory firms managing hundreds of clients and years of accumulated paperwork. Knowledge of Czech institutions and contract types is built in.",
-    pills: ["Solo advisors", "Advisory firms", "Back office teams"],
+    heading: "For anyone who wants their files sorted",
+    text: "FileIT is built for anyone who manages documents — financial advisors, small businesses, and less tech-savvy users looking for a tool that does most of the work for them. Knowledge of Czech institutions and contract types is built in.",
+    pills: ["Financial advisors", "Small businesses", "Less tech-savvy users"],
   },
   download: {
     heading: "Download",
