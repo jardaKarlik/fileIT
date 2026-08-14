@@ -19,7 +19,7 @@ export function HeroShowcase() {
       </figure>
 
       {/* Organize screen, offset behind-right */}
-      <figure className="float-medium absolute -right-4 top-[46%] hidden w-[52%] overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-float)] ring-1 ring-primary-foreground/15 sm:block">
+      <figure className="float-medium absolute -right-4 top-[58%] hidden w-[52%] overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-float)] ring-1 ring-primary-foreground/15 sm:block">
         <img
           src={organizeAsset.url}
           alt="Návrh složkové struktury v FileIT"
@@ -29,7 +29,7 @@ export function HeroShowcase() {
       </figure>
 
       {/* Classroom cards, offset lower-left */}
-      <figure className="float-fast absolute -left-6 top-[68%] hidden w-[44%] overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-float)] ring-1 ring-primary-foreground/15 md:block">
+      <figure className="float-fast absolute -left-6 top-[74%] hidden w-[44%] overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-float)] ring-1 ring-primary-foreground/15 md:block">
         <img
           src={classroomAsset.url}
           alt="Učebna s nerozpoznanými soubory"

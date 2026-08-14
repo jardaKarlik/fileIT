@@ -204,7 +204,7 @@ function LandingPage() {
           </div>
 
           {/* Product screenshots are the focal point */}
-          <div className="relative pb-32 sm:pb-44 md:pb-56 lg:pb-64">
+          <div className="relative pb-28 sm:pb-36 md:pb-44 lg:pb-48">
             <HeroShowcase />
           </div>
         </div>
