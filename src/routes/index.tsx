@@ -7,7 +7,9 @@ import {
   Download,
   FileStack,
   FolderTree,
+  Github,
   GraduationCap,
+  Heart,
   ScanLine,
   ShieldCheck,
   Sparkles,
@@ -16,10 +18,10 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
 
-import heroPortrait from "@/assets/hero-portrait.jpg";
 import { HeroCarousel } from "@/components/hero-carousel";
 import { HeroShowcase } from "@/components/hero-showcase";
 import { LanguageSwitch } from "@/components/language-switch";
+import { PortraitRotator } from "@/components/portrait-rotator";
 import { Button } from "@/components/ui/button";
 import { content, type Language } from "@/lib/i18n";
 
