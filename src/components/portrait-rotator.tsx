@@ -4,13 +4,21 @@ import portraitA from "@/assets/hero-portrait.jpg";
 import portraitB from "@/assets/portrait-b.jpg";
 import portraitC from "@/assets/portrait-c.jpg";
 import portraitD from "@/assets/portrait-d.jpg";
+import portraitE from "@/assets/portrait-e.jpg";
+import portraitF from "@/assets/portrait-f.jpg";
+import portraitG from "@/assets/portrait-g.jpg";
+import portraitH from "@/assets/portrait-h.jpg";
 
-// Atmospheric character layer: portraits cross-fade, some drift slowly, some stay still
+// Atmospheric character layer: diverse ages and roles, some drift, some stay still
 const portraits = [
   { src: portraitA, motion: true, position: "object-[30%_25%]" },
   { src: portraitB, motion: false, position: "object-[45%_20%]" },
   { src: portraitC, motion: true, position: "object-[40%_30%]" },
   { src: portraitD, motion: false, position: "object-[50%_22%]" },
+  { src: portraitE, motion: true, position: "object-[35%_25%]" },
+  { src: portraitF, motion: false, position: "object-[55%_25%]" },
+  { src: portraitG, motion: true, position: "object-[45%_25%]" },
+  { src: portraitH, motion: false, position: "object-[40%_22%]" },
 ];
 
 export function PortraitRotator() {

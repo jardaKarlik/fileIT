@@ -153,7 +153,8 @@
   --brand-coral: oklch(0.71 0.19 45);
   --status-green: oklch(0.72 0.18 150);
 
-  --gradient-mesh: radial-gradient(60% 60% at 15% 20%, oklch(0.45 0.22 305) 0%, transparent 60%),
+  --gradient-mesh:
+    radial-gradient(60% 60% at 15% 20%, oklch(0.45 0.22 305) 0%, transparent 60%),
     radial-gradient(55% 55% at 85% 15%, oklch(0.6 0.25 350) 0%, transparent 62%),
     radial-gradient(65% 65% at 75% 85%, oklch(0.7 0.19 45) 0%, transparent 60%),
     radial-gradient(60% 60% at 25% 90%, oklch(0.4 0.2 315) 0%, transparent 62%);
@@ -175,29 +176,73 @@
 
 /* Animated mesh gradient — pure CSS, no JS libs */
 @keyframes mesh-drift {
-  0% { background-position: 0% 0%, 100% 0%, 100% 100%, 0% 100%; }
-  50% { background-position: 30% 25%, 65% 30%, 60% 70%, 35% 60%; }
-  100% { background-position: 0% 0%, 100% 0%, 100% 100%, 0% 100%; }
+  0% {
+    background-position:
+      0% 0%,
+      100% 0%,
+      100% 100%,
+      0% 100%;
+  }
+  50% {
+    background-position:
+      30% 25%,
+      65% 30%,
+      60% 70%,
+      35% 60%;
+  }
+  100% {
+    background-position:
+      0% 0%,
+      100% 0%,
+      100% 100%,
+      0% 100%;
+  }
 }
 
 @utility mesh-bg {
   background-color: var(--ink);
   background-image: var(--gradient-mesh);
-  background-size: 140% 140%, 130% 130%, 150% 150%, 140% 140%;
+  background-size:
+    140% 140%,
+    130% 130%,
+    150% 150%,
+    140% 140%;
   background-repeat: no-repeat;
   animation: mesh-drift 26s ease-in-out infinite;
 }
 
 @keyframes fade-slide {
-  0% { opacity: 0; transform: translateY(10px); }
-  12% { opacity: 1; transform: translateY(0); }
-  88% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-10px); }
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  12% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  88% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
 }
 
 @utility portrait-dissolve {
-  -webkit-mask-image: radial-gradient(52% 48% at 50% 38%, #000 18%, rgba(0, 0, 0, 0.35) 62%, rgba(0, 0, 0, 0) 82%);
-  mask-image: radial-gradient(52% 48% at 50% 38%, #000 18%, rgba(0, 0, 0, 0.35) 62%, rgba(0, 0, 0, 0) 82%);
+  -webkit-mask-image: radial-gradient(
+    52% 48% at 50% 38%,
+    #000 18%,
+    rgba(0, 0, 0, 0.35) 62%,
+    rgba(0, 0, 0, 0) 82%
+  );
+  mask-image: radial-gradient(
+    52% 48% at 50% 38%,
+    #000 18%,
+    rgba(0, 0, 0, 0.35) 62%,
+    rgba(0, 0, 0, 0) 82%
+  );
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
   mix-blend-mode: screen;
@@ -205,8 +250,13 @@
 
 /* Floating collage motion — pure CSS */
 @keyframes float-y {
-  0%, 100% { transform: translateY(0) rotate(var(--tilt, 0deg)); }
-  50% { transform: translateY(-14px) rotate(var(--tilt, 0deg)); }
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--tilt, 0deg));
+  }
+  50% {
+    transform: translateY(-14px) rotate(var(--tilt, 0deg));
+  }
 }
 
 @utility float-slow {
@@ -226,9 +276,11 @@
 
 /* Portrait as a theme accent on the left edge, not the focal point */
 @utility portrait-edge {
-  -webkit-mask-image: linear-gradient(to right, #000 0%, rgba(0, 0, 0, 0.55) 55%, rgba(0, 0, 0, 0) 92%),
+  -webkit-mask-image:
+    linear-gradient(to right, #000 0%, rgba(0, 0, 0, 0.55) 55%, rgba(0, 0, 0, 0) 92%),
     linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, #000 22%, #000 68%, rgba(0, 0, 0, 0) 100%);
-  mask-image: linear-gradient(to right, #000 0%, rgba(0, 0, 0, 0.55) 55%, rgba(0, 0, 0, 0) 92%),
+  mask-image:
+    linear-gradient(to right, #000 0%, rgba(0, 0, 0, 0.55) 55%, rgba(0, 0, 0, 0) 92%),
     linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, #000 22%, #000 68%, rgba(0, 0, 0, 0) 100%);
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
@@ -238,8 +290,13 @@
 
 /* Slow drift for the rotating character portraits (alternative hero) */
 @keyframes portrait-drift-move {
-  0%, 100% { transform: scale(1.04) translate3d(0, 0, 0); }
-  50% { transform: scale(1.1) translate3d(2%, -2.5%, 0); }
+  0%,
+  100% {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: scale(1.1) translate3d(2%, -2.5%, 0);
+  }
 }
 
 @utility portrait-drift {
@@ -251,6 +308,7 @@
   .float-slow,
   .float-medium,
   .float-fast,
-  .portrait-drift { animation: none; }
+  .portrait-drift {
+    animation: none;
+  }
 }
-

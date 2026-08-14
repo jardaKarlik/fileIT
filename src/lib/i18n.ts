@@ -40,7 +40,7 @@ const cs: Content = {
       "Klasifikace bez kompromisů.",
       "Záloha do cloudu. Lokálně i bezpečně.",
     ],
-    lead: "FileIT je desktopová aplikace pro české finanční poradce a jejich mladší kolegy. Projde archiv klientských dokumentů, rozpozná jejich obsah a uspořádá je do struktury, které rozumíte a vše zazálohuje.",
+    lead: "FileIT je desktopová aplikace pro Windows, která pomůže všem, kdo chtějí dostat pořádek do složek plných dokumentů — finančním poradcům, podnikatelům i lidem, kteří raději nebudou trávit hodiny tříděním souborů. Projde archiv, rozpozná obsah a uspořádá ho do struktury, které rozumíte, a vše zazálohuje.",
     download: "Stáhnout FileIT",
     secondary: "Jak to funguje",
   },
@@ -128,9 +128,9 @@ const cs: Content = {
     ],
   },
   audience: {
-    heading: "Pro české finanční poradce",
-    text: "FileIT je navržený pro samostatné poradce i poradenské kanceláře, které spravují stovky klientů a roky nahromaděné dokumentace. Znalost českých institucí a typů smluv je součástí aplikace.",
-    pills: ["Samostatní poradci", "Poradenské kanceláře", "Back office týmy"],
+    heading: "Pro každého, kdo chce mít pořádek",
+    text: "FileIT je navržený pro všechny, kdo spravují dokumenty — finanční poradce, malé firmy, ale i méně technicky zdatné uživatele, kteří hledají nástroj, který udělá většinu práce za ně. Znalost českých institucí a typů smluv je součástí aplikace.",
+    pills: ["Finanční poradci", "Malé firmy", "Méně zdatní uživatelé"],
   },
   download: {
     heading: "Ke stažení",
@@ -151,7 +151,7 @@ const en: Content = {
       "Classification without compromise.",
       "Cloud backup. Local and secure.",
     ],
-    lead: "FileIT is a Windows desktop app for Czech financial advisors and their younger colleagues. It goes through your client document archive, recognises what each file is, organises everything into a structure you understand — and backs it all up.",
+    lead: "FileIT is a Windows desktop app for anyone who wants to bring order to a folder full of documents — financial advisors, small-business owners, and people who would rather not spend hours wrestling with files. It scans your archive, recognises what each file is, organises everything into a structure you understand, and backs it all up.",
     download: "Download FileIT",
     secondary: "How it works",
   },
@@ -239,9 +239,9 @@ const en: Content = {
     ],
   },
   audience: {
-    heading: "For Czech financial advisors",
-    text: "FileIT is built for solo advisors and advisory firms managing hundreds of clients and years of accumulated paperwork. Knowledge of Czech institutions and contract types is built in.",
-    pills: ["Solo advisors", "Advisory firms", "Back office teams"],
+    heading: "For anyone who wants their files sorted",
+    text: "FileIT is built for anyone who manages documents — financial advisors, small businesses, and less tech-savvy users looking for a tool that does most of the work for them. Knowledge of Czech institutions and contract types is built in.",
+    pills: ["Financial advisors", "Small businesses", "Less tech-savvy users"],
   },
   download: {
     heading: "Download",
