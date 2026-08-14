@@ -20,8 +20,10 @@ import { useState } from "react";
 
 import { HeroCarousel } from "@/components/hero-carousel";
 import { HeroShowcase } from "@/components/hero-showcase";
-import { LanguageSwitch } from "@/components/language-switch";
 import { PortraitRotator } from "@/components/portrait-rotator";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import { StatusPill } from "@/components/status-pill";
 import { Button } from "@/components/ui/button";
 import { content, type Language } from "@/lib/i18n";
 
@@ -32,13 +34,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "FileIT (file-app.uk) je desktopová aplikace pro Windows, která automaticky roztřídí a uspořádá archiv klientských dokumentů finančních poradců. Lokálně, bezpečně, GDPR-ready.",
+          "FileIT (file-app.uk) je desktopová aplikace pro Windows, která automaticky roztřídí a uspořádá archiv dokumentů. Lokálně, bezpečně, GDPR-ready.",
       },
       { property: "og:title", content: "FileIT — Inteligentní správa dokumentů" },
       {
         property: "og:description",
         content:
-          "Automatická klasifikace klientských dokumentů pro české finanční poradce. Tisíce dokumentů, řád za minuty.",
+          "Automatická klasifikace dokumentů pro každého, kdo chce mít pořádek. Tisíce dokumentů, řád za minuty.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://file-app.uk" },
@@ -68,42 +70,6 @@ const featureIcons: Record<string, LucideIcon> = {
   cloudBackup: CloudUpload,
 };
 
-// Wordmark: "File" adapts to the background, "IT" always in the coral accent
-function Logo({ tone = "light" }: { tone?: "light" | "dark" }) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-pink font-display text-lg font-extrabold text-primary-foreground shadow-[var(--shadow-card)]">
-        F
-      </span>
-      <span
-        className={`font-display text-xl font-extrabold tracking-tight ${
-          tone === "dark" ? "text-brand-indigo" : "text-primary-foreground"
-        }`}
-      >
-        File<span className="text-brand-coral">IT</span>
-      </span>
-    </div>
-  );
-}
-
-function StatusPill({ tone, children }: { tone: "green" | "orange" | "pink"; children: string }) {
-  const toneClass =
-    tone === "green"
-      ? "bg-status-green/15 text-status-green"
-      : tone === "orange"
-        ? "bg-brand-coral/15 text-brand-coral"
-        : "bg-brand-pink/15 text-brand-pink-deep";
-
-  return (
-    <span
-      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${toneClass}`}
-    >
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      {children}
-    </span>
-  );
-}
-
 function LandingPage() {
   const [language, setLanguage] = useState<Language>("cs");
   const t = content[language];
@@ -112,17 +78,11 @@ function LandingPage() {
     <div className="font-sans" lang={language === "cs" ? "cs" : "en"}>
       {/* Hero with animated mesh gradient */}
       <header className="mesh-bg relative overflow-hidden">
-        <nav className="relative z-20 mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-          <div>
-            <Logo />
-            <span className="mt-1 block pl-13 text-xs font-medium tracking-widest text-primary-foreground/55">
-              file-app.uk
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <LanguageSwitch language={language} onChange={setLanguage} />
-          </div>
-        </nav>
+        <SiteHeader
+          language={language}
+          onChangeLanguage={setLanguage}
+          t={t}
+        />
 
         {/* Rotating atmospheric character layer on the left edge */}
         <PortraitRotator />
@@ -133,7 +93,9 @@ function LandingPage() {
             <div className="mt-6">
               <HeroCarousel statements={t.hero.statements} />
             </div>
-            <p className="mt-6 max-w-md text-base text-primary-foreground/80">{t.hero.lead}</p>
+            <p className="mt-6 max-w-md text-base text-primary-foreground/80">
+              {t.hero.lead}
+            </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Button
                 asChild
@@ -264,7 +226,9 @@ function LandingPage() {
                   <h3 className="mt-5 font-display text-xl font-bold text-foreground">
                     {step.label}
                   </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.text}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {step.text}
+                  </p>
                 </li>
               ))}
             </ol>
@@ -316,35 +280,7 @@ function LandingPage() {
         </section>
       </main>
 
-      <footer className="bg-ink py-12">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <Logo />
-            <p className="mt-3 text-sm text-primary-foreground/70">
-              Jaroslav Karlík | FileIT | Czech Republic
-            </p>
-            <a
-              href="https://file-app.uk"
-              className="mt-1 block text-xs tracking-widest text-primary-foreground/50 hover:text-primary-foreground/80"
-            >
-              https://file-app.uk
-            </a>
-          </div>
-          <div className="flex flex-col gap-2 text-sm text-primary-foreground/70 sm:items-end">
-            <a
-              href="https://github.com/jardaKarlik/fileIT"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-primary-foreground"
-            >
-              GitHub
-            </a>
-            <a href="mailto:info@file-app.uk" className="hover:text-primary-foreground">
-              info@file-app.uk
-            </a>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter t={t} />
     </div>
   );
 }
