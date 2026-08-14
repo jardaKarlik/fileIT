@@ -123,24 +123,11 @@ function LandingPage() {
           </div>
           <div className="flex items-center gap-3">
             <LanguageSwitch language={language} onChange={setLanguage} />
-            <Button
-              asChild
-              className="rounded-full bg-brand-pink px-5 font-semibold text-primary-foreground hover:bg-brand-pink-deep"
-            >
-              <a href="#ke-stazeni">{t.nav.download}</a>
-            </Button>
           </div>
         </nav>
 
-        {/* Portrait as an atmospheric theme layer on the left edge */}
-        <img
-          src={heroPortrait}
-          alt=""
-          aria-hidden="true"
-          width={1024}
-          height={1280}
-          className="portrait-edge pointer-events-none absolute -left-24 top-10 z-0 hidden h-[85%] w-[38%] object-cover object-[30%_25%] lg:block"
-        />
+        {/* Rotating atmospheric character layer on the left edge */}
+        <PortraitRotator />
 
         <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-16 px-6 pt-6 pb-28 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
           <div>
@@ -164,6 +151,28 @@ function LandingPage() {
                 className="text-sm font-semibold text-primary-foreground/85 underline-offset-4 hover:underline"
               >
                 {t.hero.secondary}
+              </a>
+            </div>
+
+            {/* GitHub + feature voting links below the main CTA */}
+            <div className="mt-5 flex flex-wrap items-center gap-4">
+              <a
+                href="https://github.com/jardaKarlik/fileIT"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/20 bg-primary-foreground/10 px-4 py-2 text-sm font-semibold text-primary-foreground backdrop-blur-sm transition-colors hover:bg-primary-foreground/20"
+              >
+                <Github className="h-4 w-4" />
+                GitHub
+              </a>
+              <a
+                href="https://fileit.featurebase.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/20 bg-primary-foreground/10 px-4 py-2 text-sm font-semibold text-primary-foreground backdrop-blur-sm transition-colors hover:bg-primary-foreground/20"
+              >
+                <Heart className="h-4 w-4" />
+                {language === "cs" ? "Hlasovat o nových funkcích" : "Vote for new features"}
               </a>
             </div>
           </div>
