@@ -26,7 +26,7 @@ export function PortraitRotator() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute -left-24 top-10 z-0 hidden h-[85%] w-[38%] lg:block"
+      className="portrait-edge pointer-events-none absolute -left-24 top-10 z-0 hidden h-[85%] w-[38%] lg:block"
     >
       {portraits.map((portrait, index) => (
         <img
@@ -36,7 +36,7 @@ export function PortraitRotator() {
           width={1024}
           height={1280}
           loading={index === 0 ? "eager" : "lazy"}
-          className={`portrait-edge absolute inset-0 h-full w-full object-cover transition-opacity duration-[1600ms] ease-in-out ${
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1600ms] ease-in-out ${
             portrait.position
           } ${index === activeIndex ? "opacity-100" : "opacity-0"} ${
             portrait.motion ? "portrait-drift" : ""
