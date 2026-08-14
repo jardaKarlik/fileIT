@@ -40,7 +40,7 @@ const cs: Content = {
       "Klasifikace bez kompromisů.",
       "Záloha do cloudu. Lokálně i bezpečně.",
     ],
-    lead: "FileIT je desktopová aplikace pro české finanční poradce a jejich mladší kolegy. Projde archiv klientských dokumentů, rozpozná jejich obsah a uspořádá je do struktury, které rozumíte a vše zazálohuje.",
+    lead: "FileIT je desktopová aplikace pro Windows, která pomůže všem, kdo chtějí dostat pořádek do složek plných dokumentů — finančním poradcům, podnikatelům i lidem, kteří raději nebudou trávit hodiny tříděním souborů. Projde archiv, rozpozná obsah a uspořádá ho do struktury, které rozumíte, a vše zazálohuje.",
     download: "Stáhnout FileIT",
     secondary: "Jak to funguje",
   },
