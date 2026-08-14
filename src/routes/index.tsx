@@ -163,7 +163,17 @@ function LandingPage() {
           </Button>
         </nav>
 
-        <div className="relative z-10 mx-auto grid min-h-[calc(100vh-6rem)] max-w-6xl items-center gap-10 px-6 pb-20 lg:grid-cols-2">
+        {/* Portrait as an atmospheric theme layer on the left edge */}
+        <img
+          src={heroPortrait}
+          alt=""
+          aria-hidden="true"
+          width={1024}
+          height={1280}
+          className="portrait-edge pointer-events-none absolute -left-24 top-10 z-0 hidden h-[85%] w-[38%] object-cover object-[30%_25%] lg:block"
+        />
+
+        <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-16 px-6 pt-6 pb-28 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
           <div>
             <StatusPill tone="green">Windows desktop · verze 1.0</StatusPill>
             <div className="mt-6">
@@ -192,15 +202,9 @@ function LandingPage() {
             </div>
           </div>
 
-          {/* Portrait dissolving into the gradient */}
-          <div className="relative mx-auto w-full max-w-md">
-            <img
-              src={heroPortrait}
-              alt="Finanční poradkyně používající FileIT"
-              width={1024}
-              height={1280}
-              className="portrait-dissolve w-full object-cover"
-            />
+          {/* Product screenshots are the focal point */}
+          <div className="relative pb-32 sm:pb-44 md:pb-56 lg:pb-64">
+            <HeroShowcase />
           </div>
         </div>
       </header>
