@@ -151,7 +151,7 @@ const en: Content = {
       "Classification without compromise.",
       "Cloud backup. Local and secure.",
     ],
-    lead: "FileIT is a Windows desktop app for Czech financial advisors and their younger colleagues. It goes through your client document archive, recognises what each file is, organises everything into a structure you understand — and backs it all up.",
+    lead: "FileIT is a Windows desktop app for anyone who wants to bring order to a folder full of documents — financial advisors, small-business owners, and people who would rather not spend hours wrestling with files. It scans your archive, recognises what each file is, organises everything into a structure you understand, and backs it all up.",
     download: "Download FileIT",
     secondary: "How it works",
   },
