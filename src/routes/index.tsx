@@ -48,71 +48,23 @@ export const Route = createFileRoute("/")({
   component: LandingPage,
 });
 
-const aboutCards = [
-  {
-    icon: ScanLine,
-    title: "Naskenuje archiv",
-    text: "Projde tisíce souborů ve vašich složkách a přečte jejich obsah přímo na vašem počítači.",
-  },
-  {
-    icon: Sparkles,
-    title: "Rozpozná dokumenty",
-    text: "Určí typ dokumentu, instituci i klienta — bez ručního přepisování a bez tabulek.",
-  },
-  {
-    icon: FolderTree,
-    title: "Uspořádá strukturu",
-    text: "Navrhne a vytvoří přehlednou složkovou strukturu podle vašich vlastních pravidel.",
-  },
-];
+// Icons are language-independent, matched to dictionary keys
+const aboutIcons: Record<string, LucideIcon> = {
+  scan: ScanLine,
+  recognize: Sparkles,
+  organize: FolderTree,
+  cloud: CloudUpload,
+};
 
-const features = [
-  {
-    icon: FileStack,
-    title: "Automatická klasifikace dokumentů",
-    text: "Smlouvy, výpisy i dodatky se roztřídí samy podle naučených vzorů.",
-  },
-  {
-    icon: Building2,
-    title: "Rozpoznání instituce",
-    text: "Logo, firemní barvy a klíčová slova určí, od koho dokument přišel.",
-  },
-  {
-    icon: GraduationCap,
-    title: "Učebna",
-    text: "Systém doučíte pár kliknutími — vaše korekce se hned promítnou do výsledků.",
-  },
-  {
-    icon: Brain,
-    title: "Centrální Mozek",
-    text: "Sdílené vzory mezi uživateli zvyšují úspěšnost rozpoznání pro všechny.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "GDPR a compliance",
-    text: "Vše probíhá lokálně na vašem zařízení. Žádná data neodcházejí do cloudu.",
-  },
-  {
-    icon: Download,
-    title: "Záloha a auditní log",
-    text: "Každá změna je zaznamenaná a kdykoli vratná do původního stavu.",
-  },
-];
+const featureIcons: Record<string, LucideIcon> = {
+  classification: FileStack,
+  institution: Building2,
+  classroom: GraduationCap,
+  brain: Brain,
+  gdpr: ShieldCheck,
+  cloudBackup: CloudUpload,
+};
 
-const steps = [
-  {
-    label: "Naskenovat",
-    text: "Vyberete složku s archivem. FileIT přečte obsah a připraví přehled nálezů.",
-  },
-  {
-    label: "Klasifikovat",
-    text: "Aplikace přiřadí typ, instituci a klienta. Nejasné případy vám nabídne ke schválení.",
-  },
-  {
-    label: "Uspořádat",
-    text: "Potvrdíte návrh a FileIT přesune dokumenty do finální struktury včetně zálohy.",
-  },
-];
 
 // Wordmark: "File" adapts to the background, "IT" always in the coral accent
 function Logo({ tone = "light" }: { tone?: "light" | "dark" }) {
