@@ -1,0 +1,26 @@
+name: Snyk Daily Security Scan
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+  schedule:
+    # Daily at 06:00 UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  dependency-scan:
+    name: Dependency scan
+    uses: jardaKarlik/snyk-shared-workflows/.github/workflows/snyk-reusable.yml@main
+    with:
+      scan-type: dependency
+      package-manager: node
+      severity-threshold: high
+      working-directory: .
+      monitor: true
+    secrets:
+      # Omit this block if you use the Snyk GitHub App.
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
