@@ -21,4 +21,6 @@ jobs:
       severity-threshold: high
       working-directory: .
       monitor: true
-    secrets: inherit
+    secrets:
+      # Omit this block if you use the Snyk GitHub App.
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
