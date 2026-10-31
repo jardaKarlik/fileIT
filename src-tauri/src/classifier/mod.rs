@@ -175,6 +175,9 @@ impl Classifier {
             duplicate_of: None,
             pdf_producer,
             pdf_creator,
+            // Classification never runs the Indra sidecar — it only consumes
+            // whatever text layer it found. A later explicit OCR run fills this.
+            ocr: None,
         }
     }
 

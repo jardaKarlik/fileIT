@@ -10,6 +10,8 @@ mod cm_registry;
 mod cnb_registry;
 mod commands;
 mod metadata_reader;
+mod ocr;
+mod ocr_store;
 mod restructure;
 mod scan_manifest;
 mod scanner;
@@ -112,6 +114,9 @@ pub fn run() {
             commands::group_unclassified_patterns,
             commands::submit_teaching,
             commands::upload_to_cm,
+            ocr::check_ocr,
+            ocr::run_ocr,
+            ocr::get_ocr,
         ])
         .run(tauri::generate_context!())
         .expect("Error running FileIT application");

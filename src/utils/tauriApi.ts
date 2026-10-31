@@ -5,6 +5,7 @@
 
 import {
   CmPayload, CmUpdateResult, CompletedRun, DetectedCloud,
+  OcrAvailability, OcrBatchResult,
   RestructurePreview, RestructureResult, ScanResult,
   TeachingResult, UnclassifiedPattern, UploadResult,
 } from '../types';
@@ -88,6 +89,14 @@ export const api = {
   uploadToCm: (payloads: CmPayload[]) =>
     invoke<UploadResult>('upload_to_cm', { payloads }),
 
+  // ── OCR (Indra sidecar) ──────────────────────────────────────────────────
+
+  /** Probe whether the Indra OCR sidecar is installed on this machine. */
+  checkOcr: () => invoke<OcrAvailability>('check_ocr'),
+
+  /** Run OCR over the given paths. Progress events come via onOcrProgress. */
+  runOcr: (paths: string[]) => invoke<OcrBatchResult>('run_ocr', { paths }),
+
   // ── Event listeners ───────────────────────────────────────────────────────
 
   onScanProgress: (cb: (p: { files_found: number; current_path: string; message: string; done: boolean }) => void) =>
@@ -104,6 +113,10 @@ export const api = {
   onRestoreProgress: (cb: (p: {
     restored: number; total: number; log_line: string; done: boolean;
   }) => void) => listen('restore_progress', cb as any),
+
+  onOcrProgress: (cb: (p: {
+    done: number; total: number; current_path: string; failed_count: number;
+  }) => void) => listen('ocr_progress', cb as any),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -216,6 +229,24 @@ function devMock(cmd: string, _args?: Record<string, unknown>): unknown {
 
     case 'upload_to_cm':
       return { uploaded: 1, queued: 0 } satisfies UploadResult;
+
+    case 'check_ocr':
+      return {
+        installed: false,
+        command: null,
+        models_dir: null,
+        message: 'OCR není nainstalován',
+        cached_count: 0,
+      } satisfies OcrAvailability;
+
+    case 'run_ocr':
+      return {
+        processed: 0,
+        from_cache: 0,
+        failed: 0,
+        skipped_unavailable: true,
+        errors: [],
+      } satisfies OcrBatchResult;
 
     default:
       console.warn('[dev] Unhandled mock command:', cmd);
