@@ -6,6 +6,7 @@
 
 import { useMemo, useState } from 'react';
 import { VizNode, VizMetric, foldSmallChildren, fmtBytes } from '../../utils/vizTree';
+import { AGGREGATE_COLOR, segmentColor } from './vizColors';
 
 const MIN_TILE_FRACTION = 0.02;
 
@@ -19,22 +20,13 @@ interface Props {
 interface Rect { x: number; y: number; w: number; h: number }
 interface Tile { node: VizNode; rect: Rect; nested: boolean; color: string }
 
-const PALETTE = [
-  '#E5484D', '#F76B15', '#FFB224', '#46A758', '#00A2C7',
-  '#3E63DD', '#8E4EC6', '#E93D82', '#6E56CF', '#29A383',
-];
-
-const colorFor = (key: string): string => {
-  let h = 0;
-  for (let i = 0; i < key.length; i += 1) h = (h * 31 + key.charCodeAt(i)) >>> 0;
-  return PALETTE[h % PALETTE.length];
-};
-
-const lighten = (hex: string, f: number): string => {
-  const n = parseInt(hex.slice(1), 16);
-  const mix = (c: number) => Math.round(c + (255 - c) * f);
-  return `rgb(${mix((n >> 16) & 255)},${mix((n >> 8) & 255)},${mix(n & 255)})`;
-};
+/**
+ * Treemap tile colour — same theme.rs wheel system as the sunburst: hue from
+ * the tile's ordinal position among its (descending) siblings, deeper levels
+ * lighten, file leaves lighten + desaturate, aggregates neutral.
+ */
+const tileColor = (midFraction: number, depth: number, isFile: boolean, isAggregate: boolean): string =>
+  isAggregate ? AGGREGATE_COLOR : segmentColor(midFraction, depth, isFile);
 
 /**
  * Squarified layout: `areas` must be sorted descending and sum to `rect`'s
@@ -102,11 +94,12 @@ function layout(view: VizNode): Tile[] {
       const kid = kids[idx];
       if (!kid || r.w <= 0 || r.h <= 0) return;
       const nested = kid.children.length > 0 && r.w >= 56 && r.h >= 44 && depth < 3;
+      const isFile = kid.children.length === 0;
       tiles.push({
         node: kid,
         rect: r,
         nested,
-        color: lighten(colorFor(kid.key), depth === 1 ? 0 : 0.25),
+        color: tileColor((idx + 0.5) / kids.length, depth, isFile, kid.isAggregate === true),
       });
       if (nested) {
         walk(
