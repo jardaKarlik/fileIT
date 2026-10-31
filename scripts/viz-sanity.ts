@@ -51,9 +51,9 @@ const count = buildVizTree(files, 'fileCount');
 check('fileCount values are counts (3/1/…)', count.children.map(c => c.value).join(',') === '2,1,1');
 
 const folders = buildVizTree(files, 'folders');
-check('folders has dir hierarchy (drive letter stripped)', folders.children.some(c => c.name === 'vault'));
-const vault = folders.children.find(c => c.name === 'vault')!;
-check('folder sizes roll up', vault.bytes === 7500);
+check('folders rooted at scan root (common prefix stripped)', folders.children.length === 3);
+check('folders root named after scan root', folders.name === 'vault');
+check('folder sizes roll up', folders.bytes === 7500);
 
 const folded = foldSmallChildren(inst, inst.value, 0.2);
 check('foldSmallChildren keeps aggregate', folded.some(c => c.isAggregate === true));

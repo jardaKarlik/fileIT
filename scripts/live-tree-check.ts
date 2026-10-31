@@ -8,16 +8,24 @@ const paths = [
   'C:\\Vault\\x.pdf',
 ];
 
-const t = buildLivePathTree(paths);
-console.log('root count', t.count, '(expect 4)');
-console.log('top (compressed):', t.children.map(c => `${c.name}=${c.count}`).join(', '));
-// Users/jaros/Documents is a single-child chain until Docs/Photos split it,
-// so compression must produce one merged node with two children.
-const merged = t.children[0];
-const ok =
-  t.count === 4 &&
-  merged.name === 'Users/jaros/Documents' &&
-  merged.children.length === 2 &&
-  merged.count === 3;
-console.log(ok ? 'LIVE TREE OK' : 'LIVE TREE BROKEN');
-process.exit(ok ? 0 : 1);
+// Mixed roots: no common prefix → generic 'Sken' root with top-level children.
+const mixed = buildLivePathTree(paths);
+console.log('mixed root', mixed.name, '| top:', mixed.children.map(c => `${c.name}=${c.count}`).join(', '));
+const mixedOk =
+  mixed.count === 4 &&
+  mixed.name === 'Sken' &&
+  mixed.children.some(c => c.name === 'Users/jaros/Documents' && c.count === 3) &&
+  mixed.children.some(c => c.name === 'Vault');
+
+// Single scan root: common prefix is stripped, root renamed to the scan root,
+// ring 1 shows the branching folders directly.
+const single = buildLivePathTree(paths.slice(0, 3));
+console.log('single root', single.name, '| top:', single.children.map(c => `${c.name}=${c.count}`).join(', '));
+const singleOk =
+  single.count === 3 &&
+  single.name === 'Documents' &&
+  single.children.find(c => c.name === 'Docs')?.count === 2 &&
+  single.children.find(c => c.name === 'Photos')?.count === 1;
+
+console.log(mixedOk && singleOk ? 'LIVE TREE OK' : 'LIVE TREE BROKEN');
+process.exit(mixedOk && singleOk ? 0 : 1);

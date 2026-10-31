@@ -86,6 +86,7 @@ function buildSegments(view: VizNode, rings: number): { segs: Seg[]; total: numb
     const span = a1 - a0;
     for (const kid of kids) {
       const kidSpan = span * (kid.value / (node.value || total));
+      if (kidSpan < 5e-4) { cursor += kidSpan; continue; } // invisible slivers only add noise
       segs.push({
         node: kid,
         a0: cursor,

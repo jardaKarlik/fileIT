@@ -158,13 +158,16 @@ export function buildVizTree(files: ClassifiedFile[], metric: VizMetric): VizNod
   return root;
 }
 
-/** Real directory tree from file paths — the squirreldisk-native view. */
+/** Real directory tree from file paths — the squirreldisk-native view.
+ *  The common directory prefix (scan root) is stripped so ring 1 shows the
+ *  first branching level rather than the drive spine. */
 function buildFolderTree(root: VizNode, files: ClassifiedFile[]): void {
-  for (const file of files) {
-    const parts = file.record.path.split(/[\\/]/).filter(Boolean);
-    // Drop a leading Windows drive segment ("C:") — the scan root already
-    // implies the volume, and a one-tile drive ring adds no information.
-    const dirParts = parts.slice(0, -1).filter((p, i) => !(i === 0 && /^[A-Za-z]:$/.test(p)));
+  const partsList = files.map(f => dirPartsOf(f.record.path));
+  const prefixLen = commonDirPrefix(partsList);
+  if (prefixLen > 0) root.name = partsList[0][prefixLen - 1];
+
+  files.forEach((file, idx) => {
+    const dirParts = partsList[idx].slice(prefixLen);
     let cursor = root;
     let acc = '';
     for (const part of dirParts) {
@@ -183,7 +186,7 @@ function buildFolderTree(root: VizNode, files: ClassifiedFile[]): void {
     fileNode.count = 1;
     fileNode.value = file.record.size_bytes;
     cursor.children.push(fileNode);
-  }
+  });
 
   const roll = (node: VizNode): void => {
     if (node.children.length === 0) return;
@@ -213,16 +216,43 @@ export function fmtBytes(bytes: number): string {
 }
 
 /**
+ * Longest common directory-prefix length (in segments) across all paths.
+ * Stripping it roots the chart at the scan root instead of the drive, so
+ * ring 1 shows the first level that actually branches.
+ */
+function commonDirPrefix(partsList: string[][]): number {
+  if (partsList.length === 0) return 0;
+  let k = partsList[0].length;
+  for (const parts of partsList) {
+    let i = 0;
+    while (i < k && i < parts.length && parts[i] === partsList[0][i]) i += 1;
+    k = i;
+    if (k === 0) break;
+  }
+  return k;
+}
+
+const dirPartsOf = (path: string): string[] =>
+  path.split(/[\\/]/).filter(Boolean).slice(0, -1)
+    .filter((seg, i) => !(i === 0 && /^[A-Za-z]:$/.test(seg)));
+
+/**
  * Live scan tree: count-weighted folder hierarchy built from raw discovered
  * paths — used on the Scanning screen so the chart grows as files are found
  * (squirreldisk-style live progress). File sizes are not known yet mid-scan,
- * so weight = file count.
+ * so weight = file count. The common directory prefix (the scan root) is
+ * stripped so ring 1 is the first branching level; each file gets a leaf so
+ * files sitting directly in the scan root remain visible.
  */
 export function buildLivePathTree(paths: string[]): VizNode {
-  const root = makeNode('root', 'Sken', 0);
-  for (const p of paths) {
-    const dirParts = p.split(/[\\/]/).filter(Boolean).slice(0, -1)
-      .filter((seg, i) => !(i === 0 && /^[A-Za-z]:$/.test(seg)));
+  const partsList = paths.map(dirPartsOf);
+  const prefixLen = commonDirPrefix(partsList);
+  const rootName = prefixLen > 0 ? partsList[0][prefixLen - 1] : 'Sken';
+  const root = makeNode('root', rootName, 0);
+
+  partsList.forEach((all, idx) => {
+    const p = paths[idx];
+    const dirParts = all.slice(prefixLen);
     let cursor = root;
     let acc = '';
     for (const part of dirParts) {
@@ -236,9 +266,14 @@ export function buildLivePathTree(paths: string[]): VizNode {
       next.value += 1;
       cursor = next;
     }
+    const fileName = p.split(/[\\/]/).pop() || p;
+    const leaf = makeNode(`live-file-${p}`, fileName, cursor.depth + 1);
+    leaf.count = 1;
+    leaf.value = 1;
+    cursor.children.push(leaf);
     root.count += 1;
     root.value += 1;
-  }
+  });
   sortChildren(root);
   compressChains(root);
   return root;
