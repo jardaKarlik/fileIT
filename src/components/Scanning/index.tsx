@@ -49,6 +49,24 @@ export function Scanning() {
   const appendLine = (line: LogLine) =>
     setLines(prev => [...prev.slice(-300), line]);
 
+  // Feed the live tree. New backends send the full discovered path; legacy
+  // binaries send only "Čteme: {name}" with no separators — degrade to a
+  // flat bucket so the chart still grows instead of going dead.
+  const pushDiscoveredPath = (raw: string): void => {
+    if (!raw) return;
+    if (/[\\/]/.test(raw)) {
+      pathsRef.current.push(raw);
+      return;
+    }
+    const legacy = raw.match(/^Čteme:\s*(.+)$/u);
+    if (legacy) {
+      const name = legacy[1];
+      const dot = name.lastIndexOf('.');
+      const ext = dot > 0 ? name.slice(dot + 1).toLowerCase() : 'jiné';
+      pathsRef.current.push(`Nalezené soubory/${ext}/${name}`);
+    }
+  };
+
   // ── Real Tauri path ──────────────────────────────────────────────────────
   async function runRealScan() {
     const roots = scanRoots;
@@ -61,8 +79,7 @@ export function Scanning() {
     const [unlistenScan, unlistenClassify] = await Promise.all([
       api.onScanProgress(p => {
         if (p.message) appendLine({ cls: 'hit', text: p.message });
-        // Only real paths feed the live tree (status messages carry no separators).
-        if (p.current_path && /[\\/]/.test(p.current_path)) pathsRef.current.push(p.current_path);
+        if (p.current_path) pushDiscoveredPath(p.current_path);
         if (p.files_found > 0) {
           setStatusText(`Nalezeno ${p.files_found} souborů…`);
           setPct(Math.min(45, Math.round(p.files_found / 6)));
