@@ -2,17 +2,10 @@
 import { useEffect } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../utils/tauriApi';
-import { SunburstGlyph } from './SunburstGlyph';
 import './Home.css';
 
 export function Home() {
-  const { setScreen, lastRunTimestamp, lastRunFileCount, setDetectedClouds, setCompletedRun, setLastRun, scanResult } = useStore();
-
-  const hasScan = !!scanResult && scanResult.files.length > 0;
-
-  function goGraph() {
-    if (hasScan) setScreen('graph');
-  }
+  const { setScreen, lastRunTimestamp, lastRunFileCount, setDetectedClouds, setCompletedRun, setLastRun } = useStore();
 
   // eslint-disable-next-line
 
@@ -127,29 +120,6 @@ export function Home() {
             </div>
           </div>
         </div>
-      </div>
-
-      <div
-        className={`home-viz${hasScan ? '' : ' inactive'}`}
-        onClick={goGraph}
-        role={hasScan ? 'button' : undefined}
-        tabIndex={hasScan ? 0 : undefined}
-        aria-disabled={!hasScan}
-        title={hasScan ? 'Otevřít novou vizualizaci' : 'Nejdřív spusťte analýzu (Režim 1 nebo 2)'}
-      >
-        <div className="home-viz-icon"><SunburstGlyph size={56} /></div>
-        <div className="home-viz-text">
-          <div className="home-viz-title">
-            Nová vizualizace
-            <span className="new-badge">nové</span>
-          </div>
-          <div className="home-viz-sub">
-            {hasScan
-              ? 'Prozkoumejte poslední analýzu — hierarchie, klienti, instituce, typy dokumentů'
-              : 'Vyžaduje dokončenou analýzu — spusťte nejdřív Režim 1 nebo Režim 2'}
-          </div>
-        </div>
-        {hasScan && <div className="home-viz-arrow">→</div>}
       </div>
 
       <div className="home-how" onClick={() => setScreen('how_it_works')} role="button" tabIndex={0}>

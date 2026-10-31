@@ -382,16 +382,3 @@
 .scan-status-yn.no:hover {
   background: #cbd5e1;
 }
-
-/* Graph screen shortcut */
-.graph-open-btn { display: inline-flex; align-items: center; gap: 8px; }
-.graph-open-btn .new-badge {
-  background: linear-gradient(180deg, #FF1493, #FE865B);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 2px 8px;
-  border-radius: 999px;
-}

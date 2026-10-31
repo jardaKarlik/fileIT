@@ -305,14 +305,6 @@ export function Dashboard() {
       <div className="dash-body">
         {/* CTAs */}
         <div className="hero-ctas">
-          <div className="cta-card graph" onClick={() => setScreen('graph')}>
-            <div className="cta-card-content">
-              <div className="cta-card-label">Prozkoumat <span className="new-badge">nové</span></div>
-              <div className="cta-card-title">Zobrazit graf</div>
-              <div className="cta-card-desc">Sunburst a treemap vaší analýzy — instituce, klienti, roky, typy dokumentů. Klikněte a projděte hierarchii.</div>
-            </div>
-            <div className="cta-arrow">→</div>
-          </div>
           <div className="cta-card restructure" onClick={() => setScreen('restructure')}>
             <div className="cta-card-content">
               <div className="cta-card-label">Hlavní akce</div>
