@@ -177,23 +177,38 @@ pub async fn start_scan(
         if let Some(prev_entry) = unchanged_lookup.get(&path_key) {
             if let Some(ref clf_json) = prev_entry.classification {
                 if let Ok(prev_cf) = serde_json::from_str::<ClassifiedFile>(clf_json) {
-                    log::debug!("Reusing previous classification for: {}", record.name);
-                    reused_count += 1;
-                    let sha = record.sha256.clone();
-                    if let Some(ref hash) = sha {
-                        if let Some(first_path) = seen_hashes.get(hash) {
-                            let mut prev_cf = prev_cf;
-                            prev_cf.is_duplicate = true;
-                            prev_cf.duplicate_of = Some(first_path.clone());
-                            classified.push(prev_cf);
+                    // Quality gate: a stale classification that came out empty
+                    // (Unknown type, no institution, no customer) must NOT be
+                    // reused forever — re-extract so classifier improvements
+                    // reach previously misclassified files.
+                    let usable = prev_cf.document_type != DocumentType::Unknown
+                        || prev_cf.institution.is_some()
+                        || prev_cf.customer.is_some();
+                    if !usable {
+                        log::debug!(
+                            "Re-classifying (previous result empty): {}",
+                            record.name
+                        );
+                        // fall through to the fresh classification path below
+                    } else {
+                        log::debug!("Reusing previous classification for: {}", record.name);
+                        reused_count += 1;
+                        let sha = record.sha256.clone();
+                        if let Some(ref hash) = sha {
+                            if let Some(first_path) = seen_hashes.get(hash) {
+                                let mut prev_cf = prev_cf;
+                                prev_cf.is_duplicate = true;
+                                prev_cf.duplicate_of = Some(first_path.clone());
+                                classified.push(prev_cf);
+                            } else {
+                                seen_hashes.insert(hash.clone(), record.path.clone());
+                                classified.push(prev_cf);
+                            }
                         } else {
-                            seen_hashes.insert(hash.clone(), record.path.clone());
                             classified.push(prev_cf);
                         }
-                    } else {
-                        classified.push(prev_cf);
+                        continue;
                     }
-                    continue;
                 }
             }
         }
