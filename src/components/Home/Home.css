@@ -209,15 +209,14 @@
 }
 .home-viz.inactive { opacity: 0.55; cursor: not-allowed; }
 .home-viz-icon {
-  flex: 0 0 44px;
-  width: 44px;
-  height: 44px;
+  flex: 0 0 60px;
+  width: 60px;
+  height: 60px;
   display: grid;
   place-items: center;
-  font-size: 20px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--indigo-light, #7c6cf0), var(--indigo, #5b4bd6));
-  color: #fff;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(20, 16, 33, 0.35);
 }
 .home-viz-text { flex: 1; min-width: 0; }
 .home-viz-title {

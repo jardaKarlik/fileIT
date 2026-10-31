@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../utils/tauriApi';
+import { SunburstGlyph } from './SunburstGlyph';
 import './Home.css';
 
 export function Home() {
@@ -136,7 +137,7 @@ export function Home() {
         aria-disabled={!hasScan}
         title={hasScan ? 'Otevřít novou vizualizaci' : 'Nejdřív spusťte analýzu (Režim 1 nebo 2)'}
       >
-        <div className="home-viz-icon">📊</div>
+        <div className="home-viz-icon"><SunburstGlyph size={56} /></div>
         <div className="home-viz-text">
           <div className="home-viz-title">
             Nová vizualizace
