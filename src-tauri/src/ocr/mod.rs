@@ -41,7 +41,32 @@ const DEFAULT_CORES: usize = 4;
 const SIDECAR_TIMEOUT: Duration = Duration::from_secs(300);
 
 fn env_non_empty(key: &str) -> Option<String> {
-    std::env::var(key).ok().filter(|s| !s.trim().is_empty())
+    if let Ok(v) = std::env::var(key) {
+        let v = v.trim().to_string();
+        if !v.is_empty() {
+            return Some(v);
+        }
+    }
+    // Registry fallback (HKCU\Environment): covers processes launched from
+    // shells with a stale environment — `setx` writes here, but running
+    // shells and their children never see the update.
+    env_non_empty_from_registry(key)
+}
+
+#[cfg(target_os = "windows")]
+fn env_non_empty_from_registry(key: &str) -> Option<String> {
+    use winreg::enums::HKEY_CURRENT_USER;
+    use winreg::RegKey;
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let env = hkcu.open_subkey("Environment").ok()?;
+    let value: String = env.get_value(key).ok()?;
+    let value = value.trim().to_string();
+    if value.is_empty() { None } else { Some(value) }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn env_non_empty_from_registry(_key: &str) -> Option<String> {
+    None
 }
 
 fn ocr_command() -> String {
