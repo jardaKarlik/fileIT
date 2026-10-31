@@ -162,6 +162,26 @@ pub async fn start_scan(
     let mut seen_hashes: std::collections::HashMap<String, std::path::PathBuf> =
         std::collections::HashMap::new();
 
+    // Resolve the Indra sidecar once for the whole classification run —
+    // PDFs and images take their text exclusively from this pipeline.
+    let ocr_ctx = {
+        let availability = crate::ocr::check(&state.app_data_dir);
+        if availability.installed {
+            availability.command.map(|command| {
+                crate::classifier::OcrExtractContext {
+                    app_data_dir: state.app_data_dir.clone(),
+                    command,
+                }
+            })
+        } else {
+            warn!(
+                "OCR sidecar not available — PDF/image classification will be degraded: {}",
+                availability.message.unwrap_or_default()
+            );
+            None
+        }
+    };
+
     for (i, record) in records.into_iter().enumerate() {
         let _ = app.emit(
             "classify_progress",
@@ -369,7 +389,10 @@ pub async fn start_scan(
         } else {
             extracted_count += 1;
         }
-        let mut cf = state.classifier.classify_with_hints(record, hints).await;
+        let mut cf = state
+            .classifier
+            .classify_with_hints(record, hints, ocr_ctx.as_ref())
+            .await;
 
         if let Some(ref hash) = sha {
             if let Some(first_path) = seen_hashes.get(hash) {

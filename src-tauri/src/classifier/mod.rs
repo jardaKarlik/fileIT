@@ -49,10 +49,14 @@ impl Classifier {
 
     /// Classify with optional Stage 1 metadata hints.
     /// `hints = None` runs the original pipeline unchanged.
+    /// `ocr` carries the Indra sidecar context used to extract text from
+    /// PDFs and images; `None` degrades those categories to path-signal-only
+    /// classification.
     pub async fn classify_with_hints(
         &self,
         record: FileRecord,
         hints: Option<ClassificationHints>,
+        ocr: Option<&OcrExtractContext>,
     ) -> ClassifiedFile {
         let ext = record.extension.as_str();
         let category = FileCategory::from_extension(ext);
@@ -76,10 +80,48 @@ impl Classifier {
         // Stage 2 — filename signals (always runs)
         let filename_signals = self.ner.signals_from_filename(&record.name);
 
-        // Stage 3 — content extraction (skipped when skip_extraction=true)
+        // Stage 3 — content extraction (skipped when skip_extraction=true).
+        // PDFs and images go EXCLUSIVELY through the Indra sidecar (cache
+        // first, live run on miss) — pdf-extract and Windows OCR are gone.
+        // Office/plaintext formats keep their native extractors.
         info!("Classifying: {:?} (skip_extraction={})", record.name, skip_extraction);
         let (raw_text, ocr_used) = if skip_extraction {
             (String::new(), false)
+        } else if matches!(category, FileCategory::Pdf | FileCategory::Image) {
+            match ocr {
+                Some(ctx) => {
+                    let ctx = ctx.clone();
+                    let path = record.path.clone();
+                    let sha = record.sha256.clone().unwrap_or_default();
+                    match tokio::task::spawn_blocking(move || {
+                        crate::ocr::text_for_classification(
+                            &ctx.app_data_dir,
+                            &ctx.command,
+                            std::path::Path::new(&path),
+                            &sha,
+                        )
+                    })
+                    .await
+                    {
+                        Ok(Ok((text, is_scan))) => (text, is_scan),
+                        Ok(Err(e)) => {
+                            warn!("Indra extraction failed for {:?}: {}", record.name, e);
+                            (String::new(), false)
+                        }
+                        Err(e) => {
+                            warn!("Indra extraction task failed for {:?}: {}", record.name, e);
+                            (String::new(), false)
+                        }
+                    }
+                }
+                None => {
+                    warn!(
+                        "Indra sidecar unavailable — classifying {:?} from path signals only",
+                        record.name
+                    );
+                    (String::new(), false)
+                }
+            }
         } else {
             match extract_text(&record.path, &category).await {
                 Ok(result) => result,
@@ -186,6 +228,13 @@ impl Classifier {
     /// Classify without hints — preserves backward compatibility.
     #[allow(dead_code)]
     pub async fn classify(&self, record: FileRecord) -> ClassifiedFile {
-        self.classify_with_hints(record, None).await
+        self.classify_with_hints(record, None, None).await
     }
+}
+
+/// Indra sidecar context for in-classification text extraction.
+#[derive(Debug, Clone)]
+pub struct OcrExtractContext {
+    pub app_data_dir: std::path::PathBuf,
+    pub command: String,
 }

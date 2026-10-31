@@ -187,6 +187,26 @@ fn fresh_out_dir(cache_dir: &Path, path: &Path) -> Result<PathBuf, String> {
     Err("nelze vytvořit unikátní OCR výstupní adresář".to_string())
 }
 
+/// Text source for classification: OCR cache first, live sidecar on miss.
+/// Returns (full_text, is_scan).
+pub fn text_for_classification(
+    app_data_dir: &Path,
+    command: &str,
+    path: &Path,
+    sha256: &str,
+) -> Result<(String, bool), String> {
+    if let Some(hit) = ocr_store::read(app_data_dir, sha256) {
+        return Ok((hit.full_text, hit.is_scan));
+    }
+    let cache_dir = ocr_store::cache_dir(app_data_dir);
+    let mut result = run_sidecar(command, &cache_dir, path)?;
+    if result.sha256.is_none() {
+        result.sha256 = Some(sha256.to_string());
+    }
+    ocr_store::write(app_data_dir, &result);
+    Ok((result.full_text, result.is_scan))
+}
+
 /// Read and validate the JSONL the sidecar wrote into the out dir.
 fn read_sidecar_output(out_dir: &Path, path: &Path) -> Result<Vec<u8>, String> {
     let stem = path
