@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../utils/tauriApi';
+import { Explorer } from './Explorer';
 import './Dashboard.css';
 
 const TIMELINE_YEARS = 12;
@@ -224,6 +225,9 @@ export function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* squirreldisk-style explorer: sunburst/treemap with metric switching */}
+        <Explorer />
 
         {/* Charts row */}
         <div className="charts-row">
