@@ -33,3 +33,8 @@ __pycache__/
 
 # Generated local CNB registry (do not commit; regenerate from C:\_temp\xml)
 src-tauri/resources/cnb_registry.json
+
+# >>> nauro: machine-local wiring (regenerated per machine) >>>
+/.mcp.json
+/.cursor/mcp.json
+# <<< nauro <<<
