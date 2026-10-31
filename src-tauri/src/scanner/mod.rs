@@ -75,7 +75,7 @@ pub async fn scan_directories(
             continue;
         }
 
-        emit_progress(app, files_seen, &format!("Prohlížíme {:?}…", root), false);
+        emit_progress(app, files_seen, &format!("Prohlížíme {:?}…", root), None, false);
 
         for entry in WalkDir::new(root)
             .follow_links(false)
@@ -153,6 +153,7 @@ pub async fn scan_directories(
                     app,
                     files_seen,
                     &format!("Čteme: {}", name),
+                    Some(&path),
                     false,
                 );
             }
@@ -179,6 +180,7 @@ pub async fn scan_directories(
         app,
         files_seen,
         &format!("Nalezeno {} souborů", files_seen),
+        None,
         true,
     );
 
@@ -245,13 +247,23 @@ fn should_skip(path: &Path, extra_skip_dirs: &[PathBuf]) -> bool {
     false
 }
 
-/// Emit a scan_progress event to the frontend.
-fn emit_progress(app: &AppHandle, files_found: usize, message: &str, done: bool) {
+/// Emit a scan_progress event to the frontend. `current_path` carries the
+/// full path of the file just found (empty for status-only events) so the
+/// frontend live visualization can build the folder tree while scanning.
+fn emit_progress(
+    app: &AppHandle,
+    files_found: usize,
+    message: &str,
+    current_path: Option<&Path>,
+    done: bool,
+) {
     let _ = app.emit(
         "scan_progress",
         ScanProgress {
             files_found,
-            current_path: message.to_string(),
+            current_path: current_path
+                .map(|p| p.to_string_lossy().into_owned())
+                .unwrap_or_default(),
             message: message.to_string(),
             done,
         },

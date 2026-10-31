@@ -90,7 +90,7 @@ export const api = {
 
   // ── Event listeners ───────────────────────────────────────────────────────
 
-  onScanProgress: (cb: (p: { files_found: number; message: string; done: boolean }) => void) =>
+  onScanProgress: (cb: (p: { files_found: number; current_path: string; message: string; done: boolean }) => void) =>
     listen('scan_progress', cb as any),
 
   onClassifyProgress: (cb: (p: { done: number; total: number; current: string }) => void) =>

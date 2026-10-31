@@ -212,6 +212,37 @@ export function fmtBytes(bytes: number): string {
 }
 
 /**
+ * Live scan tree: count-weighted folder hierarchy built from raw discovered
+ * paths — used on the Scanning screen so the chart grows as files are found
+ * (squirreldisk-style live progress). File sizes are not known yet mid-scan,
+ * so weight = file count.
+ */
+export function buildLivePathTree(paths: string[]): VizNode {
+  const root = makeNode('root', 'Sken', 0);
+  for (const p of paths) {
+    const dirParts = p.split(/[\\/]/).filter(Boolean).slice(0, -1)
+      .filter((seg, i) => !(i === 0 && /^[A-Za-z]:$/.test(seg)));
+    let cursor = root;
+    let acc = '';
+    for (const part of dirParts) {
+      acc += (acc ? '/' : '') + part;
+      let next = cursor.children.find(c => c.name === part);
+      if (!next) {
+        next = makeNode(`live-${acc}`, part, cursor.depth + 1);
+        cursor.children.push(next);
+      }
+      next.count += 1;
+      next.value += 1;
+      cursor = next;
+    }
+    root.count += 1;
+    root.value += 1;
+  }
+  sortChildren(root);
+  return root;
+}
+
+/**
  * Fold children below `minFraction` of the parent value into an aggregate
  * "Další položky" node — squirreldisk's "smaller items" wedge (MIN_PX).
  */
