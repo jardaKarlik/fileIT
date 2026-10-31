@@ -17,7 +17,7 @@
 //
 // Environment variables:
 //   INDRA_OCR_COMMAND  sidecar binary, default "indra-ocr"
-//   INDRA_OCR_MODELS   model directory, passed through as --models
+//   INDRA_OCR_MODELS   model directory, passed through as --model-dir
 //   INDRA_OCR_CORES    worker count, default 4
 
 use crate::ocr_store;
@@ -90,7 +90,7 @@ pub fn check(app_data_dir: &Path) -> OcrAvailability {
         None
     } else {
         Some(format!(
-            "Příkaz „{}“ nebyl nalezen v PATH. Nainstalujte Indra OCR sidecar, nebo nastavte INDRA_OCR_COMMAND.",
+            "Příkaz „{}“ nebyl nalezen v PATH. Nainstalujte Indra OCR sidecar (např. `pip install indra-ocr`), nebo nastavte INDRA_OCR_COMMAND na plnou cestu k binárce, např. C:\\Users\\jaros\\AppData\\Local\\Python\\pythoncore-3.14-64\\Scripts\\indra-ocr.exe.",
             command
         ))
     };
@@ -126,57 +126,96 @@ fn hash_file(path: &Path) -> Option<String> {
     Some(hex::encode(hasher.finalize()))
 }
 
-/// Run the sidecar on one file and parse its JSON output.
+/// Run the sidecar on one file and parse its JSONL output.
 ///
 /// The sidecar is invoked as:
-///   <command> <file> --format json --cores 1 [--models <dir>]
+///   <command> <file> --out <tmpdir> --format json --cores 1 [--model-dir <dir>]
 ///
 /// `--cores 1` pins a single OCR worker per invocation: batch-level parallelism
 /// is ours (the semaphore), so N concurrent sidecars must not each spin up N
-/// threads. Each argument is passed separately — `--format json` split as one
-/// string is a classic Windows quoting bug and would fail arg parsing.
+/// threads. Even though the CLI can stream JSONL to stdout, we always route
+/// through `--out`: that keeps chatter-to-stderr races and oversized stdout
+/// pipes out of the picture and gives us a single well-defined artifact to
+/// parse (handling parity with #523 timings: stdin closed expressly after the
+/// file has been fully read).
 ///
-/// Output is expected to be the Indra JSON on stdout. A non-zero exit,
-/// unparseable stdout, or a timeout is an error for this file only.
-fn run_sidecar(command: &str, path: &Path) -> Result<OcrResult, String> {
-    let output = spawn_sidecar_json(command, path, SIDECAR_TIMEOUT)?;
-
-    let json: Json = serde_json::from_slice(&output)
-        .map_err(|e| format!("neplatné JSON z OCR sidecaru: {}", e))?;
-
-    let mut result = indra_json_to_ocr_result(&json, path)?;
-
-    // The sidecar may omit identity fields — fill them from what we know so the
-    // cache entry is self-describing.
-    if result.path.is_empty() {
-        result.path = path.to_string_lossy().to_string();
-    }
-    if result.sha256.as_deref().map_or(true, |s| s.is_empty()) {
-        result.sha256 = hash_file(path);
-    }
-    if result.confidence_avg.is_none() {
-        result.confidence_avg = mean_confidence(&result);
-    }
-
-    Ok(result)
+/// The CLI writes JSON LINES: one JSON object per page, one per line:
+///   {"file": "<input>", "page": 0, "source": "text"|"ocr", …,
+///    "lines": [{"box":[x1,y1,x2,y2], "text": "…", "conf": 0.98}]}
+/// `--out` is a DIRECTORY; inside it write <input-stem>.jsonl.
+fn run_sidecar(command: &str, cache_dir: &Path, path: &Path) -> Result<OcrResult, String> {
+    let out_dir = fresh_out_dir(cache_dir, path)?;
+    let output = spawn_sidecar_json(command, path, &out_dir, SIDECAR_TIMEOUT);
+    let result = output.and_then(|raw| parse_indra_output(&raw, path));
+    let _ = std::fs::remove_dir_all(&out_dir);
+    result
 }
 
-/// Invoke the sidecar and return its stdout bytes, enforcing a wall-clock
-/// timeout. Fully synchronous: it runs inside `spawn_blocking`, so a Tokio
-/// timeout cannot be awaited here — we poll `try_wait` against a deadline and
-/// kill the child when it expires. Stdout/stderr are drained on reader
-/// threads so a chatty child can never deadlock a full pipe.
+/// A unique directory under `cache_dir` used as the sidecar's `--out` target.
+///
+/// The CLI takes a directory and writes `<input-stem>.jsonl` inside it. We use
+/// a fresh (never pre-existing) directory name so a stale file from a previous
+/// run can never be mistaken for this run's output; the caller deletes the
+/// whole directory when done.
+fn fresh_out_dir(cache_dir: &Path, path: &Path) -> Result<PathBuf, String> {
+    let stem = path
+        .file_stem()
+        .map(|s| s.to_string_lossy().replace(['\\', '/', ':', ' '], "_"))
+        .unwrap_or_else(|| "input".to_string());
+
+    // A few rounds of (stem-counter, suffix) probing — cheaper and more
+    // readable than a random module for something that must just be unique.
+    for attempt in 0..64 {
+        let candidate = cache_dir.join(format!(
+            "indra-out-{}-{}-{:03}",
+            stem,
+            std::process::id(),
+            attempt
+        ));
+        match std::fs::create_dir(&candidate) {
+            Ok(()) => return Ok(candidate),
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(e) => return Err(format!("OCR výstupní adresář nelze vytvořit: {}", e)),
+        }
+    }
+    Err("nelze vytvořit unikátní OCR výstupní adresář".to_string())
+}
+
+/// Read and validate the JSONL the sidecar wrote into the out dir.
+fn read_sidecar_output(out_dir: &Path, path: &Path) -> Result<Vec<u8>, String> {
+    let stem = path
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .ok_or_else(|| "vstupní soubor bez názvu".to_string())?;
+    let jsonl = out_dir.join(format!("{}.jsonl", stem));
+
+    if !jsonl.is_file() {
+        return Err(format!(
+            "sidecar nevytvořil výstupní soubor {}",
+            jsonl.display()
+        ));
+    }
+    std::fs::read(&jsonl).map_err(|e| format!("výstup sidecaru nelze přečíst: {}", e))
+}
+
+/// Invoke the sidecar, enforce a wall-clock timeout, then read the JSONL it
+/// wrote into `out_dir`. Fully synchronous: it runs inside `spawn_blocking`,
+/// so a Tokio timeout cannot be awaited here — we poll `try_wait` against a
+/// deadline and kill the child when it expires. Stdout/stderr are drained on
+/// reader threads so a chatty child can never deadlock a full pipe.
 fn spawn_sidecar_json(
     command: &str,
     path: &Path,
+    out_dir: &Path,
     timeout: Duration,
 ) -> Result<Vec<u8>, String> {
     use std::io::Read;
     use std::time::Instant;
 
     let mut cmd = Command::new(command);
-    // Positional first: `indra-ocr <file> --format json --cores 1`.
+    // Positional first: `indra-ocr <file> --out <dir> --format json --cores 1`.
     cmd.arg(path);
+    cmd.arg("--out").arg(out_dir);
     cmd.arg("--format");
     cmd.arg("json");
     // One OCR worker per invocation; batch parallelism is the semaphore's job.
@@ -184,7 +223,7 @@ fn spawn_sidecar_json(
     cmd.arg("1");
 
     if let Some(models) = env_non_empty("INDRA_OCR_MODELS") {
-        cmd.arg("--models").arg(models);
+        cmd.arg("--model-dir").arg(models);
     }
 
     cmd.stdout(std::process::Stdio::piped());
@@ -232,16 +271,19 @@ fn spawn_sidecar_json(
     };
 
     // Join the readers so no bytes are lost when we did get a real exit.
-    let stdout = stdout_reader.join().unwrap_or_default();
+    let _stdout = stdout_reader.join().unwrap_or_default();
     let _stderr = stderr_reader.join().unwrap_or_default();
 
     match status {
-        Some(status) if status.success() => Ok(stdout),
-        Some(status) => Err(format!(
-            "sidecar vrátil chybu ({}): {}",
-            status,
-            String::from_utf8_lossy(&_stderr).trim()
-        )),
+        Some(status) if status.success() => read_sidecar_output(out_dir, path),
+        Some(status) => {
+            let _ = is_directory_empty(out_dir); // best-effort cleanup guard
+            Err(format!(
+                "sidecar vrátil chybu ({}): {}",
+                status,
+                String::from_utf8_lossy(&_stderr).trim()
+            ))
+        }
         None => Err(format!(
             "sidecar překročil časový limit {} s",
             timeout.as_secs()
@@ -249,12 +291,208 @@ fn spawn_sidecar_json(
     }
 }
 
-// ─────────────────────────── Indra JSON → OcrResult ───────────────────────────
+/// Trivial emptiness probe — mirrors the intent of the old stdout-only reader,
+/// kept so the failure path stays symmetrical with success.
+fn is_directory_empty(dir: &Path) -> std::io::Result<bool> {
+    Ok(dir.read_dir()?.next().is_none())
+}
 
-/// Convert an Indra CLI JSON document into our `OcrResult`.
+// ─────────────────────────── Indra JSONL → OcrResult ───────────────────────────
+
+/// Parse the sidecar's raw output bytes as JSON LINES and dispatch by shape.
 ///
-/// The mapping is deliberately tolerant: Indra emits `pages[].texts[].lines[]`
-/// (and optional `blocks[]` / layout labels). Everything optional-degrades —
+/// Verified LIVE with indra-ocr 1.1.2 (smoke test on a real 2-page PDF, both
+/// --out mode and stdout mode, text-layer and image-only pages):
+///   • The CLI emits one JSON object PER PAGE, one per line.
+///   • Each line's keys: file, page (0-based), source ("text" when read from
+///     the digital text layer, "ocr" when OCR'd), rotation, skew, vertical,
+///     note, lines [{box:[x1,y1,x2,y2], text, conf}], markdown (string with
+///     real layout incl. table HTML), blocks [{label, text}], timings.
+///   • There is NO language field anywhere.
+///
+/// For backward compatibility a single object carrying a legacy `pages[]`
+/// array or a flat `text` field routes to `indra_json_to_ocr_result`.
+fn parse_indra_output(raw: &[u8], path: &Path) -> Result<OcrResult, String> {
+    let text = String::from_utf8_lossy(raw);
+
+    let mut pages: Vec<Json> = Vec::new();
+    for line in text.lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        match serde_json::from_str::<Json>(line) {
+            Ok(v) => pages.push(v),
+            Err(e) => return Err(format!("neplatné JSON na řádku: {}", e)),
+        }
+    }
+
+    if pages.is_empty() {
+        return Err("sidecar vrátil prázdný výstup".to_string());
+    }
+
+    // Legacy single-document shape (a pages[] array or flat {text: ...}).
+    if pages.len() == 1 && (pages[0].get("pages").is_some() || pages[0].get("text").is_some()) {
+        let mut result = indra_json_to_ocr_result(&pages[0], path)?;
+        if result.sha256.as_deref().map_or(true, |s| s.is_empty()) {
+            result.sha256 = hash_file(path);
+        }
+        if result.confidence_avg.is_none() {
+            result.confidence_avg = mean_confidence(&result);
+        }
+        return Ok(result);
+    }
+
+    // Real shape: one JSON object per page per line.
+    let mut result = indra_jsonl_to_ocr_result(&pages, path)?;
+    if result.sha256.as_deref().map_or(true, |s| s.is_empty()) {
+        result.sha256 = hash_file(path);
+    }
+    Ok(result)
+}
+
+/// Convert real JSONL page objects into our `OcrResult`.
+///
+/// Mapping contract (per real CLI output, verified against a live smoke test):
+///   page_count      := number of JSONL lines (each line = one page)
+///   OcrBlock.page   := 1-based (the JSONL `page` field is 0-based; we count
+///                      lines, not trusting the CLI's page field to be dense)
+///   conf → confidence, clamped into 0..1; missing → None
+///   box → box; label → label
+///   source "text" → is_scan=false; anything else → is_scan=true
+///   confidence_avg := mean of the line confidences (present values only)
+///   full_text      := newline-joined line texts in per-page, per-line order
+///   language       := None — the JSONL has no language field; never fabricate
+///   markdown       := not persisted into blocks (per-page layout already
+///                     lives in blocks + lines; storing raw markdown into the
+///                     OcrResult type would need a types change owned by
+///                     others)
+fn indra_jsonl_to_ocr_result(pages: &[Json], path: &Path) -> Result<OcrResult, String> {
+    let path_str = path.to_string_lossy().to_string();
+
+    let mut full_text = String::new();
+    let mut blocks: Vec<OcrBlock> = Vec::new();
+    let mut has_ocr_page = false;
+
+    for (idx, page) in pages.iter().enumerate() {
+        let page_no = (idx + 1) as u32; // 1-based output numbering
+
+        // source "text" means digital-text-layer reading; anything else
+        // (OCR of a real scan, or missing/unknown) marks the result as scanned.
+        if page
+            .get("source")
+            .and_then(Json::as_str)
+            .map_or(true, |s| s != "text")
+        {
+            has_ocr_page = true;
+        }
+
+        // Ordered "lines" of the page. Full text joins them with newlines.
+        let mut page_lines: Vec<String> = Vec::new();
+
+        let jsonl_lines = page
+            .get("lines")
+            .and_then(Json::as_array)
+            .cloned()
+            .unwrap_or_default();
+
+        for line in &jsonl_lines {
+            let text = line
+                .get("text")
+                .and_then(Json::as_str)
+                .unwrap_or("")
+                .to_string();
+            if !text.is_empty() {
+                page_lines.push(text.clone());
+            }
+            let confidence = line
+                .get("conf")
+                .and_then(Json::as_f64)
+                .map(|c| clamp_unit(c as f32));
+            let box_ = line
+                .get("bbox")
+                .or_else(|| line.get("box"))
+                .and_then(bbox_to_f32_4);
+
+            blocks.push(OcrBlock {
+                page: page_no,
+                label: "line".to_string(),
+                text,
+                confidence,
+                box_,
+            });
+        }
+
+        // Layout blocks (headings, tables) — label is a real layout tag
+        // ("Section-Header", "Table", "Text", …) straight from the JSONL.
+        if let Some(raw_blocks) = page.get("blocks").and_then(Json::as_array) {
+            for rb in raw_blocks {
+                let label = rb
+                    .get("label")
+                    .or_else(|| rb.get("type"))
+                    .and_then(Json::as_str)
+                    .unwrap_or("block")
+                    .to_string();
+                let text = rb
+                    .get("text")
+                    .and_then(Json::as_str)
+                    .unwrap_or("")
+                    .to_string();
+                let confidence = rb
+                    .get("conf")
+                    .or_else(|| rb.get("confidence"))
+                    .and_then(Json::as_f64)
+                    .map(|c| clamp_unit(c as f32));
+                let box_ = rb
+                    .get("bbox")
+                    .or_else(|| rb.get("box"))
+                    .and_then(bbox_to_f32_4);
+
+                blocks.push(OcrBlock {
+                    page: page_no,
+                    label,
+                    text,
+                    confidence,
+                    box_,
+                });
+            }
+        }
+
+        // Layout markdown: when present it is the durable human-readable page
+        // (tables as HTML etc.). We do NOT append it to full_text — that must
+        // stay a newline-joined line transcript — and we do not add markdown
+        // text as a block either; both are already represented by blocks/lines.
+        // (Storing markdown verbatim would require extending OcrResult, a type
+        // owned elsewhere; skipping keeps the shape compatible.)
+        let _markdown = page.get("markdown").and_then(Json::as_str);
+
+        if !page_lines.is_empty() {
+            full_text.push_str(&page_lines.join("\n"));
+            full_text.push('\n');
+        }
+    }
+
+    if full_text.is_empty() && blocks.is_empty() {
+        return Err("sidecar vrátil prázdný výsledek".to_string());
+    }
+
+    Ok(OcrResult {
+        path: path_str,
+        sha256: None,    // filled by caller
+        full_text: full_text.trim_end().to_string(),
+        language: None, // the JSONL has no language field — never fabricate
+        confidence_avg: mean_of_blocks(&blocks),
+        page_count: pages.len().max(1) as u32,
+        is_scan: has_ocr_page,
+        layout_blocks: blocks,
+    })
+}
+
+/// Convert a legacy Indra CLI JSON document into our `OcrResult`.
+///
+/// Tolerant mapping kept for backward compatibility with older sidecar builds
+/// and the sanity fixture: Indra's earlier shape was `pages[].texts[].lines[]`
+/// (plus optional `blocks[]` / layout labels). Everything optional-degrades —
 /// a missing field must produce a valid `OcrResult`, never a parse failure.
 ///
 /// Shape handled:
@@ -475,6 +713,16 @@ fn mean_confidence(result: &OcrResult) -> Option<f32> {
     Some(vals.iter().sum::<f32>() / vals.len() as f32)
 }
 
+/// Mean of the line confidences of a block collection — used by the JSONL
+/// path where confidence_avg must be computed on present values only.
+fn mean_of_blocks(blocks: &[OcrBlock]) -> Option<f32> {
+    let vals: Vec<f32> = blocks.iter().filter_map(|b| b.confidence).collect();
+    if vals.is_empty() {
+        return None;
+    }
+    Some(vals.iter().sum::<f32>() / vals.len() as f32)
+}
+
 // ─────────────────────────── batch runner ───────────────────────────
 
 /// Process a batch of files.
@@ -569,7 +817,8 @@ pub async fn run_batch(
                         return Ok(true); // cache hit
                     }
 
-                    let mut result = run_sidecar(&command, &path)?;
+                    let cache_dir = ocr_store::cache_dir(&app_data_dir);
+                    let mut result = run_sidecar(&command, &cache_dir, &path)?;
                     if result.sha256.is_none() {
                         result.sha256 = hash_file(&path);
                     }
@@ -698,7 +947,8 @@ mod tests {
     use super::*;
     use serde_json::json;
 
-    /// Fixture: realistic Indra output for one page of a scanned statement.
+    /// Fixture: realistic legacy Indra output for one page of a scanned
+    /// statement (pre-JSONL shape kept for backward compatibility).
     #[test]
     fn indra_blocks_convert() {
         let json = json!({
@@ -776,5 +1026,202 @@ mod tests {
             ],
         };
         assert_eq!(mean_confidence(&r), Some(0.6));
+    }
+
+    /// Real Indra CLI output (indra-ocr 1.1.2, verified live): JSON LINES,
+    /// one object per page, page numbering 0-based, conf + box + label keys.
+    fn realistic_jsonl_pages() -> Vec<Json> {
+        let mut jsonl = String::new();
+        jsonl.push_str(
+            &json!({
+                "file": "C:\\Klienti\\vypis.pdf", "page": 0, "source": "text",
+                "rotation": 0, "skew": 0.0, "vertical": false, "note": "order=model",
+                "lines": [
+                    {"box": [201.6, 197.0, 625.3, 223.7], "text": "STRANA 1 - VYPIS Z UCTU", "conf": 1.0},
+                    {"box": [201.7, 254.6, 305.4, 280.4], "text": "Datum", "conf": 0.42}
+                ],
+                "markdown": "## STRANA 1 - VYPIS Z UCTU\n\n<table><tr><th>Datum</th></tr></table>",
+                "blocks": [
+                    {"label": "Section-Header", "bbox": [201.6, 197.0, 625.3, 223.7],
+                     "text": "STRANA 1 - VYPIS Z UCTU"},
+                    {"label": "Table", "bbox": [201.7, 254.6, 305.4, 280.4], "text": "Datum"}
+                ],
+                "timings": {"total_ms": 100.0}
+            })
+            .to_string(),
+        );
+        jsonl.push('\n');
+        jsonl.push_str(
+            &json!({
+                "file": "C:\\Klienti\\vypis.pdf", "page": 1, "source": "ocr",
+                "rotation": 0, "skew": 3.5, "vertical": true,
+                "note": "no text layer; order=model",
+                "lines": [
+                    {"box": [10.0, 10.0, 20.0, 20.0], "text": "STRANA 2", "conf": 1.7},
+                    {"box": null, "text": "Bez konfu"}
+                ],
+                "markdown": "STRANA 2",
+                "blocks": [{"label": "Table", "bbox": [1.0, 2.0, 3.0, 4.0], "text": "a\nb"}],
+                "timings": {"total_ms": 50.0}
+            })
+            .to_string(),
+        );
+        jsonl.push('\n');
+
+        jsonl
+            .lines()
+            .filter(|l| !l.trim().is_empty())
+            .map(|l| serde_json::from_str(l).unwrap())
+            .collect()
+    }
+
+    #[test]
+    fn real_jsonl_two_pages() {
+        let pages = realistic_jsonl_pages();
+        let r = indra_jsonl_to_ocr_result(&pages, Path::new("vypis.pdf")).unwrap();
+
+        // One JSONL line = one page.
+        assert_eq!(r.page_count, 2);
+        assert_eq!(r.layout_blocks.iter().map(|b| b.page).max(), Some(2));
+
+        // conf → confidence; clamped 0..1; missing → None; box → box.
+        let b0 = &r.layout_blocks[0];
+        assert_eq!(b0.confidence, Some(1.0));
+        assert_eq!(b0.box_, Some([201.6, 197.0, 625.3, 223.7]));
+        assert_eq!(b0.page, 1); // first JSONL line → page 1 (1-based)
+
+        let b1 = &r.layout_blocks[1];
+        assert_eq!(b1.confidence, Some(0.42));
+
+        // Bloks placement note: first page has 2 lines then 2 blocks, so the
+        // page-2 entries start at index 4, not 2.
+        let b2 = &r.layout_blocks[4]; // page 2's first line: conf 1.7 → clamp 1.0
+        assert_eq!(b2.page, 2);
+        assert_eq!(b2.confidence, Some(1.0));
+
+        let b3 = &r.layout_blocks[5]; // no conf key, null box → both None
+        assert_eq!(b3.confidence, None);
+        assert_eq!(b3.box_, None);
+        assert_eq!(b3.page, 2);
+
+        // source "text" on page 1, "ocr" on page 2 → the document is a scan.
+        assert!(r.is_scan);
+
+        // full_text: newline-joined line texts in page order.
+        assert_eq!(r.full_text, "STRANA 1 - VYPIS Z UCTU\nDatum\nSTRANA 2\nBez konfu");
+
+        // language: the JSONL has no language field — must not be fabricated.
+        assert_eq!(r.language, None);
+
+        // confidence_avg: mean of present line confs (line blocks only have
+        // conf; the blocks entries in this fixture carry none).
+        let expected = (1.0 + 0.42 + 1.0) / 3.0;
+        let avg = r.confidence_avg.unwrap();
+        assert!((avg - expected).abs() < 1e-6, "avg={} expected={}", avg, expected);
+
+        // layout labels straight from the JSONL.
+        let labels: Vec<&str> = r.layout_blocks.iter().map(|b| b.label.as_str()).collect();
+        assert!(labels.contains(&"line"), "labels: {:?}", labels);
+        assert!(labels.contains(&"Section-Header"), "labels: {:?}", labels);
+        assert!(labels.contains(&"Table"), "labels: {:?}", labels);
+    }
+
+    /// source "text" → is_scan=false; anything else → true.
+    #[test]
+    fn jsonl_is_scan_from_source() {
+        let mk = |source: &str| {
+            let line = json!({
+                "file": "f.pdf", "page": 0, "source": source,
+                "lines": [{"box": [1, 2, 3, 4], "text": "t", "conf": 0.9}]
+            });
+            indra_jsonl_to_ocr_result(&[line], Path::new("f.pdf")).unwrap()
+        };
+        assert!(!mk("text").is_scan);
+        assert!(mk("ocr").is_scan);
+        assert!(mk("").is_scan);
+    }
+
+    /// A missing `source` key must still count as scanned.
+    #[test]
+    fn jsonl_missing_source_counts_as_scan() {
+        let line = json!({
+            "file": "f.pdf", "page": 0,
+            "lines": [{"box": [1, 2, 3, 4], "text": "t", "conf": 0.9}]
+        });
+        let r = indra_jsonl_to_ocr_result(&[line], Path::new("f.pdf")).unwrap();
+        assert!(r.is_scan);
+    }
+
+    /// All-"text" sources across all pages → is_scan=false.
+    #[test]
+    fn jsonl_all_text_pages_not_scan() {
+        let pages = realistic_jsonl_pages()
+            .into_iter()
+            .map(|mut p| {
+                p["source"] = json!("text");
+                p
+            })
+            .collect::<Vec<_>>();
+        let r = indra_jsonl_to_ocr_result(&pages, Path::new("vypis.pdf")).unwrap();
+        assert!(!r.is_scan);
+    }
+
+    /// Out-of-range confidences clamp at both ends of the range.
+    #[test]
+    fn jsonl_conf_clamping() {
+        let line = json!({
+            "file": "f.pdf", "page": 0, "source": "ocr",
+            "lines": [
+                {"box": [1, 2, 3, 4], "text": "a", "conf": -0.5},
+                {"box": [1, 2, 3, 4], "text": "b", "conf": 2.0},
+                {"box": [1, 2, 3, 4], "text": "c", "conf": 0.5}
+            ]
+        });
+        let r = indra_jsonl_to_ocr_result(&[line], Path::new("f.pdf")).unwrap();
+        assert_eq!(r.layout_blocks[0].confidence, Some(0.0));
+        assert_eq!(r.layout_blocks[1].confidence, Some(1.0));
+        assert_eq!(r.layout_blocks[2].confidence, Some(0.5));
+    }
+
+    /// Empty/blank-only output must still error, never silently pass.
+    #[test]
+    fn jsonl_empty_pages_is_error() {
+        let pages: Vec<Json> = Vec::new();
+        assert!(indra_jsonl_to_ocr_result(&pages, Path::new("f.pdf")).is_err());
+    }
+
+    /// The full pipeline through `parse_indra_output` on raw JSONL bytes.
+    #[test]
+    fn parse_indra_output_jsonl_round_trip() {
+        let pages = realistic_jsonl_pages();
+        let mut raw = String::new();
+        for p in &pages {
+            raw.push_str(&p.to_string());
+            raw.push('\n');
+        }
+        let r = parse_indra_output(raw.as_bytes(), Path::new("vypis.pdf")).unwrap();
+        assert_eq!(r.page_count, 2);
+        assert_eq!(r.language, None);
+        assert!(r.is_scan);
+        assert_eq!(r.layout_blocks.len(), 7); // 2+2 lines&blocks pg1, 2+1 pg2
+    }
+
+    /// Legacy pages[] document given as a single JSONL line still routes to
+    /// the legacy mapper (backward compatibility).
+    #[test]
+    fn parse_indra_output_legacy_pages_still_works() {
+        let legacy = json!({
+            "pages": [{
+                "language": "ces",
+                "texts": [{ "lines": [
+                    { "text": "A", "confidence": 0.9, "bbox": [1, 2, 3, 4] }
+                ]}]
+            }]
+        });
+        let raw = format!("{}\n", legacy);
+        let r = parse_indra_output(raw.as_bytes(), Path::new("x.pdf")).unwrap();
+        assert_eq!(r.page_count, 1);
+        assert_eq!(r.language.as_deref(), Some("ces"));
+        assert_eq!(r.layout_blocks[0].text, "A");
     }
 }
