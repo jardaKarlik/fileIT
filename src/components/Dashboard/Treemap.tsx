@@ -5,10 +5,10 @@
 // click to zoom, breadcrumb to go back.
 
 import { useMemo, useState } from 'react';
-import { VizNode, VizMetric, foldSmallChildren, fmtBytes } from '../../utils/vizTree';
+import { VizNode, VizMetric, fmtBytes } from '../../utils/vizTree';
 import { AGGREGATE_COLOR, segmentColor } from './vizColors';
 
-const MIN_TILE_FRACTION = 0.02;
+const MIN_TILE_AREA = 240; // px² — below this a tile is unreadable and folds
 
 interface Props {
   root: VizNode;
@@ -77,23 +77,51 @@ const W = 560;
 const H = 420;
 const HEADER = 18;
 const PAD = 3;
-const MIN_AREA = 90; // tiles smaller than this (px²) fold away
 
 function layout(view: VizNode): Tile[] {
   const tiles: Tile[] = [];
 
   const walk = (node: VizNode, rect: Rect, depth: number): void => {
     if (rect.w < 8 || rect.h < 8) return;
-    const kids = foldSmallChildren(node, node.value || 1, MIN_TILE_FRACTION)
-      .filter(k => (k.value / (node.value || 1)) * rect.w * rect.h >= MIN_AREA);
+    // squirreldisk-style px folding (treemap.rs MIN_AREA): a child whose tile
+    // would be smaller than MIN_TILE_AREA px² folds into one neutral
+    // aggregate — the threshold is absolute, not a fraction of the total.
+    const total = node.value || 1;
+    const sorted = [...node.children].sort((a, b) => b.value - a.value);
+    const visible: VizNode[] = [];
+    const small: VizNode[] = [];
+    for (const kid of sorted) {
+      const area = (kid.value / total) * rect.w * rect.h;
+      (area < MIN_TILE_AREA ? small : visible).push(kid);
+    }
+    let kids: VizNode[];
+    if (small.length === 0) {
+      kids = sorted;
+    } else if (visible.length === 0) {
+      kids = small.slice(0, 4); // everything tiny — show the largest few
+    } else {
+      kids = [
+        ...visible,
+        {
+          key: `${node.key}/agg`,
+          name: `Další (${small.length})`,
+          value: small.reduce((s, c) => s + c.value, 0),
+          bytes: small.reduce((s, c) => s + c.bytes, 0),
+          count: small.reduce((s, c) => s + c.count, 0),
+          depth: (visible[0]?.depth ?? node.depth + 1),
+          children: small,
+          isAggregate: true,
+        },
+      ];
+    }
     if (kids.length === 0) return;
-    const areas = kids.map(k => Math.max((k.value / (node.value || 1)) * rect.w * rect.h, 1e-3));
+    const areas = kids.map(k => Math.max((k.value / total) * rect.w * rect.h, 1e-3));
     const rects = squarify(areas, rect);
 
     rects.forEach((r, idx) => {
       const kid = kids[idx];
       if (!kid || r.w <= 0 || r.h <= 0) return;
-      const nested = kid.children.length > 0 && r.w >= 56 && r.h >= 44 && depth < 3;
+      const nested = !kid.isAggregate && kid.children.length > 0 && r.w >= 56 && r.h >= 44 && depth < 3;
       const isFile = kid.children.length === 0;
       tiles.push({
         node: kid,
@@ -144,9 +172,10 @@ export function Treemap({ root, metric, focus, onFocusChange }: Props) {
             Prázdné
           </text>
         )}
-        {tiles.map(tile => {
+        {tiles.map((tile, tIdx) => {
           const { rect: r } = tile;
           const isHover = hover === tile;
+          const cid = `tmclip-${tIdx}`;
           return (
             <g
               key={tile.node.key}
@@ -154,6 +183,11 @@ export function Treemap({ root, metric, focus, onFocusChange }: Props) {
               onMouseEnter={() => setHover(tile)}
               style={{ cursor: !tile.node.isAggregate && tile.node.children.length > 0 ? 'pointer' : 'default' }}
             >
+              <defs>
+                <clipPath id={cid}>
+                  <rect x={r.x} y={r.y} width={Math.max(r.w - 1, 0)} height={Math.max(r.h - 1, 0)} />
+                </clipPath>
+              </defs>
               <rect
                 x={r.x}
                 y={r.y}
@@ -167,6 +201,7 @@ export function Treemap({ root, metric, focus, onFocusChange }: Props) {
               >
                 <title>{`${tile.node.name} · ${valueText(metric, tile.node)}`}</title>
               </rect>
+              <g clipPath={`url(#${cid})`}>
               {tile.nested && r.w > 46 && (
                 <>
                   <text x={r.x + 5} y={r.y + HEADER / 2 + 4} className="tm-name">
@@ -193,6 +228,7 @@ export function Treemap({ root, metric, focus, onFocusChange }: Props) {
                   )}
                 </>
               )}
+              </g>
             </g>
           );
         })}

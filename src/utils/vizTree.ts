@@ -78,6 +78,9 @@ const UNKNOWN = {
   filetype: 'Jiné',
 };
 
+const normalizeUnknown = (value: string): string =>
+  value.trim().toLowerCase() === 'unknown' ? 'unknown' : value.trim().toLowerCase();
+
 const dimOf = (dim: VizDimension, f: ClassifiedFile): { key: string; name: string } => {
   switch (dim) {
     case 'year': {
@@ -86,19 +89,21 @@ const dimOf = (dim: VizDimension, f: ClassifiedFile): { key: string; name: strin
       const label = Number.isNaN(year) ? UNKNOWN.year : String(year);
       return { key: `y-${label}`, name: label };
     }
-    case 'inst':
-      return {
-        key: `i-${f.institution?.canonical_name || 'x'}`,
-        name: f.institution?.canonical_name || UNKNOWN.inst,
-      };
-    case 'client':
-      return {
-        key: `c-${f.customer?.name || 'x'}`,
-        name: f.customer?.name || UNKNOWN.client,
-      };
+    case 'inst': {
+      const raw = f.institution?.canonical_name?.trim();
+      const isUnknown = !raw || raw.toLowerCase() === 'unknown';
+      const name = isUnknown ? UNKNOWN.inst : raw!;
+      return { key: `i-${name}`, name };
+    }
+    case 'client': {
+      const raw = f.customer?.name?.trim();
+      const name = !raw || normalizeUnknown(raw) === 'unknown' ? UNKNOWN.client : raw!;
+      return { key: `c-${name}`, name };
+    }
     case 'doc': {
-      const label = f.document_type === 'Unknown' ? UNKNOWN.doc : f.document_type;
-      return { key: `d-${label}`, name: label };
+      const raw = (f.document_type || '').trim();
+      const name = !raw || normalizeUnknown(raw) === 'unknown' ? UNKNOWN.doc : raw;
+      return { key: `d-${name}`, name };
     }
     case 'filetype': {
       const ext = f.record.extension ? f.record.extension.toUpperCase() : UNKNOWN.filetype;
