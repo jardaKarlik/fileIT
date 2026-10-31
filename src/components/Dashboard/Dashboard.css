@@ -76,3 +76,20 @@
 .cust-bar-wrap { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
 .cust-bar { height: 100%; background: linear-gradient(90deg, var(--indigo), var(--pink)); border-radius: 3px; }
 .cust-count { font-size: 10px; color: var(--ink3); width: 20px; text-align: right; flex-shrink: 0; }
+
+/* Graph CTA card + badge */
+.cta-card.graph::before { background: linear-gradient(135deg, #7c6cf0, #00a2c7); }
+.cta-card.graph { cursor: pointer; }
+.new-badge {
+  display: inline-block;
+  background: linear-gradient(180deg, #FF1493, #FE865B);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  vertical-align: middle;
+  margin-left: 6px;
+}
