@@ -196,6 +196,7 @@ function buildFolderTree(root: VizNode, files: ClassifiedFile[]): void {
   };
   roll(root);
   sortChildren(root);
+  compressChains(root);
 }
 
 function sortChildren(node: VizNode): void {
@@ -239,7 +240,31 @@ export function buildLivePathTree(paths: string[]): VizNode {
     root.value += 1;
   }
   sortChildren(root);
+  compressChains(root);
   return root;
+}
+
+/**
+ * Merge pass-through directories (a chain of single-child folders) so shallow
+ * trees render meaningful wedges. Without this, a scan rooted at
+ * C:\Users\jaros\… produces one full-circle child per ring — correct data,
+ * invisible chart. Folders whose only child has no children (a file leaf)
+ * are left alone so file names stay visible.
+ */
+function compressChains(node: VizNode): void {
+  for (const child of node.children) compressChains(child);
+  // Never merge into the root — its name is the chart's center label.
+  if (node.depth > 0) {
+    while (node.children.length === 1) {
+      const only = node.children[0];
+      if (only.children.length === 0) break; // file leaf — keep it separate
+      node.name = `${node.name}/${only.name}`;
+      node.key = `${node.key}+${only.key}`;
+      node.children = only.children;
+      // count/bytes/value already include the subtree; depths shift by one.
+    }
+  }
+  for (const child of node.children) child.depth = node.depth + 1;
 }
 
 /**

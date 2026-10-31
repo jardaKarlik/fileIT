@@ -41,6 +41,24 @@ const shade = (hex: string, depth: number): string => {
 const describeArc = (cx: number, cy: number, r0: number, r1: number, a0: number, a1: number): string => {
   const p = (r: number, a: number): [number, number] =>
     [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  // A segment spanning (almost) the whole circle degenerates into an
+  // invisible line with the two-arc trick (start == end); render a proper
+  // annulus from two half-circle arcs instead.
+  if (a1 - a0 >= Math.PI * 2 - 1e-6) {
+    const [ox, oy] = p(r1, a0);
+    const [omx, omy] = p(r1, a0 + Math.PI);
+    const [ix, iy] = p(r0, a0);
+    const [imx, imy] = p(r0, a0 + Math.PI);
+    return [
+      `M ${ox} ${oy}`,
+      `A ${r1} ${r1} 0 1 1 ${omx} ${omy}`,
+      `A ${r1} ${r1} 0 1 1 ${ox} ${oy}`,
+      `L ${ix} ${iy}`,
+      `A ${r0} ${r0} 0 1 0 ${imx} ${imy}`,
+      `A ${r0} ${r0} 0 1 0 ${ix} ${iy}`,
+      'Z',
+    ].join(' ');
+  }
   const large = a1 - a0 > Math.PI ? 1 : 0;
   const [x0, y0] = p(r1, a0);
   const [x1, y1] = p(r1, a1);

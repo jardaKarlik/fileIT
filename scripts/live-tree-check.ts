@@ -10,10 +10,14 @@ const paths = [
 
 const t = buildLivePathTree(paths);
 console.log('root count', t.count, '(expect 4)');
-console.log('top:', t.children.map(c => `${c.name}=${c.count}`).join(', '));
-const users = t.children.find(c => c.name === 'Users');
-const docs = users?.children.find(c => c.name === 'jaros')?.children.find(c => c.name === 'Documents');
-console.log('Documents count (incl. Photos child)', docs?.count, '(expect 3)');
-const ok = docs?.count === 3 && t.count === 4;
+console.log('top (compressed):', t.children.map(c => `${c.name}=${c.count}`).join(', '));
+// Users/jaros/Documents is a single-child chain until Docs/Photos split it,
+// so compression must produce one merged node with two children.
+const merged = t.children[0];
+const ok =
+  t.count === 4 &&
+  merged.name === 'Users/jaros/Documents' &&
+  merged.children.length === 2 &&
+  merged.count === 3;
 console.log(ok ? 'LIVE TREE OK' : 'LIVE TREE BROKEN');
 process.exit(ok ? 0 : 1);
