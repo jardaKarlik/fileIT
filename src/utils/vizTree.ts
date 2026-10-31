@@ -1,25 +1,24 @@
 // src/utils/vizTree.ts
-// Builds the visualization hierarchy from a ScanResult for the sunburst /
-// treemap explorer. Inspired by squirreldisk's approach (src/ui/sunburst.rs):
-// children sorted descending, small children fold into an aggregate wedge,
-// and every node has a stable key so zoom animations can morph segments.
+// Hierarchy builder for the squirreldisk-style graph screen.
+// The sunburst/treemap are hierarchical, so instead of one flat grouping the
+// caller picks an ordered sequence of dimensions, e.g.
+//   Rok → Instituce → Klient → Typ dokumentu → Typ souboru
+// Every leaf is one scanned file; parent values roll up bytes and counts.
 
 import type { ClassifiedFile } from '../types';
 
-export type VizMetric =
-  | 'institution'   // default: group by institution
-  | 'clients'       // group by customer
-  | 'fileTypes'     // group by category
-  | 'fileCount'     // same shape as institution, weight = 1 per file
-  | 'folders';      // real path-segment tree, weight = bytes
-
+/** Metric: wedge size = file bytes, or 1 per file (count). */
+export type VizMetric = 'bytes' | 'count';
 export type VizChart = 'sunburst' | 'treemap';
 
+/** One level of the visual hierarchy. */
+export type VizDimension = 'year' | 'inst' | 'client' | 'doc' | 'filetype' | 'folders';
+
 export interface VizNode {
-  /** Stable identity across re-renders and metric switches within a file. */
+  /** Stable identity across re-renders — drives zoom morph keys. */
   key: string;
   name: string;
-  /** Aggregated weight: bytes for size metrics, file count for 'fileCount'. */
+  /** Aggregated weight: bytes for 'bytes', file count for 'count'. */
   value: number;
   /** Total bytes, always tracked for tooltips regardless of metric. */
   bytes: number;
@@ -32,136 +31,169 @@ export interface VizNode {
   file?: ClassifiedFile;
 }
 
-const UNKNOWN_INSTITUTION = 'Neurčeno';
-const UNKNOWN_CLIENT = 'Bez klienta';
-const UNKNOWN_TYPE = 'Jiné';
-
-const CATEGORY_LABELS: Record<string, string> = {
-  pdf: 'PDF',
-  word: 'Word',
-  excel: 'Excel',
-  powerpoint: 'PowerPoint',
-  csv: 'CSV',
-  xml: 'XML',
-  image: 'Obrázky',
-  email: 'E-mail',
-  text: 'Text',
-  other: 'Jiné',
+export const METRIC_LABELS: Record<VizMetric, string> = {
+  bytes: 'Velikost',
+  count: 'Počet souborů',
 };
 
-export const METRIC_LABELS: Record<VizMetric, string> = {
-  institution: 'Instituce',
-  clients: 'Klienti',
-  fileTypes: 'Typy souborů',
-  fileCount: 'Počet souborů',
+export const DIMENSION_LABELS: Record<VizDimension, string> = {
+  year: 'Rok',
+  inst: 'Instituce',
+  client: 'Klient',
+  doc: 'Typ dokumentu',
+  filetype: 'Typ souboru',
   folders: 'Složky',
 };
 
-const leafValue = (metric: VizMetric, bytes: number, count: number): number =>
-  metric === 'fileCount' ? count : bytes;
+export const DIMENSION_ICONS: Record<VizDimension, string> = {
+  year: '📅',
+  inst: '🏦',
+  client: '👤',
+  doc: '📄',
+  filetype: '🏷️',
+  folders: '📁',
+};
+
+export interface HierarchyPreset {
+  id: string;
+  dims: VizDimension[];
+}
+
+/** Hierarchies with multiple meaningful levels, as requested. */
+export const HIERARCHY_PRESETS: HierarchyPreset[] = [
+  { id: 'year-inst-client-doc-filetype', dims: ['year', 'inst', 'client', 'doc', 'filetype'] },
+  { id: 'client-year-doc-inst-filetype', dims: ['client', 'year', 'doc', 'inst', 'filetype'] },
+  { id: 'inst-doc-client-year-filetype', dims: ['inst', 'doc', 'client', 'year', 'filetype'] },
+  { id: 'folders', dims: ['folders'] },
+];
+
+export const presetLabel = (dims: VizDimension[]): string =>
+  dims.map(d => DIMENSION_LABELS[d]).join(' → ');
+
+const UNKNOWN = {
+  year: 'Neznámý rok',
+  inst: 'Neurčeno',
+  client: 'Bez klienta',
+  doc: 'Neurčený typ',
+  filetype: 'Jiné',
+};
+
+const dimOf = (dim: VizDimension, f: ClassifiedFile): { key: string; name: string } => {
+  switch (dim) {
+    case 'year': {
+      const src = f.document_date || f.record.modified;
+      const year = src ? new Date(src).getFullYear() : NaN;
+      const label = Number.isNaN(year) ? UNKNOWN.year : String(year);
+      return { key: `y-${label}`, name: label };
+    }
+    case 'inst':
+      return {
+        key: `i-${f.institution?.canonical_name || 'x'}`,
+        name: f.institution?.canonical_name || UNKNOWN.inst,
+      };
+    case 'client':
+      return {
+        key: `c-${f.customer?.name || 'x'}`,
+        name: f.customer?.name || UNKNOWN.client,
+      };
+    case 'doc': {
+      const label = f.document_type === 'Unknown' ? UNKNOWN.doc : f.document_type;
+      return { key: `d-${label}`, name: label };
+    }
+    case 'filetype': {
+      const ext = f.record.extension ? f.record.extension.toUpperCase() : UNKNOWN.filetype;
+      return { key: `f-${ext}`, name: ext };
+    }
+    case 'folders':
+      return { key: 'root', name: 'Soubory' };
+  }
+};
 
 const makeNode = (key: string, name: string, depth: number): VizNode => ({
   key, name, value: 0, bytes: 0, count: 0, depth, children: [],
 });
 
+const sortChildren = (node: VizNode): void => {
+  node.children.sort((a, b) => b.value - a.value);
+  for (const child of node.children) sortChildren(child);
+};
+
+const rollUp = (node: VizNode): void => {
+  for (const child of node.children) rollUp(child);
+  if (node.children.length > 0) {
+    node.bytes = node.children.reduce((s, c) => s + c.bytes, 0);
+    node.count = node.children.reduce((s, c) => s + c.count, 0);
+    node.value = node.children.reduce((s, c) => s + c.value, 0);
+  }
+};
+
 /**
- * Build the root node for the selected metric. The returned tree is always a
- * single root so both sunburst and treemap can start from the same node.
+ * Build the hierarchy root for the selected dimension sequence.
+ * dims = ['folders'] builds the real directory tree instead.
  */
-export function buildVizTree(files: ClassifiedFile[], metric: VizMetric): VizNode {
-  const rootName =
-    metric === 'folders' ? 'Kořen'
-    : metric === 'fileCount' ? 'Všechny soubory'
-    : metric === 'clients' ? 'Klienti'
-    : metric === 'fileTypes' ? 'Typy souborů'
-    : 'Instituce';
+export function buildHierarchyTree(
+  files: ClassifiedFile[],
+  dims: VizDimension[],
+  metric: VizMetric,
+): VizNode {
+  const leafValue = (f: ClassifiedFile): number =>
+    metric === 'count' ? 1 : f.record.size_bytes;
 
-  const root = makeNode('root', rootName, 0);
-
-  if (metric === 'folders') {
-    buildFolderTree(root, files);
+  if (dims[0] === 'folders') {
+    const root = makeNode('root', 'Soubory', 0);
+    buildFolderTree(root, files, metric);
     return root;
   }
 
-  const groupOf = (f: ClassifiedFile): string => {
-    switch (metric) {
-      case 'institution':
-      case 'fileCount':
-        return f.institution?.canonical_name || UNKNOWN_INSTITUTION;
-      case 'clients':
-        return f.customer?.name || UNKNOWN_CLIENT;
-      case 'fileTypes':
-        return CATEGORY_LABELS[f.category] || UNKNOWN_TYPE;
+  const buildLevel = (level: number, fs: ClassifiedFile[], parentKey: string): VizNode[] => {
+    const dim = dims[level];
+    const groups = new Map<string, { node: VizNode; files: ClassifiedFile[] }>();
+    for (const f of fs) {
+      const { key, name } = dimOf(dim, f);
+      const gk = `${parentKey}/${key}`;
+      let g = groups.get(gk);
+      if (!g) {
+        g = { node: makeNode(gk, name, level + 1), files: [] };
+        groups.set(gk, g);
+      }
+      g.files.push(f);
     }
+
+    const out: VizNode[] = [];
+    for (const g of groups.values()) {
+      if (level === dims.length - 1) {
+        for (const f of g.files) {
+          const leaf = makeNode(`${g.node.key}/${f.record.path}`, f.record.name, g.node.depth + 1);
+          leaf.file = f;
+          leaf.bytes = f.record.size_bytes;
+          leaf.count = 1;
+          leaf.value = leafValue(f);
+          g.node.children.push(leaf);
+        }
+      } else {
+        g.node.children = buildLevel(level + 1, g.files, g.node.key);
+      }
+      g.node.bytes = g.node.children.reduce((s, c) => s + c.bytes, 0);
+      g.node.count = g.node.children.reduce((s, c) => s + c.count, 0);
+      g.node.value = g.node.children.reduce((s, c) => s + c.value, 0);
+      out.push(g.node);
+    }
+    return out;
   };
 
-  const subOf = (f: ClassifiedFile): { key: string; name: string } => {
-    if (metric === 'fileTypes') {
-      return {
-        key: `inst-${f.institution?.canonical_name || UNKNOWN_INSTITUTION}`,
-        name: f.institution?.canonical_name || UNKNOWN_INSTITUTION,
-      };
-    }
-    const dt = f.document_type === 'Unknown' ? 'Neurčený typ' : f.document_type;
-    return { key: `dt-${dt}`, name: dt };
-  };
-
-  const groups = new Map<string, VizNode>();
-
-  for (const file of files) {
-    const groupName = groupOf(file);
-    let group = groups.get(groupName);
-    if (!group) {
-      group = makeNode(`grp-${groupName}`, groupName, 1);
-      groups.set(groupName, group);
-    }
-
-    const sub = subOf(file);
-    const subKey = `${group.key}/${sub.key}`;
-    let subNode = group.children.find(c => c.key === subKey);
-    if (!subNode) {
-      subNode = makeNode(subKey, sub.name, 2);
-      group.children.push(subNode);
-    }
-
-    const fileKey = `file-${file.record.path}`;
-    let fileNode = subNode.children.find(c => c.key === fileKey);
-    if (!fileNode) {
-      fileNode = makeNode(fileKey, file.record.name, 3);
-      fileNode.file = file;
-      subNode.children.push(fileNode);
-    }
-
-    // Leaves carry their own metric value; parents are rolled up below.
-    fileNode.bytes = file.record.size_bytes;
-    fileNode.count = 1;
-    fileNode.value = leafValue(metric, file.record.size_bytes, 1);
-  }
-
-  // Roll values up the chain (children are already sorted later).
-  for (const group of groups.values()) {
-    for (const sub of group.children) {
-      sub.bytes = sub.children.reduce((s, c) => s + c.bytes, 0);
-      sub.count = sub.children.reduce((s, c) => s + c.count, 0);
-      sub.value = sub.children.reduce((s, c) => s + c.value, 0);
-    }
-    group.bytes = group.children.reduce((s, c) => s + c.bytes, 0);
-    group.count = group.children.reduce((s, c) => s + c.count, 0);
-    group.value = group.children.reduce((s, c) => s + c.value, 0);
-  }
-  root.children = [...groups.values()];
+  const root = makeNode('root', DIMENSION_LABELS[dims[0]], 0);
+  root.children = buildLevel(0, files, 'root');
   root.bytes = root.children.reduce((s, c) => s + c.bytes, 0);
   root.count = root.children.reduce((s, c) => s + c.count, 0);
-  root.value = leafValue(metric, root.bytes, root.count);
-
+  root.value = root.children.reduce((s, c) => s + c.value, 0);
   sortChildren(root);
   return root;
 }
 
-/** Real directory tree from file paths — the squirreldisk-native view.
- *  The common directory prefix (scan root) is stripped so ring 1 shows the
- *  first branching level rather than the drive spine. */
-function buildFolderTree(root: VizNode, files: ClassifiedFile[]): void {
+/** Real directory tree from file paths. The common directory prefix (the
+ *  scan root) is stripped so ring 1 is the first branching level; files are
+ *  leaves carrying their bytes. */
+function buildFolderTree(root: VizNode, files: ClassifiedFile[], metric: VizMetric): void {
   const partsList = files.map(f => dirPartsOf(f.record.path));
   const prefixLen = commonDirPrefix(partsList);
   if (prefixLen > 0) root.name = partsList[0][prefixLen - 1];
@@ -184,42 +216,21 @@ function buildFolderTree(root: VizNode, files: ClassifiedFile[]): void {
     fileNode.file = file;
     fileNode.bytes = file.record.size_bytes;
     fileNode.count = 1;
-    fileNode.value = file.record.size_bytes;
+    fileNode.value = metric === 'count' ? 1 : file.record.size_bytes;
     cursor.children.push(fileNode);
   });
 
-  const roll = (node: VizNode): void => {
-    if (node.children.length === 0) return;
-    for (const child of node.children) {
-      roll(child);
-      node.bytes += child.bytes;
-      node.count += child.count;
-      node.value += child.value;
-    }
-  };
-  roll(root);
+  rollUp(root);
   sortChildren(root);
   compressChains(root);
 }
 
-function sortChildren(node: VizNode): void {
-  node.children.sort((a, b) => b.value - a.value);
-  for (const child of node.children) sortChildren(child);
-}
+/** Directory segments of a path with a leading Windows drive letter dropped. */
+const dirPartsOf = (path: string): string[] =>
+  path.split(/[\\/]/).filter(Boolean).slice(0, -1)
+    .filter((seg, i) => !(i === 0 && /^[A-Za-z]:$/.test(seg)));
 
-/** Format bytes the way squirreldisk's fmt_size does. */
-export function fmtBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} kB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-}
-
-/**
- * Longest common directory-prefix length (in segments) across all paths.
- * Stripping it roots the chart at the scan root instead of the drive, so
- * ring 1 shows the first level that actually branches.
- */
+/** Longest common directory-prefix length (in segments) across all paths. */
 function commonDirPrefix(partsList: string[][]): number {
   if (partsList.length === 0) return 0;
   let k = partsList[0].length;
@@ -232,63 +243,13 @@ function commonDirPrefix(partsList: string[][]): number {
   return k;
 }
 
-const dirPartsOf = (path: string): string[] =>
-  path.split(/[\\/]/).filter(Boolean).slice(0, -1)
-    .filter((seg, i) => !(i === 0 && /^[A-Za-z]:$/.test(seg)));
-
 /**
- * Live scan tree: count-weighted folder hierarchy built from raw discovered
- * paths — used on the Scanning screen so the chart grows as files are found
- * (squirreldisk-style live progress). File sizes are not known yet mid-scan,
- * so weight = file count. The common directory prefix (the scan root) is
- * stripped so ring 1 is the first branching level; each file gets a leaf so
- * files sitting directly in the scan root remain visible.
- */
-export function buildLivePathTree(paths: string[]): VizNode {
-  const partsList = paths.map(dirPartsOf);
-  const prefixLen = commonDirPrefix(partsList);
-  const rootName = prefixLen > 0 ? partsList[0][prefixLen - 1] : 'Sken';
-  const root = makeNode('root', rootName, 0);
-
-  partsList.forEach((all, idx) => {
-    const p = paths[idx];
-    const dirParts = all.slice(prefixLen);
-    let cursor = root;
-    let acc = '';
-    for (const part of dirParts) {
-      acc += (acc ? '/' : '') + part;
-      let next = cursor.children.find(c => c.name === part);
-      if (!next) {
-        next = makeNode(`live-${acc}`, part, cursor.depth + 1);
-        cursor.children.push(next);
-      }
-      next.count += 1;
-      next.value += 1;
-      cursor = next;
-    }
-    const fileName = p.split(/[\\/]/).pop() || p;
-    const leaf = makeNode(`live-file-${p}`, fileName, cursor.depth + 1);
-    leaf.count = 1;
-    leaf.value = 1;
-    cursor.children.push(leaf);
-    root.count += 1;
-    root.value += 1;
-  });
-  sortChildren(root);
-  compressChains(root);
-  return root;
-}
-
-/**
- * Merge pass-through directories (a chain of single-child folders) so shallow
- * trees render meaningful wedges. Without this, a scan rooted at
- * C:\Users\jaros\… produces one full-circle child per ring — correct data,
- * invisible chart. Folders whose only child has no children (a file leaf)
- * are left alone so file names stay visible.
+ * Merge pass-through directories (single-child chains) so shallow trees
+ * render meaningful wedges. File leaves are never merged away, and the root
+ * keeps its name.
  */
 function compressChains(node: VizNode): void {
   for (const child of node.children) compressChains(child);
-  // Never merge into the root — its name is the chart's center label.
   if (node.depth > 0) {
     while (node.children.length === 1) {
       const only = node.children[0];
@@ -296,15 +257,22 @@ function compressChains(node: VizNode): void {
       node.name = `${node.name}/${only.name}`;
       node.key = `${node.key}+${only.key}`;
       node.children = only.children;
-      // count/bytes/value already include the subtree; depths shift by one.
     }
   }
   for (const child of node.children) child.depth = node.depth + 1;
 }
 
+/** Format bytes the way squirreldisk's fmt_size does. */
+export function fmtBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} kB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
 /**
  * Fold children below `minFraction` of the parent value into an aggregate
- * "Další položky" node — squirreldisk's "smaller items" wedge (MIN_PX).
+ * "Další položky" node — squirreldisk's "smaller items" wedge.
  */
 export function foldSmallChildren(node: VizNode, total: number, minFraction: number): VizNode[] {
   if (node.children.length === 0) return [];

@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../utils/tauriApi';
-import { LiveScan } from './LiveScan';
 import './Scanning.css';
 
 // True when running inside a compiled Tauri window (not browser dev mode)
@@ -23,63 +22,23 @@ export function Scanning() {
   const [pct, setPct]               = useState(0);
   const [statusText, setStatusText] = useState('Inicializace skeneru…');
   const [done, setDone]             = useState(false);
-  const [foundPaths, setFoundPaths] = useState<string[]>([]);
   const logRef   = useRef<HTMLDivElement>(null);
   const didStart = useRef(false);
-  // Discovered paths accumulate in a ref and flush to state on a timer so
-  // the live sunburst re-renders at most ~3×/second regardless of scan speed.
-  const pathsRef = useRef<string[]>([]);
-  const flushRef = useRef<number | null>(null);
-
-  const startPathFlush = (): void => {
-    if (flushRef.current !== null) return;
-    flushRef.current = window.setInterval(() => {
-      setFoundPaths(pathsRef.current.slice(-2000));
-    }, 350);
-  };
-
-  const stopPathFlush = (): void => {
-    if (flushRef.current !== null) {
-      clearInterval(flushRef.current);
-      flushRef.current = null;
-    }
-    setFoundPaths(pathsRef.current.slice(-2000));
-  };
 
   const appendLine = (line: LogLine) =>
     setLines(prev => [...prev.slice(-300), line]);
-
-  // Feed the live tree. New backends send the full discovered path; legacy
-  // binaries send only "Čteme: {name}" with no separators — degrade to a
-  // flat bucket so the chart still grows instead of going dead.
-  const pushDiscoveredPath = (raw: string): void => {
-    if (!raw) return;
-    if (/[\\/]/.test(raw)) {
-      pathsRef.current.push(raw);
-      return;
-    }
-    const legacy = raw.match(/^Čteme:\s*(.+)$/u);
-    if (legacy) {
-      const name = legacy[1];
-      const dot = name.lastIndexOf('.');
-      const ext = dot > 0 ? name.slice(dot + 1).toLowerCase() : 'jiné';
-      pathsRef.current.push(`Nalezené soubory/${ext}/${name}`);
-    }
-  };
 
   // ── Real Tauri path ──────────────────────────────────────────────────────
   async function runRealScan() {
     const roots = scanRoots;
 
     appendLine({ cls: '', text: '$ fileit scan --inicializace' });
-    startPathFlush();
 
     // Await listener registration so no early events are missed, and keep
     // unlisten handles so they can be cleaned up when the scan finishes.
     const [unlistenScan, unlistenClassify] = await Promise.all([
       api.onScanProgress(p => {
         if (p.message) appendLine({ cls: 'hit', text: p.message });
-        if (p.current_path) pushDiscoveredPath(p.current_path);
         if (p.files_found > 0) {
           setStatusText(`Nalezeno ${p.files_found} souborů…`);
           setPct(Math.min(45, Math.round(p.files_found / 6)));
@@ -99,7 +58,6 @@ export function Scanning() {
 
     api.startScan(roots, selectedCategories)
       .then(result => {
-        stopPathFlush();
         setScanResult(result);
         setPct(100);
         setStatusText(`Hotovo — ${result.total_files} souborů, ${result.customers_found} klientů`);
@@ -115,7 +73,6 @@ export function Scanning() {
         unlistenClassify();
       })
       .catch(err => {
-        stopPathFlush();
         appendLine({ cls: 'hit', text: `⚠ Chyba: ${err}` });
         setStatusText('Chyba při skenování');
         unlistenScan();
@@ -145,17 +102,9 @@ export function Scanning() {
     ];
 
     let i = 0;
-    // Browser dev mode has no backend events — synthesize plausible paths so
-    // the live sunburst grows here too.
-    const DEV_DIRS = [
-      'C:/Vault/Ceska-sporitelna/2023', 'C:/Vault/Ceska-sporitelna/2024',
-      'C:/Vault/CEZ/2024', 'C:/Vault/VZP/2023', 'C:/Vault/O2/2024',
-      'C:/Vault/Neidentifikovano', 'C:/Vault/Klient-Jana/2024',
-    ];
     const iv = setInterval(() => {
       if (i >= DEV_LINES.length) {
         clearInterval(iv);
-        stopPathFlush();
         api.startScan([], selectedCategories).then(result => {
           setScanResult(result);
           setPct(100);
@@ -165,7 +114,6 @@ export function Scanning() {
         return;
       }
       appendLine(DEV_LINES[i]);
-      pathsRef.current.push(`${DEV_DIRS[i % DEV_DIRS.length]}/dokument-${i + 1}.pdf`);
       setPct(Math.round(((i + 1) / DEV_LINES.length) * 95));
       setStatusText(DEV_LINES[i].text.replace(/^[✓→⚠] /, '').replace(/^\$ /, ''));
       i++;
@@ -209,8 +157,6 @@ export function Scanning() {
 
       <div className="scan-bar"><div className="scan-fill" style={{ width: `${pct}%` }} /></div>
       <div className="scan-status">{statusText}</div>
-
-      <LiveScan paths={foundPaths} done={done} />
 
       <div className="scan-log" ref={logRef}>
         {lines.map((l, i) => (

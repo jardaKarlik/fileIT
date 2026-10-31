@@ -123,7 +123,7 @@ function layout(view: VizNode): Tile[] {
 }
 
 const valueText = (metric: VizMetric, node: VizNode): string =>
-  metric === 'fileCount' ? `${node.count} souborů` : fmtBytes(node.bytes);
+  metric === 'count' ? `${node.count} souborů` : fmtBytes(node.bytes);
 
 export function Treemap({ root, metric, focus, onFocusChange }: Props) {
   const view = focus.length > 0 ? focus[focus.length - 1] : root;
@@ -182,7 +182,7 @@ export function Treemap({ root, metric, focus, onFocusChange }: Props) {
                       : tile.node.name}
                   </text>
                   <text x={r.x + r.w - 5} y={r.y + HEADER / 2 + 4} textAnchor="end" className="tm-val">
-                    {metric === 'fileCount' ? `${tile.node.count}` : fmtBytes(tile.node.bytes)}
+                    {metric === 'count' ? `${tile.node.count}` : fmtBytes(tile.node.bytes)}
                   </text>
                 </>
               )}

@@ -20,6 +20,7 @@ export type Screen =
   | 'scanning'
   | 'dashboard'
   | 'restructure'
+  | 'graph'
   | 'progress'
   | 'confirmation'
   | 'ucebna';

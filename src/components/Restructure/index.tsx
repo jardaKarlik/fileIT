@@ -527,6 +527,9 @@ export function Restructure() {
         {/* FOOTER */}
         <div className="rs-footer">
           <button className="btn-ghost" onClick={() => setScreen('dashboard')}>← Zpět na přehled</button>
+          <button className="btn-ghost graph-open-btn" onClick={() => setScreen('graph')}>
+            Zobrazit graf <span className="new-badge">nové</span>
+          </button>
           <div className="footer-action">
             <div className="footer-summary">
               <div>Připraveno přesunout <strong>{fileData.length} souborů</strong></div>

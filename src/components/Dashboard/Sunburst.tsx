@@ -210,7 +210,7 @@ function buildSegments(view: VizNode, r0: number, ring: number): Seg[] {
 }
 
 const valueText = (metric: VizMetric, node: VizNode): string =>
-  metric === 'fileCount' ? `${node.count} souborů` : fmtBytes(node.bytes);
+  metric === 'count' ? `${node.count} souborů` : fmtBytes(node.bytes);
 
 export function Sunburst({ root, metric, focus, onFocusChange }: Props) {
   const size = 420;

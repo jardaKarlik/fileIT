@@ -10,6 +10,7 @@ import { FileTypes }    from './components/FileTypes';
 import { Scanning }     from './components/Scanning';
 import { Dashboard }    from './components/Dashboard';
 import { Restructure }  from './components/Restructure';
+import { Graph }        from './components/Graph';
 import { Progress }     from './components/Progress';
 import { Confirmation } from './components/Confirmation';
 import { Ucebna }       from './components/Ucebna';
@@ -24,6 +25,7 @@ const SCREEN_STEP: Record<string, number | null> = {
   scanning:     2,
   dashboard:    3,
   restructure:  4,
+  graph:        null,
   progress:     null,
   confirmation: null,
   ucebna:       null,
@@ -37,6 +39,7 @@ const SCREEN_LABEL: Record<string, string> = {
   scanning:     'Prohlížení…',
   dashboard:    'Přehled',
   restructure:  'Uspořádání',
+  graph:        'Graf souborů',
   progress:     '',
   confirmation: '',
   ucebna:       'Učebna',
@@ -91,6 +94,7 @@ export default function App() {
         {screen === 'scanning'     && <Scanning />}
         {screen === 'dashboard'    && <Dashboard />}
         {screen === 'restructure'  && <Restructure />}
+        {screen === 'graph'        && <Graph />}
         {screen === 'progress'     && <Progress />}
         {screen === 'confirmation' && <Confirmation />}
         {screen === 'ucebna'       && <Ucebna />}
