@@ -8,16 +8,16 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../utils/tauriApi';
-import { analyzeAnalysisState, sample3RandomBatches } from '../../utils/analysisUtils';
+import { analyzeAnalysisState } from '../../utils/analysisUtils';
 import { GroupDimension, DetectedCloud, ClassifiedFile } from '../../types';
 import { AnalysisWarningModal } from './AnalysisWarningModal';
 import './Restructure.css';
 
-const DIMENSIONS: Record<GroupDimension, { name: string; icon: string; iconClass: string; coverageText: string; coverage: number }> = {
-  customer: { name: 'Jméno klienta',       icon: '👤', iconClass: 'i-customer', coverageText: '',                    coverage: 1.0 },
-  date:     { name: 'Měsíc a rok',         icon: '📅', iconClass: 'i-date',     coverageText: '',                    coverage: 1.0 },
-  inst:     { name: 'Nejčastěji Zmíněná',    icon: '🏦', iconClass: 'i-inst',     coverageText: '242 souborů (85 %)',  coverage: 0.85 },
-  doc:      { name: 'Typ dokumentu',         icon: '📄', iconClass: 'i-doc',      coverageText: '198 souborů (70 %)',  coverage: 0.70 },
+const DIMENSIONS: Record<GroupDimension, { name: string; icon: string; iconClass: string }> = {
+  customer: { name: 'Jméno klienta',       icon: '👤', iconClass: 'i-customer' },
+  date:     { name: 'Měsíc a rok',         icon: '📅', iconClass: 'i-date' },
+  inst:     { name: 'Instituce',            icon: '🏦', iconClass: 'i-inst' },
+  doc:      { name: 'Typ dokumentu',        icon: '📄', iconClass: 'i-doc' },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -92,7 +92,10 @@ function convertScanResultToFileObjects(files: ClassifiedFile[]): FileObj[] {
       ? new Date(f.document_date).toISOString().slice(0, 7)
       : 'Neurčeno',
     inst: f.institution?.canonical_name ?? null,
-    doc: f.document_type === 'Unknown' ? null : (f.document_type as string),
+    // Rust serializes DocumentType as snake_case ("unknown"), not "Unknown"
+    doc: f.document_type && f.document_type.toLowerCase() !== 'unknown'
+      ? (f.document_type as string)
+      : null,
   }));
 }
 
@@ -137,17 +140,32 @@ export function Restructure() {
   };
 
   // ──── FILE DATA SELECTION ──────────────────────────────────────────────────
-  // Use real analysis data if available and user hasn't rejected it
-  // Otherwise fall back to MOCK_FILES for demo
+  // Use real analysis data if available and user hasn't rejected it.
+  // ALL files are grouped — the scan dataset is the product, not a sample.
+  // MOCK_FILES remains only as the explicit "sample data" fallback.
   const fileData = useMemo(() => {
     if (useAnalysisData && scanResult?.files && scanResult.files.length > 0) {
-      // Sample 3 random batches from real data
-      const sampled = sample3RandomBatches(scanResult.files, 200);
-      return convertScanResultToFileObjects(sampled);
+      return convertScanResultToFileObjects(scanResult.files);
     }
-    // Fallback to mock data
     return MOCK_FILES;
   }, [useAnalysisData, scanResult]);
+
+  // Real per-dimension coverage computed from the actual loaded dataset.
+  const coverage = useMemo(() => {
+    const total = fileData.length;
+    const known = (k: keyof FileObj) =>
+      fileData.filter(f => f[k] && f[k] !== 'Neurčeno').length;
+    const pct = (n: number) => {
+      if (!total) return '';
+      return `${n.toLocaleString('cs-CZ')} souborů (${Math.round(100 * n / total)} %)`;
+    };
+    return {
+      customer: pct(known('customer')),
+      date:     pct(known('date')),
+      inst:     pct(known('inst')),
+      doc:      pct(known('doc')),
+    } as Record<GroupDimension, string>;
+  }, [fileData]);
 
   // ──── REST OF STATE ────────────────────────────────────────────────────────
   const [showCloudModal, setShowCloudModal] = useState(false);
@@ -403,7 +421,11 @@ export function Restructure() {
                     <div className="chip-text">
                       <div className="chip-name">{dim.name}</div>
                       <div className="chip-meta">
-                        {used ? `Použito na úrovni ${usedIdx + 1}` : dim.coverageText || 'Dostupné pro všechny soubory'}
+                        {used
+                          ? `Použito na úrovni ${usedIdx + 1}`
+                          : coverage[key]
+                            ? `Pokrytí daty: ${coverage[key]}`
+                            : 'Zatím bez dat ze skenu'}
                       </div>
                     </div>
                     {used
