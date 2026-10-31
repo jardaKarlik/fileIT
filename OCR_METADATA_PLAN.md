@@ -48,6 +48,13 @@ Integration shape (matches FileIT's existing owned-process patterns):
 Fallback engines (keep in mind, not phase 1): Tesseract 5 (minimal deps),
 PaddleOCR (PP-StructureV3 table comparison), Surya (layout-only needs).
 
+**Decision 2026-10-31:** the planned `pdf_extract → pdfium-render` mojibake
+fix was **dropped** (ClickUp task deleted). Once Indra is in the pipeline it
+supersedes PDF text extraction wholesale — it reads digital text layers and
+OCRs only the gaps — so repairing `pdf_extract` is wasted work. The mojibake
+symptoms (broken Czech diacritics → NER misses → 75% unknown) are expected to
+disappear with the Indra integration, not with a pdfium migration.
+
 ## Pipeline sketch
 
 1. During scan: record `is_scan` per file (still useful for progress planning).
