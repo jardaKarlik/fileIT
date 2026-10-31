@@ -8,9 +8,11 @@
 //   • Overall confidence score
 
 mod extractor;
+mod extract_metadata;
 mod ner;
 mod scorer;
 
+pub use extract_metadata::{extract_metadata, ExtractedMetadata};
 pub use extractor::extract_text;
 pub use ner::NerEngine;
 pub use scorer::score_classification;
