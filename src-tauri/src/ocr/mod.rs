@@ -158,6 +158,12 @@ fn run_sidecar(command: &str, cache_dir: &Path, path: &Path) -> Result<OcrResult
 /// run can never be mistaken for this run's output; the caller deletes the
 /// whole directory when done.
 fn fresh_out_dir(cache_dir: &Path, path: &Path) -> Result<PathBuf, String> {
+    // Ensure the cache root exists — on the very first OCR run nothing has
+    // created `ocr-cache` yet, and probing a child directory under a missing
+    // parent fails with NotFound.
+    std::fs::create_dir_all(cache_dir)
+        .map_err(|e| format!("OCR výstupní adresář nelze vytvořit: {}", e))?;
+
     let stem = path
         .file_stem()
         .map(|s| s.to_string_lossy().replace(['\\', '/', ':', ' '], "_"))
