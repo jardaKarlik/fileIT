@@ -18,6 +18,7 @@ type LogLine = { cls: string; text: string };
 
 export function Scanning() {
   const { setScreen, setScanResult, selectedCategories, scanRoots, detectedClouds } = useStore();
+  const ocrEnabled = useStore((s) => s.ocrEnabled);
   const [lines, setLines]           = useState<LogLine[]>([]);
   const [pct, setPct]               = useState(0);
   const [statusText, setStatusText] = useState('Inicializace skeneru…');
@@ -56,7 +57,14 @@ export function Scanning() {
       }),
     ]);
 
-    api.startScan(roots, selectedCategories)
+    appendLine({
+      cls: '',
+      text: ocrEnabled
+        ? 'OCR zapnuto — skenované dokumenty a obrázky čte Indra OCR.'
+        : 'OCR vypnuto — čte se jen textová vrstva PDF, obrázky se přeskočí.',
+    });
+
+    api.startScan(roots, selectedCategories, ocrEnabled)
       .then(result => {
         setScanResult(result);
         setPct(100);
@@ -105,7 +113,7 @@ export function Scanning() {
     const iv = setInterval(() => {
       if (i >= DEV_LINES.length) {
         clearInterval(iv);
-        api.startScan([], selectedCategories).then(result => {
+        api.startScan([], selectedCategories, ocrEnabled).then(result => {
           setScanResult(result);
           setPct(100);
           setStatusText(`Hotovo — ${result.total_files} souborů, ${result.customers_found} klientů`);

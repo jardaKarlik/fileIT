@@ -52,9 +52,16 @@ export const api = {
   /** Detect the OneDrive sync root on Windows. Returns null when not found. */
   getOneDrivePath: () => invoke<string | null>('get_onedrive_path'),
 
-  /** Start a scan. Progress events come via onScanProgress listener. */
-  startScan: (roots: string[], fileCategories: string[]) =>
-    invoke<ScanResult>('start_scan', { request: { roots, file_categories: fileCategories } }),
+  /**
+   * Start a scan. Progress events come via onScanProgress listener.
+   * `ocrEnabled` (Home-screen switch): Indra OCRs scanned pages and images —
+   * slower, more precise. Off: only digital text layers are read.
+   * Files already read / OCR'd in an earlier scan are not processed again.
+   */
+  startScan: (roots: string[], fileCategories: string[], ocrEnabled: boolean) =>
+    invoke<ScanResult>('start_scan', {
+      request: { roots, file_categories: fileCategories, ocr_enabled: ocrEnabled },
+    }),
 
   /** Build a restructure preview without moving files. */
   buildPreview: (structure: string[], targetPath: string, destinationMode: string) =>

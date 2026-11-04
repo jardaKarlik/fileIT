@@ -169,9 +169,25 @@ fn hash_file(path: &Path) -> Option<String> {
 ///    "lines": [{"box":[x1,y1,x2,y2], "text": "…", "conf": 0.98}]}
 /// `--out` is a DIRECTORY; inside it write <input-stem>.jsonl.
 fn run_sidecar(command: &str, cache_dir: &Path, path: &Path) -> Result<OcrResult, String> {
+    run_sidecar_mode(command, cache_dir, path, false)
+}
+
+/// `text_only = true` passes `--mode text`: read the digital text layer and
+/// never OCR (fast path used when the Home-screen OCR switch is off).
+fn run_sidecar_mode(
+    command: &str,
+    cache_dir: &Path,
+    path: &Path,
+    text_only: bool,
+) -> Result<OcrResult, String> {
     let out_dir = fresh_out_dir(cache_dir, path)?;
-    let output = spawn_sidecar_json(command, path, &out_dir, SIDECAR_TIMEOUT);
-    let result = output.and_then(|raw| parse_indra_output(&raw, path));
+    let output = spawn_sidecar_json(command, path, &out_dir, SIDECAR_TIMEOUT, text_only);
+    let result = output
+        .and_then(|raw| parse_indra_output(&raw, path))
+        .map(|mut r| {
+            r.text_only = text_only;
+            r
+        });
     let _ = std::fs::remove_dir_all(&out_dir);
     result
 }
@@ -212,24 +228,65 @@ fn fresh_out_dir(cache_dir: &Path, path: &Path) -> Result<PathBuf, String> {
     Err("nelze vytvořit unikátní OCR výstupní adresář".to_string())
 }
 
+/// A text-layer-only result with fewer words than this is treated as a
+/// scanned document that OCR could improve.
+const MIN_TEXT_LAYER_WORDS: usize = 20;
+
+/// Text for classification of a PDF or image.
+pub struct ClassificationText {
+    pub text: String,
+    pub is_scan: bool,
+    /// OCR was not run although it could have found (more) text.
+    pub ocr_skipped: bool,
+}
+
+fn text_layer_is_sparse(text: &str) -> bool {
+    text.split_whitespace().count() < MIN_TEXT_LAYER_WORDS
+}
+
 /// Text source for classification: OCR cache first, live sidecar on miss.
-/// Returns (full_text, is_scan).
+///
+/// Each file content (hash) is processed at most once per mode:
+///   • OCR on  → full Indra run (`--mode auto`), cached; never repeated.
+///   • OCR off → images are skipped; PDFs are read with `--mode text`
+///     (no OCR), cached as `text_only`. Any cached entry is reused.
+///   • A `text_only` entry whose text layer is sparse is upgraded once by a
+///     scan with OCR on; a text-rich one is reused as is.
 pub fn text_for_classification(
     app_data_dir: &Path,
     command: &str,
     path: &Path,
     sha256: &str,
-) -> Result<(String, bool), String> {
-    if let Some(hit) = ocr_store::read(app_data_dir, sha256) {
-        return Ok((hit.full_text, hit.is_scan));
+    ocr_enabled: bool,
+) -> Result<ClassificationText, String> {
+    let is_image = !path
+        .extension()
+        .map(|e| e.eq_ignore_ascii_case("pdf"))
+        .unwrap_or(false);
+
+    let cached = if sha256.is_empty() { None } else { ocr_store::read(app_data_dir, sha256) };
+    if let Some(hit) = cached {
+        let needs_upgrade = ocr_enabled && hit.text_only && text_layer_is_sparse(&hit.full_text);
+        if !needs_upgrade {
+            let ocr_skipped = hit.text_only && text_layer_is_sparse(&hit.full_text);
+            return Ok(ClassificationText { text: hit.full_text, is_scan: hit.is_scan, ocr_skipped });
+        }
+        info!("Upgrading text-only result with OCR: {}", path.display());
     }
+
+    if !ocr_enabled && is_image {
+        // An image has no text layer — without OCR there is nothing to read.
+        return Ok(ClassificationText { text: String::new(), is_scan: false, ocr_skipped: true });
+    }
+
     let cache_dir = ocr_store::cache_dir(app_data_dir);
-    let mut result = run_sidecar(command, &cache_dir, path)?;
-    if result.sha256.is_none() {
+    let mut result = run_sidecar_mode(command, &cache_dir, path, !ocr_enabled)?;
+    if result.sha256.is_none() && !sha256.is_empty() {
         result.sha256 = Some(sha256.to_string());
     }
     ocr_store::write(app_data_dir, &result);
-    Ok((result.full_text, result.is_scan))
+    let ocr_skipped = result.text_only && text_layer_is_sparse(&result.full_text);
+    Ok(ClassificationText { text: result.full_text, is_scan: result.is_scan, ocr_skipped })
 }
 
 /// Read and validate the JSONL the sidecar wrote into the out dir.
@@ -259,11 +316,20 @@ fn spawn_sidecar_json(
     path: &Path,
     out_dir: &Path,
     timeout: Duration,
+    text_only: bool,
 ) -> Result<Vec<u8>, String> {
     use std::io::Read;
     use std::time::Instant;
 
     let mut cmd = Command::new(command);
+    // Release builds are GUI apps: without this, every sidecar call flashes
+    // a console window on Windows.
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
     // Positional first: `indra-ocr <file> --out <dir> --format json --cores 1`.
     cmd.arg(path);
     cmd.arg("--out").arg(out_dir);
@@ -272,6 +338,10 @@ fn spawn_sidecar_json(
     // One OCR worker per invocation; batch parallelism is the semaphore's job.
     cmd.arg("--cores");
     cmd.arg("1");
+    if text_only {
+        // Digital text layer only — no OCR (Home-screen switch off).
+        cmd.arg("--mode").arg("text");
+    }
 
     if let Some(models) = env_non_empty("INDRA_OCR_MODELS") {
         cmd.arg("--model-dir").arg(models);
@@ -536,6 +606,7 @@ fn indra_jsonl_to_ocr_result(pages: &[Json], path: &Path) -> Result<OcrResult, S
         page_count: pages.len().max(1) as u32,
         is_scan: has_ocr_page,
         layout_blocks: blocks,
+        text_only: false,
     })
 }
 
@@ -701,6 +772,7 @@ fn indra_json_to_ocr_result(json: &Json, path: &Path) -> Result<OcrResult, Strin
         page_count: page_count.max(1),
         is_scan,
         layout_blocks: blocks,
+        text_only: false,
     })
 }
 
@@ -859,10 +931,15 @@ pub async fn run_batch(
                 let app_data_dir = app_data_dir.clone();
                 let command = command.clone();
                 move || -> Result<bool, String> {
-                    let sha = hash_file(&path);
+                    // Same key as the scan pipeline (scanner's content hash),
+                    // so a file OCR'd during a scan is not OCR'd again here
+                    // and vice versa. Text-only entries (OCR switched off)
+                    // do not count — this action exists to run OCR.
+                    let sha = crate::scanner::compute_hash_for_manifest(&path);
                     let cached = sha
                         .as_deref()
-                        .and_then(|s| ocr_store::read(&app_data_dir, s));
+                        .and_then(|s| ocr_store::read(&app_data_dir, s))
+                        .filter(|hit| !hit.text_only);
 
                     if let Some(_hit) = cached {
                         return Ok(true); // cache hit
@@ -871,7 +948,7 @@ pub async fn run_batch(
                     let cache_dir = ocr_store::cache_dir(&app_data_dir);
                     let mut result = run_sidecar(&command, &cache_dir, &path)?;
                     if result.sha256.is_none() {
-                        result.sha256 = hash_file(&path);
+                        result.sha256 = sha.clone();
                     }
                     ocr_store::write(&app_data_dir, &result);
                     Ok(false) // processed fresh
@@ -1059,6 +1136,53 @@ mod tests {
         assert_eq!(clamp_unit(0.42), 0.42);
     }
 
+    /// OCR switch + cache: each content is OCR'd at most once, text-only
+    /// results are upgraded only when sparse. The sidecar command is bogus,
+    /// so any path that would invoke it returns Err.
+    #[test]
+    fn classification_text_respects_ocr_switch_and_cache() {
+        let dir = std::env::temp_dir().join(format!("fileit-ocr-switch-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let bogus = "fileit-no-such-indra-binary";
+        let entry = |sha: &str, text: &str, text_only: bool| OcrResult {
+            path: "x.pdf".into(),
+            sha256: Some(sha.into()),
+            full_text: text.into(),
+            language: None,
+            confidence_avg: None,
+            page_count: 1,
+            is_scan: !text_only,
+            layout_blocks: vec![],
+            text_only,
+        };
+        let rich = "slovo ".repeat(30);
+        let pdf = Path::new("doc.pdf");
+
+        // Full OCR result cached → reused with OCR on, sidecar never called.
+        ocr_store::write(&dir, &entry("full", "faktura cez", false));
+        let t = text_for_classification(&dir, bogus, pdf, "full", true).unwrap();
+        assert_eq!(t.text, "faktura cez");
+        assert!(!t.ocr_skipped);
+
+        // Sparse text-only result: reused with OCR off (flagged skipped)…
+        ocr_store::write(&dir, &entry("sparse", "", true));
+        let t = text_for_classification(&dir, bogus, pdf, "sparse", false).unwrap();
+        assert!(t.ocr_skipped);
+        // …but upgraded (sidecar invoked → Err here) once OCR is on.
+        assert!(text_for_classification(&dir, bogus, pdf, "sparse", true).is_err());
+
+        // Text-rich text-only result is good enough even with OCR on.
+        ocr_store::write(&dir, &entry("rich", &rich, true));
+        let t = text_for_classification(&dir, bogus, pdf, "rich", true).unwrap();
+        assert!(!t.ocr_skipped);
+
+        // Image with OCR off: nothing to read, sidecar not called.
+        let t = text_for_classification(&dir, bogus, Path::new("foto.jpg"), "img", false).unwrap();
+        assert!(t.text.is_empty() && t.ocr_skipped);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     /// Mean over present confidences only.
     #[test]
     fn mean_confidence_picks_up_present() {
@@ -1075,6 +1199,7 @@ mod tests {
                 OcrBlock { page: 1, label: "line".into(), text: "b".into(), confidence: None, box_: None },
                 OcrBlock { page: 1, label: "line".into(), text: "c".into(), confidence: Some(0.4), box_: None },
             ],
+            text_only: false,
         };
         assert_eq!(mean_confidence(&r), Some(0.6));
     }

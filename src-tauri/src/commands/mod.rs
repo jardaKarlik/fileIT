@@ -164,6 +164,7 @@ pub async fn start_scan(
 
     // Resolve the Indra sidecar once for the whole classification run —
     // PDFs and images take their text exclusively from this pipeline.
+    info!("OCR {} for this scan", if request.ocr_enabled { "enabled" } else { "disabled" });
     let ocr_ctx = {
         let availability = crate::ocr::check(&state.app_data_dir);
         if availability.installed {
@@ -171,6 +172,7 @@ pub async fn start_scan(
                 crate::classifier::OcrExtractContext {
                     app_data_dir: state.app_data_dir.clone(),
                     command,
+                    ocr_enabled: request.ocr_enabled,
                 }
             })
         } else {
@@ -204,7 +206,13 @@ pub async fn start_scan(
                     let usable = prev_cf.document_type != DocumentType::Unknown
                         || prev_cf.institution.is_some()
                         || prev_cf.customer.is_some();
-                    if !usable {
+                    // Classified without OCR last time and OCR is on now —
+                    // redo it once so the scanned content is read. (The OCR
+                    // itself still runs only once: see ocr::text_for_classification.)
+                    let wants_ocr = request.ocr_enabled && prev_cf.ocr_skipped;
+                    if wants_ocr {
+                        log::debug!("Re-classifying with OCR: {}", record.name);
+                    } else if !usable {
                         log::debug!(
                             "Re-classifying (previous result empty): {}",
                             record.name

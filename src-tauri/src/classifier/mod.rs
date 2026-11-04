@@ -85,6 +85,7 @@ impl Classifier {
         // first, live run on miss) — pdf-extract and Windows OCR are gone.
         // Office/plaintext formats keep their native extractors.
         info!("Classifying: {:?} (skip_extraction={})", record.name, skip_extraction);
+        let mut ocr_skipped = false;
         let (raw_text, ocr_used) = if skip_extraction {
             (String::new(), false)
         } else if matches!(category, FileCategory::Pdf | FileCategory::Image) {
@@ -99,11 +100,15 @@ impl Classifier {
                             &ctx.command,
                             std::path::Path::new(&path),
                             &sha,
+                            ctx.ocr_enabled,
                         )
                     })
                     .await
                     {
-                        Ok(Ok((text, is_scan))) => (text, is_scan),
+                        Ok(Ok(t)) => {
+                            ocr_skipped = t.ocr_skipped;
+                            (t.text, t.is_scan)
+                        }
                         Ok(Err(e)) => {
                             warn!("Indra extraction failed for {:?}: {}", record.name, e);
                             (String::new(), false)
@@ -119,6 +124,7 @@ impl Classifier {
                         "Indra sidecar unavailable — classifying {:?} from path signals only",
                         record.name
                     );
+                    ocr_skipped = true;
                     (String::new(), false)
                 }
             }
@@ -222,6 +228,7 @@ impl Classifier {
             // Classification never runs the Indra sidecar — it only consumes
             // whatever text layer it found. A later explicit OCR run fills this.
             ocr: None,
+            ocr_skipped,
         }
     }
 
@@ -237,4 +244,6 @@ impl Classifier {
 pub struct OcrExtractContext {
     pub app_data_dir: std::path::PathBuf,
     pub command: String,
+    /// Home-screen OCR switch for this scan.
+    pub ocr_enabled: bool,
 }

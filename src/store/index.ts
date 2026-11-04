@@ -40,6 +40,9 @@ interface FileITState {
   setScanRoots: (roots: string[]) => void;
   selectedCategories: string[];
   toggleCategory: (cat: string) => void;
+  /** Home-screen OCR switch (Indra OCR during scan). Persisted. */
+  ocrEnabled: boolean;
+  setOcrEnabled: (v: boolean) => void;
 
   // ── Scan results ──────────────────────────────────────────────────────────
   scanResult: ScanResult | null;
@@ -91,6 +94,28 @@ interface FileITState {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────────────────────
+// OCR switch persistence — on by default (Indra was always on before v1.1)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const OCR_PREF_KEY = 'fileIT_ocrEnabled';
+
+function loadOcrPref(): boolean {
+  try {
+    return localStorage.getItem(OCR_PREF_KEY) !== '0';
+  } catch {
+    return true;
+  }
+}
+
+function saveOcrPref(v: boolean) {
+  try {
+    localStorage.setItem(OCR_PREF_KEY, v ? '1' : '0');
+  } catch {
+    /* storage unavailable — preference lasts for this session only */
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Store
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -115,6 +140,11 @@ export const useStore = create<FileITState>((set) => ({
         : [...s.selectedCategories, cat],
     };
   }),
+  ocrEnabled: loadOcrPref(),
+  setOcrEnabled: (ocrEnabled) => {
+    saveOcrPref(ocrEnabled);
+    set({ ocrEnabled });
+  },
 
   // ── Scan results ──────────────────────────────────────────────────────────
   scanResult: null,

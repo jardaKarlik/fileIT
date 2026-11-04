@@ -153,6 +153,11 @@ pub struct ClassifiedFile {
     /// Full OCR result, present once the Indra sidecar has processed this file.
     /// Optional so older scan manifests deserialise unchanged.
     pub ocr: Option<OcrResult>,
+    /// True when this PDF/image was classified without OCR (switch off or
+    /// sidecar unavailable) although OCR could have found more text. Such a
+    /// classification is redone once the user scans with OCR on.
+    #[serde(default)]
+    pub ocr_skipped: bool,
 }
 
 impl ClassifiedFile {
@@ -365,6 +370,10 @@ pub struct OcrResult {
     pub page_count: u32,
     pub is_scan: bool,
     pub layout_blocks: Vec<OcrBlock>,
+    /// True when produced with OCR switched off (`--mode text`: digital text
+    /// layer only). Such an entry is upgraded by a later run with OCR on.
+    #[serde(default)]
+    pub text_only: bool,
 }
 
 /// Whether the Indra sidecar is usable on this machine.
@@ -408,6 +417,15 @@ pub struct OcrProgress {
 pub struct ScanRequest {
     pub roots: Vec<PathBuf>,
     pub file_categories: Vec<String>,
+    /// Home-screen OCR switch. On: Indra OCRs scanned pages and images
+    /// (slower, more precise). Off: PDFs are read from their digital text
+    /// layer only and images are skipped. Defaults to on for older clients.
+    #[serde(default = "default_true")]
+    pub ocr_enabled: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, Serialize)]

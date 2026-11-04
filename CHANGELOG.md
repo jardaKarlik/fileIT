@@ -1,5 +1,29 @@
 # FileIT Changelog
 
+## [1.1.0] - Unreleased
+
+### ✨ Features
+- **OCR switch on the Home screen** — "Číst skenované dokumenty (OCR)".
+  On (default): Indra OCR reads scanned PDFs and photos of documents — slower,
+  but more precise. Off: PDFs are read from their digital text layer only
+  (`indra-ocr --mode text`) and images are skipped. Remembered between launches.
+- **Each file is read / OCR'd once.** The content-hashed OCR cache now records
+  whether a result was text-only. A file scanned with OCR off is OCR'd once
+  when OCR is later switched on (only if its text layer is sparse); after that
+  it is never OCR'd again. Scan-manifest reuse redoes a classification only
+  when it was made without OCR and OCR is now on.
+
+### 🔧 Fixes
+- Dashboard "Spustit OCR" and the scan now share one cache key (scanner content
+  hash) — previously a file OCR'd during a scan was OCR'd again from the
+  Dashboard and vice versa.
+- No console window flashes on Windows for each Indra sidecar call.
+
+### 🔌 API
+- `start_scan` request: `ocr_enabled` (defaults to `true` when omitted).
+- `OcrResult.text_only`, `ClassifiedFile.ocr_skipped` (both default `false`,
+  so existing caches and scan manifests stay valid).
+
 ## [1.0.9] - 2026-06-09
 
 ### ✨ Features

@@ -60,6 +60,8 @@ export interface ClassifiedFile {
   pdf_creator: string | null;
   /** Populated when the Indra OCR sidecar has processed this file. */
   ocr?: OcrResult;
+  /** Classified without OCR although OCR could read more (switch off / no sidecar). */
+  ocr_skipped?: boolean;
 }
 
 /** One recognised region of a page — a heading, paragraph, table cell block, … */
@@ -85,6 +87,8 @@ export interface OcrResult {
   /** True when the file had no text layer and was recognised from pixels. */
   is_scan: boolean;
   layout_blocks: OcrBlock[];
+  /** Produced with OCR switched off (digital text layer only). */
+  text_only?: boolean;
 }
 
 /** Whether the Indra OCR sidecar is usable on this machine. */
