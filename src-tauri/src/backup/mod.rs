@@ -10,7 +10,7 @@
 use crate::types::*;
 use anyhow::{Context, Result};
 use chrono::Utc;
-use log::{info, warn, debug};
+use log::{info, debug};
 use std::path::{Path, PathBuf};
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -100,20 +100,6 @@ pub fn save_manifest_sidecar(
     info!("[backup] Manifest sidecar saved: {:?} ({} moves, {} bytes)", path, manifest.moves.len(), json.len());
 
     Ok(path)
-}
-
-/// Load the pending confirmation manifest from sidecar, if it exists.
-pub fn load_manifest_sidecar(app_data_dir: &Path) -> Option<BackupManifest> {
-    let path = app_data_dir.join("state").join("pending_confirmation.json");
-    if !path.exists() {
-        debug!("[backup] No manifest sidecar at {:?}", path);
-        return None;
-    }
-
-    let json = std::fs::read_to_string(&path).ok()?;
-    let manifest: BackupManifest = serde_json::from_str(&json).ok()?;
-    info!("[backup] Loaded manifest sidecar: {} moves, session {}", manifest.moves.len(), manifest.session_id);
-    Some(manifest)
 }
 
 /// Delete the sidecar manifest — called after user confirms or restores.

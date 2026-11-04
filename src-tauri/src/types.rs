@@ -36,6 +36,9 @@ pub enum FileCategory {
     Pdf,
     Word,
     Excel,
+    PowerPoint,
+    Csv,
+    Xml,
     Image,
     Email,
     Text,
@@ -47,7 +50,10 @@ impl FileCategory {
         match ext {
             "pdf" => Self::Pdf,
             "doc" | "docx" => Self::Word,
-            "xls" | "xlsx" | "csv" => Self::Excel,
+            "xls" | "xlsx" => Self::Excel,
+            "pptx" => Self::PowerPoint,
+            "csv" => Self::Csv,
+            "xml" => Self::Xml,
             "jpg" | "jpeg" | "png" | "bmp" | "tif" | "tiff" => Self::Image,
             "msg" | "eml" => Self::Email,
             "txt" | "rtf" => Self::Text,
@@ -144,10 +150,14 @@ pub struct ClassifiedFile {
     pub pdf_producer: Option<String>,
     /// PDF /Creator string — used for CM pattern grouping.
     pub pdf_creator: Option<String>,
+    /// Full OCR result, present once the Indra sidecar has processed this file.
+    /// Optional so older scan manifests deserialise unchanged.
+    pub ocr: Option<OcrResult>,
 }
 
 impl ClassifiedFile {
     /// Returns true if confidence is in the "review required" band (0.40–0.84).
+    #[allow(dead_code)]
     pub fn needs_review(&self) -> bool {
         self.confidence >= 0.40 && self.confidence < 0.85
     }
@@ -299,6 +309,7 @@ pub struct CompletedRun {
 /// Created fresh on each scan run. Never persisted to disk except for
 /// CompletedRun (which uses a small JSON sidecar in AppData).
 #[derive(Debug, Default)]
+#[allow(dead_code)]
 pub struct SessionState {
     pub id: String,
     pub scan_roots: Vec<PathBuf>,
@@ -323,6 +334,70 @@ impl SessionState {
             ..Default::default()
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OCR (Indra sidecar)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// One recognised region of a page.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OcrBlock {
+    pub page: u32,
+    pub label: String,
+    pub text: String,
+    /// 0..1 — the sidecar may omit it for some engines.
+    pub confidence: Option<f32>,
+    /// Bounding box [x0, y0, x1, y1] in PDF points.
+    #[serde(rename = "box")]
+    pub box_: Option<[f32; 4]>,
+}
+
+/// Full OCR outcome for a single file. Cached on disk keyed by content hash,
+/// so a re-run never pays for work that is already done.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OcrResult {
+    pub path: String,
+    pub sha256: Option<String>,
+    pub full_text: String,
+    pub language: Option<String>,
+    pub confidence_avg: Option<f32>,
+    pub page_count: u32,
+    pub is_scan: bool,
+    pub layout_blocks: Vec<OcrBlock>,
+}
+
+/// Whether the Indra sidecar is usable on this machine.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OcrAvailability {
+    pub installed: bool,
+    /// Resolved command name/path, when found.
+    pub command: Option<String>,
+    /// Model directory in use, when configured.
+    pub models_dir: Option<String>,
+    /// Human-readable reason, e.g. "indra-ocr nebyl nalezen v PATH".
+    pub message: Option<String>,
+    /// Number of cached OCR results already on disk.
+    pub cached_count: u32,
+}
+
+/// Outcome of an explicit "run OCR" request.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OcrBatchResult {
+    pub processed: u32,
+    pub from_cache: u32,
+    pub failed: u32,
+    pub skipped_unavailable: bool,
+    pub errors: Vec<String>,
+}
+
+/// Progress event emitted while a batch runs.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OcrProgress {
+    pub done: u32,
+    pub total: u32,
+    pub current_path: String,
+    pub failed_count: u32,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -353,6 +428,7 @@ pub struct ScanResult {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct PreviewRequest {
     pub structure: Vec<String>,
     pub target_path: PathBuf,

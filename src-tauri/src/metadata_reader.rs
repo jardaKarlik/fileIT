@@ -10,6 +10,7 @@ use std::path::Path;
 
 const TRAILER_READ_BYTES: u64 = 2048;
 
+#[allow(dead_code)]
 pub struct PdfMetadata {
     pub producer: Option<String>,
     pub creator: Option<String>,
@@ -297,12 +298,6 @@ pub fn path_institution_tokens(path: &Path) -> String {
 // ─────────────────────────────────────────────────────────────────────────────
 // Color extraction — stub pending pdfium-render integration
 // ─────────────────────────────────────────────────────────────────────────────
-
-/// Extract dominant color buckets from PDF page 1.
-/// Returns empty vec until pdfium-render is wired in.
-pub fn extract_dominant_colors(_path: &Path) -> Vec<String> {
-    vec![]
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Size bucketing helper (shared with cm_registry)

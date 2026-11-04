@@ -3,9 +3,14 @@
 ## Project Overview
 FileIT is a smart file organizer for Czech financial advisory agents. It's a desktop application built with Tauri (Rust backend) and React/TypeScript frontend that helps users scan, classify, and reorganize their financial documents.
 
-## Current Status (as of 2026-06-09)
-- **Version**: 1.0.8 (from Cargo.toml)
-- **State**: Near completion of v1 - core functionality implemented, needs final polish and testing
+## Current Status (as of 2026-08-11)
+- **Version**: v1.0.12 development (package/Cargo metadata still reports 1.0.11 and should be aligned before release)
+- **State**: End-of-day checkpoint; core scan/classification changes committed locally and validated in dev mode
+- **Latest commits**:
+  - `7fd71a3` — v1.0.12: harden classification and incremental scanning
+  - `9a77c61` — docs: record v1.0.12 analysis and handoff
+- **Remote state**: commits are local only; not pushed from this session
+- **Validation**: `cargo check` zero warnings; `cargo test --lib` 13 passed; `npm run build` successful
 - **Primary Tech Stack**:
   - Backend: Rust (Tauri 2.0)
   - Frontend: React 18 + TypeScript + Vite
@@ -252,3 +257,29 @@ This document captures the essential state needed for another workstation with d
 - **Backup** (`src-tauri/src/backup/mod.rs`): ZIP backup creation and restoration
 - **Metadata Reader** (`src-tauri/src/metadata_reader.rs`): File metadata extraction
 - **CM Registry** (`src-tauri/src/cm_registry.rs`): Customer/institution matching database
+
+## v1.0.12 End-of-Day Memory — 2026-08-11
+
+### Completed
+- Built and integrated the local CNB JERRS registry loader and path detector.
+- Independently verified the CNB source data: 133 XML files, 127,065 raw cross-file rows, 50,283 unique ICO-keyed records, zero duplicate/collision ICOs.
+- Kept `src-tauri/resources/cnb_registry.json` local-only; it is explicitly ignored in `.gitignore` and must never be committed. Regenerate it with `python scripts/build_cnb_registry.py` from `C:\_temp\xml`.
+- Added persistent scan manifests under AppData and verified incremental scanning: 5,211 existing files reused and 10 newly created PDFs extracted/classified.
+- Narrowed scanner exclusions to the requested folders: Native Instruments, Samples, Claude, iZotope, Lexicon, League of Legends, Magda/Madga, and McAfee; normal work folders remain scannable.
+- Hardened PDF classification by disabling unstable in-process Windows PDF OCR fallback. Native extraction remains active; OCR should later be isolated in a helper process before re-enabling.
+- Fixed sticky `skip_extraction`: metadata skip and CM skip now merge with logical OR, so a strong metadata rule cannot be overwritten by a weaker CM match.
+- Reduced CNB false positives by ignoring generic filename words, matching directory components only, and requiring CNB results to resolve through the curated NER dictionary.
+- Removed obsolete compiler dead code and reached a zero-warning Rust check.
+
+### Runtime test result
+- Latest incremental scan summary: `5221 total, 5211 reused, 10 extracted, 0 extraction-skipped, 458 duplicates`.
+- This confirms new files are detected and processed while unchanged files are reused.
+- `extraction-skipped=0` in that test is expected because the 10 generated PDFs were new and did not match a skip rule.
+
+### Known cautions / next session
+- Do not run Cargo builds/tests while a live FileIT scan is running; inspect logs only until the scan completes.
+- The current AppData runtime log is `C:\Users\jaros\AppData\Local\cz.fileit.app\logs\fileit.log`.
+- The current scan manifest is under `C:\Users\jaros\AppData\Roaming\cz.fileit.app\scan_history\`.
+- Before release, align version metadata (`package.json`, `Cargo.toml`, `tauri.conf.json`) with v1.0.12.
+- Run a fresh modified-file test to confirm `metadata_skip=true` produces `skip_extraction=true` and no extraction-start log for an EPO/OpenPDF document.
+- Decide whether to implement isolated helper-process OCR or leave OCR disabled for the stable release.
