@@ -39,27 +39,6 @@ src-tauri/resources/cnb_registry.json
 /.cursor/mcp.json
 # <<< nauro <<<
 
-# Lovable website (TanStack Start)
-logs
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-node_modules
-dist
-dist-ssr
-.output
-.vinxi
-.tanstack/**
-.nitro
-*.local
-.wrangler/
-.dev.vars
-.vscode/*
-!.vscode/extensions.json
-.idea
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# Temporary evaluation worktrees
+/fileIT-indra/
+/fileIT-meta/
