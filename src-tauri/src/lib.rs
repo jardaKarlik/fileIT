@@ -7,11 +7,13 @@
 mod backup;
 mod classifier;
 mod cm_registry;
+mod cnb_registry;
 mod commands;
-mod extraction_cache;
 mod metadata_reader;
 mod ocr;
+mod ocr_store;
 mod restructure;
+mod scan_manifest;
 mod scanner;
 mod types;
 
@@ -80,11 +82,17 @@ pub fn run() {
                 registry.fingerprints.len()
             );
 
+            // Load CNB registry (Stage 0 path detection)
+            let cnb_reg =
+                cnb_registry::CnbRegistry::new().expect("Failed to load CNB registry");
+            log::info!("CNB registry: {} institutions loaded", cnb_reg.count());
+
             app.manage(AppState {
                 session: Mutex::new(types::SessionState::new()),
                 classifier,
                 app_data_dir,
                 cm_registry: RwLock::new(registry),
+                cnb_registry: cnb_reg,
             });
 
             Ok(())
@@ -94,8 +102,6 @@ pub fn run() {
             commands::app_init,
             commands::detect_clouds,
             commands::start_scan,
-            commands::get_ocr_status,
-            commands::clear_scan_cache,
             commands::build_preview,
             commands::run_restructure,
             commands::create_standalone_backup,
@@ -108,6 +114,9 @@ pub fn run() {
             commands::group_unclassified_patterns,
             commands::submit_teaching,
             commands::upload_to_cm,
+            ocr::check_ocr,
+            ocr::run_ocr,
+            ocr::get_ocr,
         ])
         .run(tauri::generate_context!())
         .expect("Error running FileIT application");

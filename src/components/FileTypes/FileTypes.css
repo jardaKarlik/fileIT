@@ -19,4 +19,5 @@
 .ft-extra-row   { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
 .ft-extra-chip  { border: 1px solid var(--border); border-radius: var(--radius-pill); padding: 5px 12px; font-size: 11px; color: var(--ink2); cursor: pointer; transition: all 0.15s; }
 .ft-extra-chip:hover { border-color: var(--pink); color: var(--pink); }
+.ft-extra-chip.selected { border-color: var(--pink); background: var(--pink-pale); color: var(--pink); font-weight: 600; }
 .ft-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }

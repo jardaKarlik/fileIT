@@ -1,6 +1,6 @@
 [package]
 name = "fileit"
-version = "1.1.0"
+version = "1.0.12"
 description = "FileIT — Smart file organiser for Czech financial advisory agents"
 authors = ["FileIT Team"]
 license = "UNLICENSED"
@@ -37,7 +37,6 @@ serde_json = "1"
 walkdir = "2"
 
 # PDF text extraction
-pdf-extract = "0.7"
 
 # DOCX/XLSX text extraction (via zip + XML parsing)
 zip = "2"
@@ -75,13 +74,6 @@ reqwest = { version = "0.11", features = ["json", "rustls-tls"], default-feature
 # Windows registry access — used for OneDrive path detection
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"
-windows = { version = "0.58", features = [
-    "Data_Pdf",
-    "Graphics_Imaging",
-    "Media_Ocr",
-    "Storage",
-    "Storage_Streams",
-] }
 
 [features]
 default = ["custom-protocol"]

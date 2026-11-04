@@ -1,16 +1,14 @@
 // src/components/Home/index.tsx
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../utils/tauriApi';
-import type { OcrStatus } from '../../types';
 import './Home.css';
 
 export function Home() {
-  const {
-    setScreen, lastRunTimestamp, lastRunFileCount, setDetectedClouds, setCompletedRun, setLastRun,
-    ocrEnabled, setOcrEnabled,
-  } = useStore();
-  const [ocrStatus, setOcrStatus] = useState<OcrStatus | null>(null);
+  const { setScreen, lastRunTimestamp, lastRunFileCount, setDetectedClouds, setCompletedRun, setLastRun } = useStore();
+
+  // eslint-disable-next-line
+
 
   useEffect(() => {
     // On mount: init app state (check for pending confirmation, detect clouds)
@@ -27,16 +25,7 @@ export function Home() {
     });
 
     api.detectClouds().then(setDetectedClouds);
-    api.getOcrStatus().then(setOcrStatus).catch(() => setOcrStatus(null));
   }, []);
-
-  const ocrEngineNote = !ocrStatus
-    ? null
-    : ocrStatus.indra_available
-      ? 'Indra OCR je připraveno.'
-      : ocrStatus.windows_fallback
-        ? 'Indra OCR není nainstalováno — použije se vestavěné OCR Windows (méně přesné).'
-        : 'OCR není na tomto počítači dostupné.';
 
 
   function goAnalyze() {
@@ -63,7 +52,7 @@ export function Home() {
 
   return (
     <div className="home-wrap">
-      <span className="corner-tr">FILEIT · V1.1 · HOME</span>
+      <span className="corner-tr">FILEIT · V1.0 · HOME</span>
       <span className="corner-bl">N°00 · home</span>
 
       <div className="home-head">
@@ -131,32 +120,6 @@ export function Home() {
             </div>
           </div>
         </div>
-      </div>
-
-      <div className={`home-ocr ${ocrEnabled ? 'on' : ''}`}>
-        <div className="home-ocr-text">
-          <div className="home-ocr-title" id="home-ocr-title">
-            Číst skenované dokumenty (OCR)
-            <span className={`home-ocr-state ${ocrEnabled ? 'on' : ''}`}>{ocrEnabled ? 'Zapnuto' : 'Vypnuto'}</span>
-          </div>
-          <p className="home-ocr-desc" id="home-ocr-desc">
-            S OCR FileIT přečte i naskenované PDF a fotky dokumentů. Analýza tak trvá déle,
-            ale výsledky jsou přesnější — rozpozná více klientů, institucí a typů dokumentů.
-            Soubory přečtené při minulé analýze se znovu nezpracovávají.
-          </p>
-          {ocrEngineNote && <div className="home-ocr-engine">{ocrEngineNote}</div>}
-        </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={ocrEnabled}
-          aria-labelledby="home-ocr-title"
-          aria-describedby="home-ocr-desc"
-          className={`home-ocr-switch ${ocrEnabled ? 'on' : ''}`}
-          onClick={() => setOcrEnabled(!ocrEnabled)}
-        >
-          <span className="home-ocr-thumb" />
-        </button>
       </div>
 
       <div className="home-how" onClick={() => setScreen('how_it_works')} role="button" tabIndex={0}>

@@ -1,5 +1,33 @@
 # Session Summary — 2026-06-09
 
+## Latest Session Checkpoint — 2026-08-11
+
+### Commits
+- `7fd71a3` — v1.0.12: harden classification and incremental scanning
+- `9a77c61` — docs: record v1.0.12 analysis and handoff
+- CNB registry JSON remains local-only and ignored; it was not committed.
+
+### Validation
+- `cargo check`: passed with zero warnings.
+- `cargo test --lib`: 13 passed, 0 failed.
+- `npm run build`: successful.
+- Incremental scan test: 5,211 reused, 10 new PDFs extracted/classified, total 5,221.
+
+### Important implementation notes
+- Metadata/CM `skip_extraction` now merges as a sticky OR flag.
+- Manifest reuse skips full classification for unchanged files; this is separate from Stage 1 content-extraction skipping.
+- In-process Windows PDF OCR is disabled after a crash during a problematic scanned PDF. Native PDF extraction remains enabled.
+- CNB token matching now uses directory components only, rejects generic terms, and requires resolution through the curated NER dictionary.
+- Scanner exclusions are intentionally narrow: Native Instruments, Samples, Claude, iZotope, Lexicon, League of Legends, Magda/Madga, and McAfee.
+
+### Next session first steps
+1. Start dev mode only after confirming no prior scan is active: `npm run tauri dev`.
+2. Run a small modified-file test using a known EPO/OpenPDF document.
+3. Confirm logs show `metadata_skip=true`, `skip_extraction=true`, and no extraction start for that file.
+4. Align project version metadata to v1.0.12 before release preparation.
+
+---
+
 ## What We Accomplished
 
 ### 1. Git Repository Initialized ✅

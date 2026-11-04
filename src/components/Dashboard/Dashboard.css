@@ -42,6 +42,53 @@
 .stat-sub-hero.warn { color: #FFD9BC; }
 
 .dash-body { padding: 20px 44px 40px; }
+
+/* OCR status row — read-only status plus one explicit, opt-in action */
+.dash-ocr-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 44px;
+  background: white;
+  border-bottom: 1px solid var(--border);
+}
+.ocr-status { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ocr-label {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.ocr-value { font-size: 11px; font-weight: 600; color: var(--ink); }
+.ocr-value.ok  { color: #15803d; }
+.ocr-value.off { color: var(--ink3); font-weight: 500; }
+.ocr-cached { font-size: 10px; color: var(--ink3); }
+.ocr-action { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.ocr-progress {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--indigo);
+  font-variant-numeric: tabular-nums;
+}
+.btn-ocr {
+  background: var(--indigo);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 7px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.btn-ocr:hover:not(:disabled) { opacity: 0.88; }
+.btn-ocr:disabled { background: #d1d5db; color: #9ca3af; cursor: not-allowed; }
+.ocr-msg { font-size: 10px; color: var(--ink2); }
+.ocr-msg.bad { color: #b91c1c; }
+
 .hero-ctas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
 .cta-card { border-radius: var(--radius-lg); padding: 16px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.15s; }
 .cta-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-soft); }
@@ -62,6 +109,11 @@
 .chart-tag   { font-size: 10px; color: var(--ink3); font-weight: 400; margin-left: 4px; }
 
 .activity-bars { display: flex; align-items: flex-end; gap: 4px; height: 90px; }
+.timeline-content { display: flex; align-items: flex-end; gap: 14px; }
+.timeline-outside { width: 62px; flex: 0 0 62px; align-self: stretch; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 17px; border-right: 1px solid var(--border); }
+.timeline-outside-count { font-family: var(--font-display); font-size: 22px; font-weight: 800; color: var(--indigo); line-height: 1; }
+.timeline-outside-label { font-size: 8px; color: var(--ink3); line-height: 1.2; margin-top: 4px; }
+.timeline-content .activity-bars { flex: 1; min-width: 0; }
 .act-bar-wrap  { display: flex; flex-direction: column; align-items: center; flex: 1; gap: 4px; }
 .act-bar  { width: 100%; border-radius: 3px 3px 0 0; transition: height 0.3s; }
 .act-month { font-size: 8px; color: var(--ink3); }

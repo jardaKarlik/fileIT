@@ -1,12 +1,50 @@
+# Dependencies
+node_modules/
+src-tauri/target/
+
+# Build artifacts
+dist/
+*.exe
+*.msi
+*.dmg
+*.app/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Tauri
+src-tauri/tauri.conf.json.bak
+src-tauri/Cargo.lock
+
 # Logs
-logs
 *.log
 npm-debug.log*
+
+# Python generated cache
+__pycache__/
+*.py[cod]
+
+# Generated local CNB registry (do not commit; regenerate from C:\_temp\xml)
+src-tauri/resources/cnb_registry.json
+
+# >>> nauro: machine-local wiring (regenerated per machine) >>>
+/.mcp.json
+/.cursor/mcp.json
+# <<< nauro <<<
+
+# Lovable website (TanStack Start)
+logs
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-
 node_modules
 dist
 dist-ssr
@@ -15,21 +53,13 @@ dist-ssr
 .tanstack/**
 .nitro
 *.local
-
-# Wrangler / Cloudflare
 .wrangler/
 .dev.vars
-
-# Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-
-# Rust / Tauri build output
-src-tauri/target

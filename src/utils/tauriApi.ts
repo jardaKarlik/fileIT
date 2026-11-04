@@ -4,7 +4,8 @@
 // so the UI can be developed and iterated without a compiled backend.
 
 import {
-  CmPayload, CmUpdateResult, CompletedRun, DetectedCloud, OcrStatus,
+  CmPayload, CmUpdateResult, CompletedRun, DetectedCloud,
+  OcrAvailability, OcrBatchResult,
   RestructurePreview, RestructureResult, ScanResult,
   TeachingResult, UnclassifiedPattern, UploadResult,
 } from '../types';
@@ -51,21 +52,9 @@ export const api = {
   /** Detect the OneDrive sync root on Windows. Returns null when not found. */
   getOneDrivePath: () => invoke<string | null>('get_onedrive_path'),
 
-  /**
-   * Start a scan. Progress events come via onScanProgress listener.
-   * `ocrEnabled` runs Indra OCR on scanned PDFs and images (slower, more precise).
-   * Files already read/OCR'd in an earlier scan are reused from the backend cache.
-   */
-  startScan: (roots: string[], fileCategories: string[], ocrEnabled: boolean) =>
-    invoke<ScanResult>('start_scan', {
-      request: { roots, file_categories: fileCategories, ocr_enabled: ocrEnabled },
-    }),
-
-  /** Is Indra OCR installed / is the Windows OCR fallback available? */
-  getOcrStatus: () => invoke<OcrStatus>('get_ocr_status'),
-
-  /** Forget cached extraction/OCR results. Returns number of entries removed. */
-  clearScanCache: () => invoke<number>('clear_scan_cache'),
+  /** Start a scan. Progress events come via onScanProgress listener. */
+  startScan: (roots: string[], fileCategories: string[]) =>
+    invoke<ScanResult>('start_scan', { request: { roots, file_categories: fileCategories } }),
 
   /** Build a restructure preview without moving files. */
   buildPreview: (structure: string[], targetPath: string, destinationMode: string) =>
@@ -100,9 +89,17 @@ export const api = {
   uploadToCm: (payloads: CmPayload[]) =>
     invoke<UploadResult>('upload_to_cm', { payloads }),
 
+  // ── OCR (Indra sidecar) ──────────────────────────────────────────────────
+
+  /** Probe whether the Indra OCR sidecar is installed on this machine. */
+  checkOcr: () => invoke<OcrAvailability>('check_ocr'),
+
+  /** Run OCR over the given paths. Progress events come via onOcrProgress. */
+  runOcr: (paths: string[]) => invoke<OcrBatchResult>('run_ocr', { paths }),
+
   // ── Event listeners ───────────────────────────────────────────────────────
 
-  onScanProgress: (cb: (p: { files_found: number; message: string; done: boolean }) => void) =>
+  onScanProgress: (cb: (p: { files_found: number; current_path: string; message: string; done: boolean }) => void) =>
     listen('scan_progress', cb as any),
 
   onClassifyProgress: (cb: (p: { done: number; total: number; current: string }) => void) =>
@@ -116,6 +113,10 @@ export const api = {
   onRestoreProgress: (cb: (p: {
     restored: number; total: number; log_line: string; done: boolean;
   }) => void) => listen('restore_progress', cb as any),
+
+  onOcrProgress: (cb: (p: {
+    done: number; total: number; current_path: string; failed_count: number;
+  }) => void) => listen('ocr_progress', cb as any),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -149,16 +150,8 @@ function devMock(cmd: string, _args?: Record<string, unknown>): unknown {
         total_size_bytes: 2_576_351_232,
         customers_found: 38,
         duplicates_found: 24,
-        reused_from_cache: 0,
-        ocr_performed: 0,
         files: [],
       } satisfies ScanResult;
-
-    case 'get_ocr_status':
-      return { indra_available: true, indra_path: 'indra-ocr', windows_fallback: true } satisfies OcrStatus;
-
-    case 'clear_scan_cache':
-      return 0;
 
     case 'build_preview':
       return {
@@ -236,6 +229,24 @@ function devMock(cmd: string, _args?: Record<string, unknown>): unknown {
 
     case 'upload_to_cm':
       return { uploaded: 1, queued: 0 } satisfies UploadResult;
+
+    case 'check_ocr':
+      return {
+        installed: false,
+        command: null,
+        models_dir: null,
+        message: 'OCR není nainstalován',
+        cached_count: 0,
+      } satisfies OcrAvailability;
+
+    case 'run_ocr':
+      return {
+        processed: 0,
+        from_cache: 0,
+        failed: 0,
+        skipped_unavailable: true,
+        errors: [],
+      } satisfies OcrBatchResult;
 
     default:
       console.warn('[dev] Unhandled mock command:', cmd);

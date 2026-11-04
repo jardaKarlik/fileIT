@@ -1,7 +1,7 @@
 // src/types/index.ts
 // Mirror of the Rust types that cross the IPC bridge.
 
-export type FileCategory = 'pdf' | 'word' | 'excel' | 'image' | 'email' | 'text' | 'other';
+export type FileCategory = 'pdf' | 'word' | 'excel' | 'powerpoint' | 'csv' | 'xml' | 'image' | 'email' | 'text' | 'other';
 
 export type DocumentType =
   | 'Contract' | 'BankLetter' | 'Invoice' | 'PaymentDemand'
@@ -53,15 +53,61 @@ export interface ClassifiedFile {
   document_date: string | null;
   confidence: number;
   ocr_used: boolean;
-  /** OCR engine that produced the text: 'indra' | 'windows'. */
-  ocr_engine?: string | null;
-  /** True if the text was reused from an earlier scan. */
-  from_cache?: boolean;
   text_preview: string | null;
   is_duplicate: boolean;
   duplicate_of: string | null;
   pdf_producer: string | null;
   pdf_creator: string | null;
+  /** Populated when the Indra OCR sidecar has processed this file. */
+  ocr?: OcrResult;
+}
+
+/** One recognised region of a page — a heading, paragraph, table cell block, … */
+export interface OcrBlock {
+  page: number;
+  label: string;
+  text: string;
+  /** 0..1 — null when the sidecar did not report a per-block confidence. */
+  confidence: number | null;
+  /** Bounding box [x0, y0, x1, y1] in PDF points — null when unknown. */
+  box: [number, number, number, number] | null;
+}
+
+/** Full OCR outcome for a single file, cached on disk by content hash. */
+export interface OcrResult {
+  path: string;
+  sha256: string | null;
+  full_text: string;
+  language: string | null;
+  /** Mean confidence across blocks — null when the sidecar reported none. */
+  confidence_avg: number | null;
+  page_count: number;
+  /** True when the file had no text layer and was recognised from pixels. */
+  is_scan: boolean;
+  layout_blocks: OcrBlock[];
+}
+
+/** Whether the Indra OCR sidecar is usable on this machine. */
+export interface OcrAvailability {
+  installed: boolean;
+  /** Resolved command name/path, when found. */
+  command: string | null;
+  /** Model directory in use, when configured. */
+  models_dir: string | null;
+  /** Human-readable reason when not installed. */
+  message: string | null;
+  /** Number of cached OCR results already on disk. */
+  cached_count: number;
+}
+
+/** Outcome of an explicit "Spustit OCR" request. */
+export interface OcrBatchResult {
+  processed: number;
+  from_cache: number;
+  failed: number;
+  /** True when the sidecar is not installed and the batch was skipped. */
+  skipped_unavailable: boolean;
+  errors: string[];
 }
 
 export interface PlannedMove {
@@ -87,17 +133,7 @@ export interface ScanResult {
   total_size_bytes: number;
   customers_found: number;
   duplicates_found: number;
-  /** Files whose text was reused from an earlier scan (not read / OCR'd again). */
-  reused_from_cache?: number;
-  /** Files OCR'd during this scan. */
-  ocr_performed?: number;
   files: ClassifiedFile[];
-}
-
-export interface OcrStatus {
-  indra_available: boolean;
-  indra_path: string | null;
-  windows_fallback: boolean;
 }
 
 export interface FileError {

@@ -17,7 +17,7 @@ const CLASSIFY_VERBS = [
 type LogLine = { cls: string; text: string };
 
 export function Scanning() {
-  const { setScreen, setScanResult, selectedCategories, scanRoots, detectedClouds, ocrEnabled } = useStore();
+  const { setScreen, setScanResult, selectedCategories, scanRoots, detectedClouds } = useStore();
   const [lines, setLines]           = useState<LogLine[]>([]);
   const [pct, setPct]               = useState(0);
   const [statusText, setStatusText] = useState('Inicializace skeneru…');
@@ -32,13 +32,7 @@ export function Scanning() {
   async function runRealScan() {
     const roots = scanRoots;
 
-    appendLine({ cls: '', text: `$ fileit scan --inicializace${ocrEnabled ? ' --ocr' : ''}` });
-    appendLine({
-      cls: '',
-      text: ocrEnabled
-        ? 'OCR zapnuto — skenované dokumenty a obrázky budou přečteny (Indra OCR).'
-        : 'OCR vypnuto — skenované dokumenty bez textové vrstvy se nečtou.',
-    });
+    appendLine({ cls: '', text: '$ fileit scan --inicializace' });
 
     // Await listener registration so no early events are missed, and keep
     // unlisten handles so they can be cleaned up when the scan finishes.
@@ -62,7 +56,7 @@ export function Scanning() {
       }),
     ]);
 
-    api.startScan(roots, selectedCategories, ocrEnabled)
+    api.startScan(roots, selectedCategories)
       .then(result => {
         setScanResult(result);
         setPct(100);
@@ -73,12 +67,6 @@ export function Scanning() {
         });
         if (result.duplicates_found > 0) {
           appendLine({ cls: '', text: `Detekce duplikátů: ${result.duplicates_found} možných duplikátů` });
-        }
-        if (result.reused_from_cache) {
-          appendLine({ cls: '', text: `Znovu použito z minulé analýzy: ${result.reused_from_cache} souborů (nečteno znovu)` });
-        }
-        if (result.ocr_performed) {
-          appendLine({ cls: '', text: `OCR přečetlo ${result.ocr_performed} skenovaných dokumentů` });
         }
         setDone(true);
         unlistenScan();
@@ -106,7 +94,7 @@ export function Scanning() {
       { cls: 'found', text: '✓ Instituce: banka' },
       { cls: 'found', text: '✓ Instituce rozpoznána — pojišťovna' },
       { cls: 'found', text: '✓ Klient identifikován (IČO)' },
-      ...(ocrEnabled ? [{ cls: '', text: 'OCR zpracovává skenované stránky…' }] : []),
+      { cls: '',      text: 'OCR zpracovává skenované stránky…' },
       { cls: 'found', text: '✓ Rodné číslo rozpoznáno — klient přiřazen' },
       { cls: 'found', text: '✓ Instituce: pojišťovna' },
       { cls: '',      text: 'Kontrola duplikátů…' },
@@ -117,7 +105,7 @@ export function Scanning() {
     const iv = setInterval(() => {
       if (i >= DEV_LINES.length) {
         clearInterval(iv);
-        api.startScan([], selectedCategories, ocrEnabled).then(result => {
+        api.startScan([], selectedCategories).then(result => {
           setScanResult(result);
           setPct(100);
           setStatusText(`Hotovo — ${result.total_files} souborů, ${result.customers_found} klientů`);

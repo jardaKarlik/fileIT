@@ -40,9 +40,6 @@ interface FileITState {
   setScanRoots: (roots: string[]) => void;
   selectedCategories: string[];
   toggleCategory: (cat: string) => void;
-  /** Run OCR (Indra OCR) during scan — slower, more precise. Persisted. */
-  ocrEnabled: boolean;
-  setOcrEnabled: (v: boolean) => void;
 
   // ── Scan results ──────────────────────────────────────────────────────────
   scanResult: ScanResult | null;
@@ -93,24 +90,6 @@ interface FileITState {
 // Default scan roots — Windows user folders
 // ─────────────────────────────────────────────────────────────────────────────
 
-const OCR_PREF_KEY = 'fileIT_ocrEnabled';
-
-function loadOcrPref(): boolean {
-  try {
-    return localStorage.getItem(OCR_PREF_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
-function saveOcrPref(v: boolean) {
-  try {
-    localStorage.setItem(OCR_PREF_KEY, v ? '1' : '0');
-  } catch {
-    /* storage unavailable — preference lasts for this session only */
-  }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Store
 // ─────────────────────────────────────────────────────────────────────────────
@@ -123,7 +102,9 @@ export const useStore = create<FileITState>((set) => ({
   // ── Scan config ───────────────────────────────────────────────────────────
   lastSourcePath: '',
   setLastSourcePath: (path) => set({ lastSourcePath: path }),
-  scanRoots: [],
+  // Default root for this workspace: the local sample-vault subfolder, so a
+  // fresh install/dev run can scan something meaningful without configuration.
+  scanRoots: ['C:\\_dev\\fileIT\\sample-vault'],
   setScanRoots: (roots) => set({ scanRoots: roots }),
   selectedCategories: ['pdf', 'word', 'excel', 'image'],
   toggleCategory: (cat) => set((s) => {
@@ -134,11 +115,6 @@ export const useStore = create<FileITState>((set) => ({
         : [...s.selectedCategories, cat],
     };
   }),
-  ocrEnabled: loadOcrPref(),
-  setOcrEnabled: (ocrEnabled) => {
-    saveOcrPref(ocrEnabled);
-    set({ ocrEnabled });
-  },
 
   // ── Scan results ──────────────────────────────────────────────────────────
   scanResult: null,

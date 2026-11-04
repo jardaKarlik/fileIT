@@ -12,7 +12,11 @@ const CORE_TYPES = [
   { key: 'text',  icon: '🗒', name: 'Text a poznámky',  desc: 'Textové soubory, poznámky',                 core: false },
 ];
 
-const EXTRA = ['ZIP archivy','PowerPoint','XML / JSON','Audio záznamy','CSV data'];
+const EXTRA = [
+  { key: 'powerpoint', label: 'PowerPoint (.pptx)' },
+  { key: 'xml', label: 'XML data' },
+  { key: 'csv', label: 'CSV data' },
+];
 
 export function FileTypes() {
   const { setScreen, setScanRoots, selectedCategories, toggleCategory } = useStore();
@@ -53,7 +57,17 @@ export function FileTypes() {
 
       <div className="ft-extra-label">Přidat další typy</div>
       <div className="ft-extra-row">
-        {EXTRA.map(e => <div key={e} className="ft-extra-chip">+ {e}</div>)}
+        {EXTRA.map(e => (
+          <div
+            key={e.key}
+            className={`ft-extra-chip ${selectedCategories.includes(e.key) ? 'selected' : ''}`}
+            onClick={() => toggleCategory(e.key)}
+            role="button"
+            aria-pressed={selectedCategories.includes(e.key)}
+          >
+            {selectedCategories.includes(e.key) ? '✓' : '+'} {e.label}
+          </div>
+        ))}
       </div>
 
       <div className="info-note" style={{ marginBottom: 24 }}>

@@ -8,14 +8,15 @@
 //   • Overall confidence score
 
 mod extractor;
+mod extract_metadata;
 mod ner;
 mod scorer;
 
-pub use extractor::{extract_text, Extraction};
+pub use extract_metadata::{extract_metadata, ExtractedMetadata};
+pub use extractor::extract_text;
 pub use ner::NerEngine;
 pub use scorer::score_classification;
 
-use crate::extraction_cache::{CacheEntry, ExtractionCache, CACHE_VERSION};
 use crate::types::*;
 use anyhow::Result;
 use log::{debug, info, warn};
@@ -39,21 +40,6 @@ pub struct ClassificationHints {
     pub pdf_creator: Option<String>,
 }
 
-/// Per-scan extraction settings.
-#[derive(Clone, Copy)]
-pub struct ExtractOptions<'a> {
-    /// Run OCR on scanned PDFs and images (slower, more precise).
-    pub ocr_enabled: bool,
-    /// Persistent cache of earlier extraction / OCR results.
-    pub cache: Option<&'a ExtractionCache>,
-}
-
-impl Default for ExtractOptions<'_> {
-    fn default() -> Self {
-        Self { ocr_enabled: false, cache: None }
-    }
-}
-
 impl Classifier {
     /// Load from the bundled institution dictionary.
     pub fn new(dictionary_json: &str) -> Result<Self> {
@@ -63,11 +49,14 @@ impl Classifier {
 
     /// Classify with optional Stage 1 metadata hints.
     /// `hints = None` runs the original pipeline unchanged.
+    /// `ocr` carries the Indra sidecar context used to extract text from
+    /// PDFs and images; `None` degrades those categories to path-signal-only
+    /// classification.
     pub async fn classify_with_hints(
         &self,
         record: FileRecord,
         hints: Option<ClassificationHints>,
-        opts: ExtractOptions<'_>,
+        ocr: Option<&OcrExtractContext>,
     ) -> ClassifiedFile {
         let ext = record.extension.as_str();
         let category = FileCategory::from_extension(ext);
@@ -91,14 +80,57 @@ impl Classifier {
         // Stage 2 — filename signals (always runs)
         let filename_signals = self.ner.signals_from_filename(&record.name);
 
-        // Stage 3 — content extraction (skipped when skip_extraction=true)
+        // Stage 3 — content extraction (skipped when skip_extraction=true).
+        // PDFs and images go EXCLUSIVELY through the Indra sidecar (cache
+        // first, live run on miss) — pdf-extract and Windows OCR are gone.
+        // Office/plaintext formats keep their native extractors.
         info!("Classifying: {:?} (skip_extraction={})", record.name, skip_extraction);
-        let (extraction, from_cache) = if skip_extraction {
-            (Extraction::default(), false)
+        let (raw_text, ocr_used) = if skip_extraction {
+            (String::new(), false)
+        } else if matches!(category, FileCategory::Pdf | FileCategory::Image) {
+            match ocr {
+                Some(ctx) => {
+                    let ctx = ctx.clone();
+                    let path = record.path.clone();
+                    let sha = record.sha256.clone().unwrap_or_default();
+                    match tokio::task::spawn_blocking(move || {
+                        crate::ocr::text_for_classification(
+                            &ctx.app_data_dir,
+                            &ctx.command,
+                            std::path::Path::new(&path),
+                            &sha,
+                        )
+                    })
+                    .await
+                    {
+                        Ok(Ok((text, is_scan))) => (text, is_scan),
+                        Ok(Err(e)) => {
+                            warn!("Indra extraction failed for {:?}: {}", record.name, e);
+                            (String::new(), false)
+                        }
+                        Err(e) => {
+                            warn!("Indra extraction task failed for {:?}: {}", record.name, e);
+                            (String::new(), false)
+                        }
+                    }
+                }
+                None => {
+                    warn!(
+                        "Indra sidecar unavailable — classifying {:?} from path signals only",
+                        record.name
+                    );
+                    (String::new(), false)
+                }
+            }
         } else {
-            extract_cached(&record, &category, opts).await
+            match extract_text(&record.path, &category).await {
+                Ok(result) => result,
+                Err(e) => {
+                    warn!("Text extraction failed for {:?}: {}", record.path, e);
+                    (String::new(), false)
+                }
+            }
         };
-        let Extraction { text: raw_text, ocr_used, ocr_engine, .. } = extraction;
 
         let text_lower = raw_text.to_lowercase();
 
@@ -182,72 +214,27 @@ impl Classifier {
             document_date,
             confidence,
             ocr_used,
-            ocr_engine,
-            from_cache,
             text_preview,
             is_duplicate: false,
             duplicate_of: None,
             pdf_producer,
             pdf_creator,
+            // Classification never runs the Indra sidecar — it only consumes
+            // whatever text layer it found. A later explicit OCR run fills this.
+            ocr: None,
         }
     }
 
     /// Classify without hints — preserves backward compatibility.
+    #[allow(dead_code)]
     pub async fn classify(&self, record: FileRecord) -> ClassifiedFile {
-        self.classify_with_hints(record, None, ExtractOptions::default()).await
+        self.classify_with_hints(record, None, None).await
     }
 }
 
-/// Extract text, reusing an earlier result for the same file content when the
-/// cache allows it. Returns (extraction, served_from_cache).
-async fn extract_cached(
-    record: &FileRecord,
-    category: &FileCategory,
-    opts: ExtractOptions<'_>,
-) -> (Extraction, bool) {
-    let cache_key = opts.cache.zip(record.sha256.as_deref());
-
-    if let Some((cache, sha)) = cache_key {
-        if let Some(entry) = cache.get(sha, record.size_bytes) {
-            if entry.is_reusable(opts.ocr_enabled) {
-                debug!("Extraction cache hit for {:?}", record.name);
-                return (
-                    Extraction {
-                        text: entry.text,
-                        ocr_used: entry.ocr_used,
-                        ocr_engine: entry.ocr_engine,
-                        ocr_attempted: entry.ocr_attempted,
-                        needs_ocr: entry.needs_ocr,
-                    },
-                    true,
-                );
-            }
-            info!("Cached result for {:?} has no OCR yet — running OCR", record.name);
-        }
-    }
-
-    let extraction = match extract_text(&record.path, category, opts.ocr_enabled).await {
-        Ok(e) => e,
-        Err(e) => {
-            // Not cached: the failure may be transient (locked / cloud-only file).
-            warn!("Text extraction failed for {:?}: {}", record.path, e);
-            return (Extraction::default(), false);
-        }
-    };
-
-    if let Some((cache, sha)) = cache_key {
-        cache.put(&CacheEntry {
-            version: CACHE_VERSION,
-            size_bytes: record.size_bytes,
-            sha256: sha.to_string(),
-            text: extraction.text.clone(),
-            ocr_used: extraction.ocr_used,
-            ocr_engine: extraction.ocr_engine.clone(),
-            ocr_attempted: extraction.ocr_attempted,
-            needs_ocr: extraction.needs_ocr,
-            extracted_at: chrono::Utc::now(),
-        });
-    }
-
-    (extraction, false)
+/// Indra sidecar context for in-classification text extraction.
+#[derive(Debug, Clone)]
+pub struct OcrExtractContext {
+    pub app_data_dir: std::path::PathBuf,
+    pub command: String,
 }
