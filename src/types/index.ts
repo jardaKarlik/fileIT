@@ -53,6 +53,10 @@ export interface ClassifiedFile {
   document_date: string | null;
   confidence: number;
   ocr_used: boolean;
+  /** OCR engine that produced the text: 'indra' | 'windows'. */
+  ocr_engine?: string | null;
+  /** True if the text was reused from an earlier scan. */
+  from_cache?: boolean;
   text_preview: string | null;
   is_duplicate: boolean;
   duplicate_of: string | null;
@@ -83,7 +87,17 @@ export interface ScanResult {
   total_size_bytes: number;
   customers_found: number;
   duplicates_found: number;
+  /** Files whose text was reused from an earlier scan (not read / OCR'd again). */
+  reused_from_cache?: number;
+  /** Files OCR'd during this scan. */
+  ocr_performed?: number;
   files: ClassifiedFile[];
+}
+
+export interface OcrStatus {
+  indra_available: boolean;
+  indra_path: string | null;
+  windows_fallback: boolean;
 }
 
 export interface FileError {

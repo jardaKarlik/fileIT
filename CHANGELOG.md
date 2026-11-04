@@ -1,5 +1,35 @@
 # FileIT Changelog
 
+## [1.1.0] - Unreleased
+
+### ✨ Features
+- **Indra OCR** — scanned PDFs and photos of documents can now be read with
+  [Indra OCR](https://github.com/datalab-to/indra) (CPU-only, supports Czech).
+  Windows built-in OCR remains as a fallback when Indra is not installed.
+- **OCR switch on the Home screen** — "Číst skenované dokumenty (OCR)".
+  Off by default: scans are fast and read only documents with a text layer.
+  On: scanned documents and images are OCR'd — slower, but more precise
+  (more customers, institutions and document types recognised).
+  The choice is remembered between launches.
+- **No repeated work between scans** — extraction / OCR results are cached in
+  `%APPDATA%/<app>/extract_cache/`, keyed by file content (SHA-256 of first
+  64 KB + size). A file read or OCR'd once is not read or OCR'd again in the
+  next scan cycle, even after it was moved or renamed by a restructure.
+  A file first scanned with OCR off is OCR'd once when OCR is later switched on.
+  Classification still re-runs on cached text, so dictionary / CM updates apply.
+
+### 🔧 Backend
+- `start_scan` request accepts `ocr_enabled`; `ScanResult` reports
+  `reused_from_cache` and `ocr_performed`; `ClassifiedFile` carries
+  `ocr_engine` and `from_cache`.
+- New IPC commands: `get_ocr_status`, `clear_scan_cache`.
+- Indra executable lookup: `FILEIT_INDRA_OCR` env var → sidecar next to
+  `fileit.exe` → `PATH`. Optional `FILEIT_INDRA_MODEL_DIR` for offline models.
+
+### ⚠ Behaviour change
+- Windows OCR used to run automatically on every scan. OCR now runs only when
+  the switch is on.
+
 ## [1.0.9] - 2026-06-09
 
 ### ✨ Features

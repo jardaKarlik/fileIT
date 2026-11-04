@@ -40,6 +40,9 @@ interface FileITState {
   setScanRoots: (roots: string[]) => void;
   selectedCategories: string[];
   toggleCategory: (cat: string) => void;
+  /** Run OCR (Indra OCR) during scan — slower, more precise. Persisted. */
+  ocrEnabled: boolean;
+  setOcrEnabled: (v: boolean) => void;
 
   // ── Scan results ──────────────────────────────────────────────────────────
   scanResult: ScanResult | null;
@@ -90,6 +93,24 @@ interface FileITState {
 // Default scan roots — Windows user folders
 // ─────────────────────────────────────────────────────────────────────────────
 
+const OCR_PREF_KEY = 'fileIT_ocrEnabled';
+
+function loadOcrPref(): boolean {
+  try {
+    return localStorage.getItem(OCR_PREF_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function saveOcrPref(v: boolean) {
+  try {
+    localStorage.setItem(OCR_PREF_KEY, v ? '1' : '0');
+  } catch {
+    /* storage unavailable — preference lasts for this session only */
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Store
 // ─────────────────────────────────────────────────────────────────────────────
@@ -113,6 +134,11 @@ export const useStore = create<FileITState>((set) => ({
         : [...s.selectedCategories, cat],
     };
   }),
+  ocrEnabled: loadOcrPref(),
+  setOcrEnabled: (ocrEnabled) => {
+    saveOcrPref(ocrEnabled);
+    set({ ocrEnabled });
+  },
 
   // ── Scan results ──────────────────────────────────────────────────────────
   scanResult: null,

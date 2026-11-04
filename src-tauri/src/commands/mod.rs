@@ -8,7 +8,9 @@
 // SessionState is held in a Tauri-managed Mutex.
 
 use crate::backup;
-use crate::classifier::{Classifier, ClassificationHints};
+use crate::classifier::{Classifier, ClassificationHints, ExtractOptions};
+use crate::extraction_cache::ExtractionCache;
+use crate::ocr;
 use crate::cm_registry::CmRegistry;
 use crate::metadata_reader;
 use crate::scanner;
@@ -119,6 +121,11 @@ pub async fn start_scan(
         info!("No scan roots provided — scanning entire drive: {:?}", root);
         vec![root]
     };
+
+    let ocr_enabled = request.ocr_enabled;
+    info!("OCR {} for this scan", if ocr_enabled { "enabled" } else { "disabled" });
+    let cache = ExtractionCache::open(&state.app_data_dir);
+    let extract_opts = ExtractOptions { ocr_enabled, cache: Some(&cache) };
 
     let records = scanner::scan_directories(&app, scan_roots, &categories, &[])
         .await
@@ -246,7 +253,7 @@ pub async fn start_scan(
         // ─────────────────────────────────────────────────────────────────────
 
         let sha = record.sha256.clone();
-        let mut cf = state.classifier.classify_with_hints(record, hints).await;
+        let mut cf = state.classifier.classify_with_hints(record, hints, extract_opts).await;
 
         if let Some(ref hash) = sha {
             if let Some(first_path) = seen_hashes.get(hash) {
@@ -277,12 +284,17 @@ pub async fn start_scan(
 
     let duplicates_found = classified.iter().filter(|f| f.is_duplicate).count();
     let total_size: u64 = classified.iter().map(|f| f.record.size_bytes).sum();
+    let reused_from_cache = classified.iter().filter(|f| f.from_cache).count();
+    let ocr_performed = classified.iter().filter(|f| f.ocr_used && !f.from_cache).count();
+    info!("Scan stats: {} reused from cache, {} OCR'd now", reused_from_cache, ocr_performed);
 
     let result = ScanResult {
         total_files: classified.len(),
         total_size_bytes: total_size,
         customers_found,
         duplicates_found,
+        reused_from_cache,
+        ocr_performed,
         files: classified.clone(),
     };
 
@@ -292,6 +304,30 @@ pub async fn start_scan(
     }
 
     Ok(result)
+}
+
+/// Report whether Indra OCR (and the Windows OCR fallback) is available.
+/// Locating Indra spawns a process, so run it off the async executor.
+#[tauri::command]
+pub async fn get_ocr_status() -> ocr::OcrStatus {
+    tokio::task::spawn_blocking(ocr::status)
+        .await
+        .unwrap_or(ocr::OcrStatus {
+            indra_available: false,
+            indra_path: None,
+            windows_fallback: cfg!(target_os = "windows"),
+        })
+}
+
+/// Forget all cached extraction / OCR results so the next scan reads every
+/// file again. Returns the number of cache entries removed.
+#[tauri::command]
+pub async fn clear_scan_cache(state: State<'_, AppState>) -> Result<usize, String> {
+    let removed = ExtractionCache::open(&state.app_data_dir)
+        .clear()
+        .map_err(|e| e.to_string())?;
+    info!("Extraction cache cleared: {} entries", removed);
+    Ok(removed)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

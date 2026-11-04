@@ -4,7 +4,7 @@
 // so the UI can be developed and iterated without a compiled backend.
 
 import {
-  CmPayload, CmUpdateResult, CompletedRun, DetectedCloud,
+  CmPayload, CmUpdateResult, CompletedRun, DetectedCloud, OcrStatus,
   RestructurePreview, RestructureResult, ScanResult,
   TeachingResult, UnclassifiedPattern, UploadResult,
 } from '../types';
@@ -51,9 +51,21 @@ export const api = {
   /** Detect the OneDrive sync root on Windows. Returns null when not found. */
   getOneDrivePath: () => invoke<string | null>('get_onedrive_path'),
 
-  /** Start a scan. Progress events come via onScanProgress listener. */
-  startScan: (roots: string[], fileCategories: string[]) =>
-    invoke<ScanResult>('start_scan', { request: { roots, file_categories: fileCategories } }),
+  /**
+   * Start a scan. Progress events come via onScanProgress listener.
+   * `ocrEnabled` runs Indra OCR on scanned PDFs and images (slower, more precise).
+   * Files already read/OCR'd in an earlier scan are reused from the backend cache.
+   */
+  startScan: (roots: string[], fileCategories: string[], ocrEnabled: boolean) =>
+    invoke<ScanResult>('start_scan', {
+      request: { roots, file_categories: fileCategories, ocr_enabled: ocrEnabled },
+    }),
+
+  /** Is Indra OCR installed / is the Windows OCR fallback available? */
+  getOcrStatus: () => invoke<OcrStatus>('get_ocr_status'),
+
+  /** Forget cached extraction/OCR results. Returns number of entries removed. */
+  clearScanCache: () => invoke<number>('clear_scan_cache'),
 
   /** Build a restructure preview without moving files. */
   buildPreview: (structure: string[], targetPath: string, destinationMode: string) =>
@@ -137,8 +149,16 @@ function devMock(cmd: string, _args?: Record<string, unknown>): unknown {
         total_size_bytes: 2_576_351_232,
         customers_found: 38,
         duplicates_found: 24,
+        reused_from_cache: 0,
+        ocr_performed: 0,
         files: [],
       } satisfies ScanResult;
+
+    case 'get_ocr_status':
+      return { indra_available: true, indra_path: 'indra-ocr', windows_fallback: true } satisfies OcrStatus;
+
+    case 'clear_scan_cache':
+      return 0;
 
     case 'build_preview':
       return {

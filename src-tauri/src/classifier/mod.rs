@@ -11,10 +11,11 @@ mod extractor;
 mod ner;
 mod scorer;
 
-pub use extractor::extract_text;
+pub use extractor::{extract_text, Extraction};
 pub use ner::NerEngine;
 pub use scorer::score_classification;
 
+use crate::extraction_cache::{CacheEntry, ExtractionCache, CACHE_VERSION};
 use crate::types::*;
 use anyhow::Result;
 use log::{debug, info, warn};
@@ -38,6 +39,21 @@ pub struct ClassificationHints {
     pub pdf_creator: Option<String>,
 }
 
+/// Per-scan extraction settings.
+#[derive(Clone, Copy)]
+pub struct ExtractOptions<'a> {
+    /// Run OCR on scanned PDFs and images (slower, more precise).
+    pub ocr_enabled: bool,
+    /// Persistent cache of earlier extraction / OCR results.
+    pub cache: Option<&'a ExtractionCache>,
+}
+
+impl Default for ExtractOptions<'_> {
+    fn default() -> Self {
+        Self { ocr_enabled: false, cache: None }
+    }
+}
+
 impl Classifier {
     /// Load from the bundled institution dictionary.
     pub fn new(dictionary_json: &str) -> Result<Self> {
@@ -51,6 +67,7 @@ impl Classifier {
         &self,
         record: FileRecord,
         hints: Option<ClassificationHints>,
+        opts: ExtractOptions<'_>,
     ) -> ClassifiedFile {
         let ext = record.extension.as_str();
         let category = FileCategory::from_extension(ext);
@@ -76,17 +93,12 @@ impl Classifier {
 
         // Stage 3 — content extraction (skipped when skip_extraction=true)
         info!("Classifying: {:?} (skip_extraction={})", record.name, skip_extraction);
-        let (raw_text, ocr_used) = if skip_extraction {
-            (String::new(), false)
+        let (extraction, from_cache) = if skip_extraction {
+            (Extraction::default(), false)
         } else {
-            match extract_text(&record.path, &category).await {
-                Ok(result) => result,
-                Err(e) => {
-                    warn!("Text extraction failed for {:?}: {}", record.path, e);
-                    (String::new(), false)
-                }
-            }
+            extract_cached(&record, &category, opts).await
         };
+        let Extraction { text: raw_text, ocr_used, ocr_engine, .. } = extraction;
 
         let text_lower = raw_text.to_lowercase();
 
@@ -170,6 +182,8 @@ impl Classifier {
             document_date,
             confidence,
             ocr_used,
+            ocr_engine,
+            from_cache,
             text_preview,
             is_duplicate: false,
             duplicate_of: None,
@@ -180,6 +194,60 @@ impl Classifier {
 
     /// Classify without hints — preserves backward compatibility.
     pub async fn classify(&self, record: FileRecord) -> ClassifiedFile {
-        self.classify_with_hints(record, None).await
+        self.classify_with_hints(record, None, ExtractOptions::default()).await
     }
+}
+
+/// Extract text, reusing an earlier result for the same file content when the
+/// cache allows it. Returns (extraction, served_from_cache).
+async fn extract_cached(
+    record: &FileRecord,
+    category: &FileCategory,
+    opts: ExtractOptions<'_>,
+) -> (Extraction, bool) {
+    let cache_key = opts.cache.zip(record.sha256.as_deref());
+
+    if let Some((cache, sha)) = cache_key {
+        if let Some(entry) = cache.get(sha, record.size_bytes) {
+            if entry.is_reusable(opts.ocr_enabled) {
+                debug!("Extraction cache hit for {:?}", record.name);
+                return (
+                    Extraction {
+                        text: entry.text,
+                        ocr_used: entry.ocr_used,
+                        ocr_engine: entry.ocr_engine,
+                        ocr_attempted: entry.ocr_attempted,
+                        needs_ocr: entry.needs_ocr,
+                    },
+                    true,
+                );
+            }
+            info!("Cached result for {:?} has no OCR yet — running OCR", record.name);
+        }
+    }
+
+    let extraction = match extract_text(&record.path, category, opts.ocr_enabled).await {
+        Ok(e) => e,
+        Err(e) => {
+            // Not cached: the failure may be transient (locked / cloud-only file).
+            warn!("Text extraction failed for {:?}: {}", record.path, e);
+            return (Extraction::default(), false);
+        }
+    };
+
+    if let Some((cache, sha)) = cache_key {
+        cache.put(&CacheEntry {
+            version: CACHE_VERSION,
+            size_bytes: record.size_bytes,
+            sha256: sha.to_string(),
+            text: extraction.text.clone(),
+            ocr_used: extraction.ocr_used,
+            ocr_engine: extraction.ocr_engine.clone(),
+            ocr_attempted: extraction.ocr_attempted,
+            needs_ocr: extraction.needs_ocr,
+            extracted_at: chrono::Utc::now(),
+        });
+    }
+
+    (extraction, false)
 }

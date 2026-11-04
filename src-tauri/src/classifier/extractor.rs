@@ -1,7 +1,10 @@
 // src-tauri/src/classifier/extractor.rs
 //
-// Extracts raw text from files. Returns (text, ocr_used).
+// Extracts raw text from files.
 // Reads only the first ~16KB of content for performance.
+//
+// OCR (scanned PDFs, images) only runs when the user enabled it for the scan.
+// Engine order: Indra OCR (more accurate) → Windows built-in OCR (fallback).
 
 use crate::types::FileCategory;
 use anyhow::{Context, Result};
@@ -11,24 +14,63 @@ use std::path::Path;
 
 const MAX_TEXT_BYTES: usize = 16_384; // 16KB — enough for classification
 
-/// Extract text from a file. Returns (extracted_text, ocr_was_used).
-pub async fn extract_text(path: &Path, category: &FileCategory) -> Result<(String, bool)> {
-    match category {
-        FileCategory::Pdf   => extract_pdf(path).await,
-        FileCategory::Word  => extract_docx(path).map(|t| (t, false)),
-        FileCategory::Text  => extract_plain(path).map(|t| (t, false)),
-        FileCategory::Image => extract_image_ocr(path).await,
-        FileCategory::Excel => extract_xlsx(path).map(|t| (t, false)),
-        FileCategory::Email => extract_plain(path).map(|t| (t, false)),
-        FileCategory::Other => Ok((String::new(), false)),
+/// A PDF with fewer words than this in its text layer is treated as scanned.
+const MIN_NATIVE_WORDS: usize = 20;
+
+/// Result of reading one file's text.
+#[derive(Debug, Clone, Default)]
+pub struct Extraction {
+    pub text: String,
+    /// True if `text` came from OCR.
+    pub ocr_used: bool,
+    /// "indra" or "windows" when OCR produced the text.
+    pub ocr_engine: Option<String>,
+    /// True if OCR was run (whether or not it found text).
+    pub ocr_attempted: bool,
+    /// True if the file has no usable text layer, i.e. OCR could help.
+    pub needs_ocr: bool,
+}
+
+impl Extraction {
+    fn native(text: String) -> Self {
+        Self { text, ..Default::default() }
     }
+}
+
+/// Extract text from a file.
+pub async fn extract_text(path: &Path, category: &FileCategory, ocr_enabled: bool) -> Result<Extraction> {
+    match category {
+        FileCategory::Pdf   => extract_pdf(path, ocr_enabled).await,
+        FileCategory::Word  => extract_docx(path).map(Extraction::native),
+        FileCategory::Text  => extract_plain(path).map(Extraction::native),
+        FileCategory::Image => Ok(extract_image(path, ocr_enabled).await),
+        FileCategory::Excel => extract_xlsx(path).map(Extraction::native),
+        FileCategory::Email => extract_plain(path).map(Extraction::native),
+        FileCategory::Other => Ok(Extraction::default()),
+    }
+}
+
+/// Run OCR on a PDF or image: Indra OCR first, Windows OCR as fallback.
+/// Returns (text, engine) or None if no engine produced text.
+async fn run_ocr(path: &Path, is_pdf: bool) -> Option<(String, &'static str)> {
+    if let Some(text) = crate::ocr::indra_ocr(path).await {
+        return Some((text, "indra"));
+    }
+    let path_buf = path.to_path_buf();
+    let text = tokio::task::spawn_blocking(move || {
+        if is_pdf { try_windows_ocr_pdf(&path_buf) } else { try_windows_ocr_image(&path_buf) }
+    })
+    .await
+    .ok()
+    .flatten()?;
+    Some((text, "windows"))
 }
 
 // pdf_extract::extract_text_from_mem can panic on malformed/encrypted PDFs.
 // Run it in spawn_blocking so that with panic="unwind", Tokio catches the panic
 // as a JoinError instead of aborting the whole process.
-// If native text layer is empty/sparse, fall back to Windows OCR.
-async fn extract_pdf(path: &Path) -> Result<(String, bool)> {
+// If native text layer is empty/sparse and OCR is enabled, run OCR.
+async fn extract_pdf(path: &Path, ocr_enabled: bool) -> Result<Extraction> {
     let path_buf = path.to_path_buf();
     let handle = tokio::task::spawn_blocking(move || {
         let bytes = std::fs::read(&path_buf)
@@ -42,45 +84,56 @@ async fn extract_pdf(path: &Path) -> Result<(String, bool)> {
     let native = match tokio::time::timeout(std::time::Duration::from_secs(10), handle).await {
         Ok(Ok(Ok(text))) => text,
         Ok(Ok(Err(_))) | Ok(Err(_)) => {
-            warn!("pdf-extract failed or panicked for {:?} — trying Windows OCR", path);
+            warn!("pdf-extract failed or panicked for {:?}", path);
             String::new()
         }
         Err(_) => {
-            warn!("pdf-extract timed out for {:?} — trying Windows OCR", path);
+            warn!("pdf-extract timed out for {:?}", path);
             String::new()
         }
     };
 
+    let native_words = native.split_whitespace().count();
+
     // Enough native text — no OCR needed
-    if native.split_whitespace().count() >= 20 {
-        return Ok((truncate_text(native), false));
+    if native_words >= MIN_NATIVE_WORDS {
+        return Ok(Extraction::native(truncate_text(native)));
     }
 
-    // Sparse/empty text layer → likely a scanned PDF. Try Windows OCR.
-    let path_buf = path.to_path_buf();
-    let ocr = tokio::task::spawn_blocking(move || try_windows_ocr_pdf(&path_buf))
-        .await
-        .ok()
-        .flatten()
-        .unwrap_or_default();
-
-    if ocr.split_whitespace().count() > native.split_whitespace().count() {
-        Ok((truncate_text(ocr), true))
-    } else {
-        Ok((truncate_text(native), false))
+    // Sparse/empty text layer → likely a scanned PDF.
+    let mut result = Extraction {
+        text: truncate_text(native),
+        needs_ocr: true,
+        ..Default::default()
+    };
+    if !ocr_enabled {
+        return Ok(result);
     }
+
+    result.ocr_attempted = true;
+    if let Some((ocr, engine)) = run_ocr(path, true).await {
+        if ocr.split_whitespace().count() > native_words {
+            result.text = truncate_text(ocr);
+            result.ocr_used = true;
+            result.ocr_engine = Some(engine.to_string());
+        }
+    }
+    Ok(result)
 }
 
-/// OCR path for image files (JPG, PNG, TIFF, BMP).
-async fn extract_image_ocr(path: &Path) -> Result<(String, bool)> {
-    let path_buf = path.to_path_buf();
-    let text = tokio::task::spawn_blocking(move || try_windows_ocr_image(&path_buf))
-        .await
-        .ok()
-        .flatten()
-        .unwrap_or_default();
-    let used_ocr = !text.is_empty();
-    Ok((truncate_text(text), used_ocr))
+/// Image files (JPG, PNG, TIFF, BMP) have text only via OCR.
+async fn extract_image(path: &Path, ocr_enabled: bool) -> Extraction {
+    let mut result = Extraction { needs_ocr: true, ..Default::default() };
+    if !ocr_enabled {
+        return result;
+    }
+    result.ocr_attempted = true;
+    if let Some((text, engine)) = run_ocr(path, false).await {
+        result.text = truncate_text(text);
+        result.ocr_used = true;
+        result.ocr_engine = Some(engine.to_string());
+    }
+    result
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

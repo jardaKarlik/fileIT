@@ -134,6 +134,12 @@ pub struct ClassifiedFile {
     pub confidence: Score,
     /// True if content was extracted via OCR (image/scanned PDF).
     pub ocr_used: bool,
+    /// OCR engine that produced the text: "indra" or "windows".
+    #[serde(default)]
+    pub ocr_engine: Option<String>,
+    /// True if the text was reused from an earlier scan (extraction cache).
+    #[serde(default)]
+    pub from_cache: bool,
     /// Raw extracted text snippet (first 500 chars) for UI display.
     pub text_preview: Option<String>,
     /// Whether this file appears to be a duplicate of another.
@@ -333,6 +339,10 @@ impl SessionState {
 pub struct ScanRequest {
     pub roots: Vec<PathBuf>,
     pub file_categories: Vec<String>,
+    /// Run OCR (Indra OCR, Windows OCR fallback) on scanned PDFs and images.
+    /// Slower, but reads documents that have no text layer.
+    #[serde(default)]
+    pub ocr_enabled: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -349,6 +359,10 @@ pub struct ScanResult {
     pub total_size_bytes: u64,
     pub customers_found: usize,
     pub duplicates_found: usize,
+    /// Files whose text was reused from an earlier scan (not read / OCR'd again).
+    pub reused_from_cache: usize,
+    /// Files whose text was produced by OCR in this scan.
+    pub ocr_performed: usize,
     pub files: Vec<ClassifiedFile>,
 }
 

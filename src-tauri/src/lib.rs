@@ -8,7 +8,9 @@ mod backup;
 mod classifier;
 mod cm_registry;
 mod commands;
+mod extraction_cache;
 mod metadata_reader;
+mod ocr;
 mod restructure;
 mod scanner;
 mod types;
@@ -92,6 +94,8 @@ pub fn run() {
             commands::app_init,
             commands::detect_clouds,
             commands::start_scan,
+            commands::get_ocr_status,
+            commands::clear_scan_cache,
             commands::build_preview,
             commands::run_restructure,
             commands::create_standalone_backup,
