@@ -1,6 +1,7 @@
 // src/components/FileTypes/index.tsx
 
 import { useStore } from '../../store';
+import { resolveDefaultScanRoots } from '../../utils/scanRoots';
 import './FileTypes.css';
 
 const CORE_TYPES = [
@@ -22,18 +23,8 @@ export function FileTypes() {
   const { setScreen, setScanRoots, selectedCategories, toggleCategory } = useStore();
 
   async function handleStart() {
-    if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
-      try {
-        const { documentDir, desktopDir, downloadDir } = await import('@tauri-apps/api/path');
-        const docs      = await documentDir();
-        const desktop   = await desktopDir();
-        const downloads = await downloadDir();
-        setScanRoots([docs, desktop, downloads]);
-      } catch (e) {
-        console.warn('Could not resolve path dirs:', e);
-        setScanRoots([]);
-      }
-    }
+    const roots = await resolveDefaultScanRoots();
+    setScanRoots(roots.map(r => r.path).filter(Boolean));
     setScreen('scanning');
   }
 

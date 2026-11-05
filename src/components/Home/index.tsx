@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../utils/tauriApi';
 import type { OcrAvailability } from '../../types';
+import { resolveDefaultScanRoots, type ScanRoot } from '../../utils/scanRoots';
 import './Home.css';
 
 export function Home() {
@@ -10,6 +11,7 @@ export function Home() {
   const ocrEnabled = useStore((s) => s.ocrEnabled);
   const setOcrEnabled = useStore((s) => s.setOcrEnabled);
   const [ocrAvail, setOcrAvail] = useState<OcrAvailability | null>(null);
+  const [scanRoots, setScanRootsInfo] = useState<ScanRoot[]>([]);
 
   // eslint-disable-next-line
 
@@ -30,6 +32,7 @@ export function Home() {
 
     api.detectClouds().then(setDetectedClouds);
     api.checkOcr().then(setOcrAvail).catch(() => setOcrAvail(null));
+    resolveDefaultScanRoots().then(setScanRootsInfo).catch(() => setScanRootsInfo([]));
   }, []);
 
 
@@ -95,8 +98,25 @@ export function Home() {
             </div>
             <div className="home-cta-title">Jen analyzovat<br />moje soubory</div>
             <p className="home-cta-desc">
-              FileIT prohlédne vaše disky a ukáže vám přehled — co kde máte, kolik toho je, kdo jsou vaši klienti. Nic se neuspořádá ani nepřesune.
+              FileIT prohlédne vaše dokumenty a ukáže vám přehled — co kde máte, kolik toho je, kdo jsou vaši klienti. Nic se neuspořádá ani nepřesune.
             </p>
+            <div className="home-cta-scope">
+              <div className="home-cta-scope-label">Co se prohledá</div>
+              {scanRoots.length > 0 ? (
+                <ul className="home-cta-scope-list">
+                  {scanRoots.map(r => (
+                    <li key={r.label} title={r.path || undefined}>
+                      📁 {r.label}{r.path && <span className="home-cta-scope-path"> — {r.path}</span>}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="home-cta-scope-note">Složky Dokumenty, Plocha a Stažené soubory</div>
+              )}
+              <div className="home-cta-scope-note">
+                Včetně všech podsložek. Systémové, programové a skryté složky se přeskakují.
+              </div>
+            </div>
             <div className="home-cta-actions">
               <button className="btn-indigo" onClick={(e) => { e.stopPropagation(); goAnalyze(); }}>
                 Začít analýzu <span>→</span>

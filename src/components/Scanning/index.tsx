@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../utils/tauriApi';
+import { resolveDefaultScanRoots } from '../../utils/scanRoots';
 import './Scanning.css';
 
 // True when running inside a compiled Tauri window (not browser dev mode)
@@ -31,7 +32,13 @@ export function Scanning() {
 
   // ── Real Tauri path ──────────────────────────────────────────────────────
   async function runRealScan() {
-    const roots = scanRoots;
+    // Entry points that skip the file-types step (e.g. Režim 2 → "Spustit
+    // skenování") arrive with no roots: use the same defaults as Režim 1
+    // instead of letting the backend fall back to the whole system drive.
+    let roots = scanRoots;
+    if (roots.length === 0) {
+      roots = (await resolveDefaultScanRoots()).map(r => r.path).filter(Boolean);
+    }
 
     appendLine({ cls: '', text: '$ fileit scan --inicializace' });
 

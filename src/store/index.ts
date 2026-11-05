@@ -127,9 +127,9 @@ export const useStore = create<FileITState>((set) => ({
   // ── Scan config ───────────────────────────────────────────────────────────
   lastSourcePath: '',
   setLastSourcePath: (path) => set({ lastSourcePath: path }),
-  // Default root for this workspace: the local sample-vault subfolder, so a
-  // fresh install/dev run can scan something meaningful without configuration.
-  scanRoots: ['C:\\_dev\\fileIT\\sample-vault'],
+  // Empty = use the defaults from utils/scanRoots.ts (Documents, Desktop,
+  // Downloads; or VITE_FILEIT_SCAN_ROOT in dev). Resolved when a scan starts.
+  scanRoots: [],
   setScanRoots: (roots) => set({ scanRoots: roots }),
   selectedCategories: ['pdf', 'word', 'excel', 'image'],
   toggleCategory: (cat) => set((s) => {
