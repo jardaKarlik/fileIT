@@ -7,7 +7,8 @@
 // apps started from Finder / the Dock do not see variables exported in
 // ~/.zshrc, so a file is the reliable place.
 //
-//   macOS:   ~/Library/Application Support/cz.fileit.app/settings.json
+//   macOS:   ~/Library/Application Support/cz.fileit.desktop/settings.json
+//            (macOS bundle id, see tauri.macos.conf.json)
 //   Windows: %APPDATA%\cz.fileit.app\settings.json
 //
 // {

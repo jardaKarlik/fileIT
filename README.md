@@ -15,7 +15,11 @@ Release build: `npm run tauri build` (installers in `src-tauri/target/release/bu
 OCR uses the [Indra OCR](https://github.com/datalab-to/indra) sidecar
 (`pip install indra-ocr`). If `indra-ocr` is not on `PATH`, set
 `INDRA_OCR_COMMAND` to the full path of the executable; `INDRA_OCR_MODELS`
-points it at pre-downloaded models.
+points it at pre-downloaded models. Both can also be set in the FileIT
+settings file `settings.json` in the app data folder.
+
+macOS (porting in progress, branch `feature/macos-port`): see
+[docs/MACOS.md](docs/MACOS.md) for setup, unsigned builds and the test checklist.
 
 ## Branches
 

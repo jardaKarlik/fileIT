@@ -123,8 +123,9 @@ export const useStore = create<FileITState>((set) => ({
   // ── Scan config ───────────────────────────────────────────────────────────
   lastSourcePath: '',
   setLastSourcePath: (path) => set({ lastSourcePath: path }),
-  // Empty = use the defaults from utils/scanRoots.ts (Documents, Desktop,
-  // Downloads; or VITE_FILEIT_SCAN_ROOT in dev). Resolved when a scan starts.
+  // Empty = use the defaults from utils/scanRoots.ts (Windows: fixed drives;
+  // macOS: home + cloud folders; or VITE_FILEIT_SCAN_ROOT in dev).
+  // Resolved when a scan starts.
   scanRoots: [],
   setScanRoots: (roots) => set({ scanRoots: roots }),
   selectedCategories: ['pdf', 'word', 'excel', 'image'],
