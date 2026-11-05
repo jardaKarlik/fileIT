@@ -267,7 +267,14 @@
     "LegalLetter": [
       "soud", "soudu", "advokát", "právní zástupce", "žaloba", "žalobce",
       "žalovaný", "rozsudek", "usnesení", "odvolání", "exekuce"
-    ]
+    ],
+    "PropertyRecord": ["list vlastnictví", "výpis z katastru", "katastrální úřad", "katastrální území", "katastr nemovitostí", "parcela", "parc. č.", "vlastnické právo", "číslo lv", "lv č."],
+    "Application": ["žádost o", "žádám o", "žadatel", "žadatelka", "tímto žádám", "podání žádosti", "formulář žádosti"],
+    "Consent": ["uděluji souhlas", "souhlas se zpracováním", "souhlasím se zpracováním", "informovaný souhlas", "souhlas subjektu údajů", "odvolání souhlasu"],
+    "PowerOfAttorney": ["plná moc", "plnou moc", "zmocnitel", "zmocněnec", "zmocňuji", "udělení plné moci"],
+    "Termination": ["výpověď", "vypovídám", "výpověď smlouvy", "ukončení smlouvy", "odstoupení od smlouvy", "výpovědní lhůta"],
+    "Amendment": ["dodatek č", "dodatek ke smlouvě", "dodatkem", "tímto dodatkem", "změna smlouvy"],
+    "LoanContract": ["úvěrová smlouva", "smlouva o úvěru", "hypoteční úvěr", "hypotéka", "úroková sazba", "splátkový kalendář", "výše úvěru", "rpsn", "spotřebitelský úvěr"]
   },
   "rodne_cislo_pattern": "\\b(\\d{2})(0[1-9]|1[0-2]|5[1-9]|6[0-2])(0[1-9]|[12]\\d|3[01])(\\d{3,4})\\b",
   "ico_pattern": "\\b(IČO|IČ)[:\\s]*([0-9]{8})\\b",

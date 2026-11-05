@@ -128,7 +128,48 @@ pub enum DocumentType {
     AdminDecision,
     Identity,
     LegalLetter,
+    /// List vlastnictví / výpis z katastru nemovitostí
+    PropertyRecord,
+    /// Žádost
+    Application,
+    /// Souhlas (GDPR, zpracování údajů, …)
+    Consent,
+    /// Plná moc
+    PowerOfAttorney,
+    /// Výpověď / odstoupení od smlouvy
+    Termination,
+    /// Dodatek ke smlouvě
+    Amendment,
+    /// Úvěrová / hypoteční smlouva
+    LoanContract,
     Unknown,
+}
+
+impl DocumentType {
+    /// Czech folder name used by the restructure (and shown in the UI).
+    pub fn label_cs(&self) -> &'static str {
+        match self {
+            Self::Contract => "Smlouva",
+            Self::BankLetter => "Dopis z banky",
+            Self::Invoice => "Faktura",
+            Self::PaymentDemand => "Platba a upomínka",
+            Self::TaxReturn => "Daňové přiznání",
+            Self::UtilityBill => "Vyúčtování energií",
+            Self::InsuranceContract => "Pojistná smlouva",
+            Self::BankStatement => "Výpis z účtu",
+            Self::AdminDecision => "Rozhodnutí úřadu",
+            Self::Identity => "Osobní doklady",
+            Self::LegalLetter => "Právní dokument",
+            Self::PropertyRecord => "List vlastnictví (LV)",
+            Self::Application => "Žádost",
+            Self::Consent => "Souhlas",
+            Self::PowerOfAttorney => "Plná moc",
+            Self::Termination => "Výpověď",
+            Self::Amendment => "Dodatek ke smlouvě",
+            Self::LoanContract => "Úvěr a hypotéka",
+            Self::Unknown => "Neurčený typ",
+        }
+    }
 }
 
 /// A fully classified file — extends FileRecord with extracted metadata.
@@ -196,7 +237,8 @@ impl ClassifiedFile {
                 .as_ref()
                 .map(|i| i.canonical_name.clone())
                 .unwrap_or_else(|| "Bez instituce".to_string()),
-            GroupDimension::DocumentType => format!("{:?}", self.document_type),
+            // Czech folder names (was the English enum name, e.g. "InsuranceContract").
+            GroupDimension::DocumentType => self.document_type.label_cs().to_string(),
         }
     }
 }

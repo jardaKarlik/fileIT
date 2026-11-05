@@ -309,3 +309,30 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
+
+#[cfg(test)]
+mod doc_type_tests {
+    use super::*;
+
+    #[test]
+    fn recognises_new_czech_document_types() {
+        let dict = include_str!("../../resources/institution_dictionary.json");
+        let c = Classifier::new(dict).expect("dictionary loads");
+        let cases = [
+            ("výpis z katastru nemovitostí, list vlastnictví číslo lv 1234, katastrální území brno, parcela 12/3", DocumentType::PropertyRecord),
+            ("žádost o poskytnutí příspěvku. žadatel: jan novák. tímto žádám o", DocumentType::Application),
+            ("uděluji souhlas se zpracováním osobních údajů. odvolání souhlasu je možné", DocumentType::Consent),
+            ("plná moc. zmocnitel jan novák zmocňuji tímto zmocněnec", DocumentType::PowerOfAttorney),
+            ("výpověď smlouvy. tímto vypovídám smlouvu, výpovědní lhůta dva měsíce", DocumentType::Termination),
+            ("úvěrová smlouva, hypoteční úvěr, úroková sazba 4,9 %, splátkový kalendář, rpsn", DocumentType::LoanContract),
+        ];
+        for (text, expected) in cases {
+            assert_eq!(c.ner.find_document_type(text), expected, "{}", text);
+        }
+        let f = c.ner.signals_from_filename("LV_parcela_Brno.pdf");
+        assert_eq!(f.doc_type, Some(DocumentType::PropertyRecord));
+        let f = c.ner.signals_from_filename("zadost-o-hypoteku.pdf");
+        assert!(matches!(f.doc_type, Some(DocumentType::LoanContract) | Some(DocumentType::Application)));
+        assert_eq!(DocumentType::InsuranceContract.label_cs(), "Pojistná smlouva");
+    }
+}
