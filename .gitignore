@@ -21,7 +21,7 @@ Thumbs.db
 
 # Tauri
 src-tauri/tauri.conf.json.bak
-src-tauri/Cargo.lock
+# src-tauri/Cargo.lock is committed: reproducible builds, Rust/npm Tauri versions in step
 
 # Logs
 *.log
