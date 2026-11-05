@@ -1,0 +1,107 @@
+# Desktop builds: macOS (Apple Silicon) and Windows.
+# Unsigned / ad-hoc-signed debug builds only — no Developer ID, no notarization.
+name: desktop-build
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    name: macOS (aarch64)
+    runs-on: macos-latest   # Apple Silicon runner
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: npm ci
+        run: npm ci
+
+      - name: npm run build
+        run: npm run build
+
+      - name: cargo test
+        working-directory: src-tauri
+        run: cargo test
+
+      - name: cargo check (Intel Mac)
+        working-directory: src-tauri
+        run: cargo check --target x86_64-apple-darwin
+
+      - name: tauri build --debug (app + dmg, ad-hoc signed)
+        env:
+          # Make sure no signing / notarization is attempted.
+          APPLE_SIGNING_IDENTITY: '-'
+          APPLE_CERTIFICATE: ''
+          APPLE_ID: ''
+        run: npx tauri build --debug
+
+      - name: Verify bundle
+        run: |
+          APP=$(ls -d src-tauri/target/debug/bundle/macos/*.app | head -1)
+          echo "App: $APP"
+          plutil -p "$APP/Contents/Info.plist" | grep -E 'CFBundleIdentifier|NSDocumentsFolderUsageDescription|LSMinimumSystemVersion'
+          codesign -dv "$APP" 2>&1 | grep -E 'Signature|Identifier' || true
+          ls -l src-tauri/target/debug/bundle/dmg/
+
+      - name: Upload dmg
+        uses: actions/upload-artifact@v4
+        with:
+          name: FileIT-macos-aarch64-debug-dmg
+          path: src-tauri/target/debug/bundle/dmg/*.dmg
+          if-no-files-found: error
+
+  windows:
+    name: Windows (x64)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: npm ci
+        run: npm ci
+
+      - name: npm run build
+        run: npm run build
+
+      - name: cargo test
+        working-directory: src-tauri
+        run: cargo test
+
+      - name: tauri build --debug (msi)
+        run: npx tauri build --debug
+
+      - name: Upload msi
+        uses: actions/upload-artifact@v4
+        with:
+          name: FileIT-windows-x64-debug-msi
+          path: src-tauri/target/debug/bundle/msi/*.msi
+          if-no-files-found: error
