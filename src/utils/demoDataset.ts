@@ -18,34 +18,36 @@ const CLIENTS = [
   'Říhová Klára', 'Kratochvíl Adam', 'Pospíšilová Markéta', 'Moravec Stanislav', 'Tichá Pavla',
 ];
 
-type InstGroup = { names: string[]; docs: string[] };
+// Document types per institution group, with weights (how often each
+// appears in a typical advisor's archive for that institution).
+type InstGroup = { names: string[]; docs: [string, number][] };
 
-// Institution groups and the document types each one realistically issues.
 const INSTITUTIONS: InstGroup[] = [
   { names: ['Česká spořitelna', 'ČSOB', 'Komerční banka', 'Raiffeisenbank', 'MONETA Money Bank', 'Air Bank', 'Fio banka'],
-    docs: ['Výpis z účtu', 'Smlouva', 'Úvěr a hypotéka', 'Dopis z banky', 'Dodatek ke smlouvě', 'Souhlas', 'Výpověď'] },
+    docs: [['Výpis z účtu', 30], ['Smlouva', 16], ['Úvěr a hypotéka', 14], ['Dopis z banky', 12], ['Souhlas', 10], ['Dodatek ke smlouvě', 8], ['Žádost', 6], ['Výpověď', 4]] },
   { names: ['Kooperativa', 'Allianz', 'Generali Česká pojišťovna', 'ČPP', 'UNIQA'],
-    docs: ['Pojistná smlouva', 'Dodatek ke smlouvě', 'Výpověď', 'Souhlas', 'Plná moc', 'Platba a upomínka'] },
+    docs: [['Pojistná smlouva', 34], ['Dodatek ke smlouvě', 14], ['Souhlas', 12], ['Platba a upomínka', 10], ['Žádost', 8], ['Plná moc', 6], ['Výpověď', 6]] },
   { names: ['ČEZ', 'E.ON', 'Pražská plynárenská', 'innogy'],
-    docs: ['Vyúčtování energií', 'Smlouva', 'Faktura', 'Výpověď'] },
+    docs: [['Vyúčtování energií', 45], ['Smlouva', 20], ['Faktura', 25], ['Výpověď', 5]] },
   { names: ['O2', 'T-Mobile', 'Vodafone'],
-    docs: ['Faktura', 'Smlouva', 'Výpověď'] },
+    docs: [['Faktura', 60], ['Smlouva', 30], ['Výpověď', 10]] },
   { names: ['Finanční úřad'],
-    docs: ['Daňové přiznání', 'Rozhodnutí úřadu', 'Platba a upomínka'] },
+    docs: [['Daňové přiznání', 45], ['Rozhodnutí úřadu', 30], ['Platba a upomínka', 25]] },
   { names: ['ČSSZ', 'VZP', 'OZP'],
-    docs: ['Rozhodnutí úřadu', 'Žádost', 'Platba a upomínka'] },
+    docs: [['Rozhodnutí úřadu', 40], ['Žádost', 35], ['Platba a upomínka', 25]] },
   { names: ['Katastrální úřad'],
-    docs: ['List vlastnictví (LV)', 'Žádost'] },
+    docs: [['List vlastnictví (LV)', 75], ['Žádost', 25]] },
   { names: ['Úřad práce'],
-    docs: ['Žádost', 'Rozhodnutí úřadu'] },
+    docs: [['Žádost', 60], ['Rozhodnutí úřadu', 40]] },
   { names: ['Notářství Mgr. Malá', 'Advokátní kancelář Fiala'],
-    docs: ['Plná moc', 'Právní dokument', 'Smlouva'] },
+    docs: [['Plná moc', 40], ['Právní dokument', 30], ['Smlouva', 30]] },
   { names: ['Magistrát města Brna', 'Městský úřad Kolín'],
-    docs: ['Osobní doklady', 'Žádost', 'Rozhodnutí úřadu'] },
+    docs: [['Žádost', 45], ['Rozhodnutí úřadu', 35], ['Osobní doklady', 20]] },
 ];
 
-// Group weights: banks and insurers dominate an advisor's archive.
-const GROUP_WEIGHTS = [30, 22, 10, 8, 8, 7, 5, 3, 4, 3];
+// Group weights: banks and insurers dominate an advisor's archive; the land
+// registry gets enough weight that LV folders show up clearly in the demo.
+const GROUP_WEIGHTS = [30, 24, 10, 7, 7, 7, 6, 3, 3, 3];
 
 const FILE_STEM: Record<string, string> = {
   'Výpis z účtu': 'vypis', 'Smlouva': 'smlouva', 'Úvěr a hypotéka': 'uverova-smlouva',
@@ -86,7 +88,7 @@ export const DEMO_FILES: FileObj[] = (() => {
   for (let i = 0; i < DEMO_FILE_COUNT; i++) {
     const group = INSTITUTIONS[pickWeighted(r, GROUP_WEIGHTS)];
     const inst = group.names[Math.floor(r() * group.names.length)];
-    const doc = group.docs[Math.floor(r() * group.docs.length)];
+    const doc = group.docs[pickWeighted(r, group.docs.map(d => d[1]))][0];
     const client = CLIENTS[pickWeighted(r, clientWeights)];
     const year = 2023 + Math.floor(r() * 4);              // 2023–2026
     const month = 1 + Math.floor(r() * (year === 2026 ? 10 : 12));
