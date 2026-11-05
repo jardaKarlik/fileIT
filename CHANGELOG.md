@@ -38,13 +38,15 @@
   for each OCR call.
 
 ### 🔧 Build
+- New `FileIT_1.1.0_x64-setup.exe` (NSIS, per-user) next to the MSI, with the
+  Indra OCR install step (`resources/install-indra.ps1`).
 - Tauri crates pinned to the npm package versions (`tauri build` refuses
   mismatched versions); `Cargo.lock` committed for reproducible builds.
 
 ### ⚠ Known limitations
-- Indra OCR is not bundled in the installer: install it separately
-  (`pip install indra-ocr`) or set `INDRA_OCR_COMMAND`; otherwise PDFs/images
-  are classified from names and folders only.
+- Indra OCR is installed by an optional step of the setup.exe wizard (Python
+  environment + models, ~230 MB download); the MSI has no such step. Without
+  Indra, PDFs/images are classified from names and folders only.
 - The installer is not code-signed yet (Windows SmartScreen warning).
 - HEIC (iPhone photos) not supported yet.
 

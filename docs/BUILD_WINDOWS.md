@@ -27,9 +27,13 @@ npm run tauri build
 Output:
 
 ```
+src-tauri\target\release\bundle\nsis\FileIT_1.1.0_x64-setup.exe   <- distribute this one
 src-tauri\target\release\bundle\msi\FileIT_1.1.0_x64_cs-CZ.msi
 src-tauri\target\release\fileit.exe
 ```
+
+The **setup.exe** (NSIS) includes the Indra OCR step; the MSI does not
+(use it for managed / silent deployments).
 
 A release build takes 5–15 minutes (LTO, size-optimised).
 
@@ -46,12 +50,24 @@ A release build takes 5–15 minutes (LTO, size-optimised).
 
 ## Indra OCR on the target machine
 
-The installer does not include Indra OCR. On each PC that should OCR scans:
+The **setup.exe** asks after copying the files: "Nainstalovat Indra OCR…?".
+On *Yes* it runs `resources\install-indra.ps1`, which:
+
+1. finds Python 3.10+ (or installs Python 3.12 for the current user via winget),
+2. creates `%LOCALAPPDATA%\FileIT\indra-ocr` and installs `indra-ocr` into it,
+3. sets the user variable `INDRA_OCR_COMMAND` (FileIT reads it),
+4. pre-downloads the OCR models.
+
+About 230 MB is downloaded; log: `%LOCALAPPDATA%\FileIT\indra-install.log`.
+Silent installs (`/S`) and updates skip the step. To run it later:
 
 ```
-pip install indra-ocr
+powershell -ExecutionPolicy Bypass -File "%LOCALAPPDATA%\FileIT\resources\install-indra.ps1"
 ```
 
-If `indra-ocr` is not on PATH, set `INDRA_OCR_COMMAND` to the full path of
-`indra-ocr.exe`. Without it, FileIT still runs; PDFs and images are classified
-from file and folder names only, and the Home screen says OCR is not installed.
+(the path is the FileIT install folder). The uninstaller offers to remove the
+Indra environment too (never during updates).
+
+MSI installs / manual setup: `pip install indra-ocr` and, if `indra-ocr` is not
+on PATH, set `INDRA_OCR_COMMAND` to the full path of `indra-ocr.exe`. Without
+Indra, FileIT still runs; PDFs and images are classified from names only.
