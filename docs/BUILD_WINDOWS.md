@@ -54,11 +54,11 @@ The **setup.exe** asks after copying the files: "Nainstalovat Indra OCR…?".
 On *Yes* it runs `resources\install-indra.ps1`, which:
 
 1. finds Python 3.10+ (or installs Python 3.12 for the current user via winget),
-2. creates `%LOCALAPPDATA%\FileIT\indra-ocr` and installs `indra-ocr` into it,
+2. creates `%LOCALAPPDATA%\FileIT-Indra\indra-ocr` (outside the app folder) and installs `indra-ocr` into it,
 3. sets the user variable `INDRA_OCR_COMMAND` (FileIT reads it),
 4. pre-downloads the OCR models.
 
-About 230 MB is downloaded; log: `%LOCALAPPDATA%\FileIT\indra-install.log`.
+About 230 MB is downloaded; log: `%LOCALAPPDATA%\FileIT-Indra\indra-install.log`.
 Silent installs (`/S`) and updates skip the step. To run it later:
 
 ```

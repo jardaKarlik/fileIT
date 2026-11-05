@@ -10,7 +10,7 @@
   ${If} $UpdateMode = 1
     Goto fileit_indra_done
   ${EndIf}
-  IfFileExists "$LOCALAPPDATA\FileIT\indra-ocr\Scripts\indra-ocr.exe" fileit_indra_done
+  IfFileExists "$LOCALAPPDATA\FileIT-Indra\indra-ocr\Scripts\indra-ocr.exe" fileit_indra_done
 
   MessageBox MB_YESNO|MB_ICONQUESTION "Nainstalovat Indra OCR pro čtení skenovaných dokumentů?$\r$\n$\r$\nBez OCR FileIT třídí skenované PDF a fotky jen podle názvu a složky.$\r$\n$\r$\nStáhne se asi 230 MB (Python prostředí a modely), potrvá to několik minut.$\r$\nPokud chybí Python, nainstaluje se Python 3.12 pro tohoto uživatele.$\r$\nVše zůstává na tomto počítači." /SD IDNO IDNO fileit_indra_done
 
@@ -19,7 +19,7 @@
   Pop $0
   StrCmp $0 "0" fileit_indra_ok
 
-  MessageBox MB_OK|MB_ICONEXCLAMATION "Indra OCR se nepodařilo nainstalovat (kód $0).$\r$\n$\r$\nFileIT funguje i bez něj. Podrobnosti najdete v souboru:$\r$\n$LOCALAPPDATA\FileIT\indra-install.log$\r$\n$\r$\nInstalaci můžete později spustit znovu:$\r$\n$INSTDIR\resources\install-indra.ps1"
+  MessageBox MB_OK|MB_ICONEXCLAMATION "Indra OCR se nepodařilo nainstalovat (kód $0).$\r$\n$\r$\nFileIT funguje i bez něj. Podrobnosti najdete v souboru:$\r$\n$LOCALAPPDATA\FileIT-Indra\indra-install.log$\r$\n$\r$\nInstalaci můžete později spustit znovu:$\r$\n$INSTDIR\resources\install-indra.ps1"
   Goto fileit_indra_done
 
   fileit_indra_ok:
@@ -32,7 +32,7 @@
   ; Updates reinstall over the old version: keep Indra.
   ${If} $UpdateMode <> 1
     IfSilent fileit_unindra_done
-    IfFileExists "$LOCALAPPDATA\FileIT\indra-ocr\*.*" 0 fileit_unindra_done
+    IfFileExists "$LOCALAPPDATA\FileIT-Indra\indra-ocr\*.*" 0 fileit_unindra_done
     MessageBox MB_YESNO|MB_ICONQUESTION "Odebrat také Indra OCR (asi 230 MB)?" /SD IDNO IDNO fileit_unindra_done
     nsExec::ExecToLog '"$WINDIR\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "$INSTDIR\resources\install-indra.ps1" -Uninstall'
     Pop $0

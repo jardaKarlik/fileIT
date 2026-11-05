@@ -1,13 +1,15 @@
 # install-indra.ps1 - installs Indra OCR for FileIT (called by the setup wizard).
 #
 # - Finds Python 3.10+ (or installs Python 3.12 for the current user via winget)
-# - Creates an isolated environment %LOCALAPPDATA%\FileIT\indra-ocr
+# - Creates an isolated environment %LOCALAPPDATA%\FileIT-Indra\indra-ocr
+#   (outside the app install folder %LOCALAPPDATA%\FileIT, so app updates and
+#   uninstalls never touch it)
 #   and installs the indra-ocr package into it
 # - Sets the user variable INDRA_OCR_COMMAND (read by FileIT, also from HKCU)
 # - Pre-downloads the OCR models with a tiny test image
 #
 # Exit codes: 0 ok, 2 no Python, 3 venv failed, 4 pip failed, 5 exe missing.
-# Log: %LOCALAPPDATA%\FileIT\indra-install.log
+# Log: %LOCALAPPDATA%\FileIT-Indra\indra-install.log
 #
 #   powershell -ExecutionPolicy Bypass -File install-indra.ps1            install
 #   powershell -ExecutionPolicy Bypass -File install-indra.ps1 -Uninstall remove
@@ -18,7 +20,7 @@ param([switch]$Uninstall)
 # PowerShell errors. Success is judged by $LASTEXITCODE.
 $ErrorActionPreference = 'Continue'
 
-$base = Join-Path $env:LOCALAPPDATA 'FileIT'
+$base = Join-Path $env:LOCALAPPDATA 'FileIT-Indra'
 $venv = Join-Path $base 'indra-ocr'
 $venvPython = Join-Path $venv 'Scripts\python.exe'
 $exe = Join-Path $venv 'Scripts\indra-ocr.exe'
