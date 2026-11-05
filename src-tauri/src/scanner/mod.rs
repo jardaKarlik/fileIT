@@ -56,20 +56,55 @@ pub fn compute_hash_for_manifest(path: &Path) -> Option<String> {
     compute_partial_hash(path, 65_536)
 }
 
+/// What a scan found, plus what it had to leave out.
+#[derive(Debug, Default)]
+pub struct ScanOutcome {
+    pub records: Vec<FileRecord>,
+    /// Folders the OS refused to open (macOS privacy / TCC prompts denied,
+    /// external drives without access, NTFS ACLs). The scan carries on.
+    pub denied_folders: Vec<PathBuf>,
+    /// Cloud-only placeholders skipped instead of being downloaded.
+    pub cloud_only_skipped: usize,
+}
+
+/// The logged-in user's home / profile folder.
+fn user_home_dir() -> Option<PathBuf> {
+    #[cfg(target_os = "windows")]
+    {
+        std::env::var_os("USERPROFILE").map(PathBuf::from)
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        std::env::var_os("HOME").map(PathBuf::from)
+    }
+}
+
+/// True for "permission denied" / "operation not permitted" (macOS TCC
+/// answers EPERM; both map to io::ErrorKind::PermissionDenied).
+fn is_permission_denied(e: &walkdir::Error) -> bool {
+    e.io_error()
+        .map(|io| io.kind() == std::io::ErrorKind::PermissionDenied)
+        .unwrap_or(false)
+}
+
 /// Scan roots for files matching the requested categories.
 /// Emits "scan_progress" events to the frontend as it goes.
+/// Folders that cannot be opened are skipped and reported, never fatal.
 pub async fn scan_directories(
     app: &AppHandle,
     roots: Vec<PathBuf>,
     allowed_categories: &[FileCategory],
     extra_skip_dirs: &[PathBuf],
-) -> Result<Vec<FileRecord>> {
+) -> Result<ScanOutcome> {
     let mut records: Vec<FileRecord> = Vec::new();
     let mut hash_map: HashMap<String, PathBuf> = HashMap::new(); // sha256 → first_path
     let mut files_seen = 0usize;
-    let mut cloud_only_skipped = 0usize;
-    // Only the logged-in user's profile is scanned under <drive>\Users.
-    let user_profile: Option<PathBuf> = std::env::var_os("USERPROFILE").map(PathBuf::from);
+    // Cell: also counted inside the walk's filter closure.
+    let cloud_only_skipped = std::cell::Cell::new(0usize);
+    let mut denied_folders: Vec<PathBuf> = Vec::new();
+    // Only the logged-in user's profile is scanned under <drive>\Users
+    // (Windows) or /Users (macOS).
+    let user_profile: Option<PathBuf> = user_home_dir();
     // Top-level drive folders recognised as installed software, with reason.
     let mut skipped_software: Vec<(PathBuf, &'static str)> = Vec::new();
 
@@ -97,7 +132,26 @@ pub async fn scan_directories(
                 if e.depth() == 0 {
                     return true;
                 }
+                // iCloud "Optimise Mac Storage" stub (".smlouva.pdf.icloud"):
+                // the real file is not on this Mac. Never download it.
+                if is_icloud_stub_name(&e.file_name().to_string_lossy()) {
+                    cloud_only_skipped.set(cloud_only_skipped.get() + 1);
+                    return false;
+                }
                 if should_skip(e.path(), extra_skip_dirs) {
+                    return false;
+                }
+                #[cfg(target_os = "macos")]
+                if let Some(reason) = mac_skip_reason(e.path(), user_profile.as_deref()) {
+                    debug!("Skip ({}): {:?}", reason, e.path());
+                    return false;
+                }
+                #[cfg(target_os = "macos")]
+                if e.file_type().is_dir() && is_dataless_dir(e.path()) {
+                    // Cloud folder whose contents are not downloaded: listing
+                    // it would make the File Provider fetch it.
+                    cloud_only_skipped.set(cloud_only_skipped.get() + 1);
+                    debug!("Skip (cloud-only folder): {:?}", e.path());
                     return false;
                 }
                 if e.file_type().is_dir() {
@@ -116,7 +170,14 @@ pub async fn scan_directories(
             let entry = match entry {
                 Ok(e) => e,
                 Err(e) => {
-                    warn!("WalkDir error: {}", e);
+                    if is_permission_denied(&e) {
+                        if let Some(p) = e.path() {
+                            denied_folders.push(p.to_path_buf());
+                        }
+                        warn!("No permission, skipped: {}", e);
+                    } else {
+                        warn!("WalkDir error: {}", e);
+                    }
                     continue;
                 }
             };
@@ -165,7 +226,7 @@ pub async fn scan_directories(
             // OneDrive / cloud "online-only" placeholders: reading them would
             // download the whole file. Skip them instead of hydrating.
             if is_cloud_placeholder(&metadata) {
-                cloud_only_skipped += 1;
+                cloud_only_skipped.set(cloud_only_skipped.get() + 1);
                 debug!("Skip (cloud-only placeholder): {:?}", path);
                 continue;
             }
@@ -252,6 +313,20 @@ pub async fn scan_directories(
         );
     }
 
+    let cloud_only_skipped = cloud_only_skipped.get();
+    for folder in &denied_folders {
+        info!("Skipped folder without permission: {:?}", folder);
+    }
+    if !denied_folders.is_empty() {
+        emit_progress(
+            app,
+            files_seen,
+            &format!("Přeskočeno (bez oprávnění): {} složek", denied_folders.len()),
+            None,
+            false,
+        );
+    }
+
     emit_progress(
         app,
         files_seen,
@@ -261,10 +336,30 @@ pub async fn scan_directories(
     );
 
     info!(
-        "Scan complete: {} files found across {} roots ({} cloud-only placeholders skipped)",
-        records.len(), roots.len(), cloud_only_skipped
+        "Scan complete: {} files found across {} roots ({} cloud-only placeholders skipped, {} folders without permission)",
+        records.len(), roots.len(), cloud_only_skipped, denied_folders.len()
     );
-    Ok(records)
+    Ok(ScanOutcome { records, denied_folders, cloud_only_skipped })
+}
+
+/// iCloud Drive placeholder written by older macOS versions instead of the
+/// file: ".<name>.icloud".
+fn is_icloud_stub_name(name: &str) -> bool {
+    name.starts_with('.') && name.len() > ".icloud".len() + 1 && name.ends_with(".icloud")
+}
+
+/// macOS st_flags bit for "dataless" files and folders: the content lives
+/// in the cloud (iCloud Drive, OneDrive / Google Drive / Dropbox via File
+/// Provider) and reading it would download it.
+#[cfg(target_os = "macos")]
+const SF_DATALESS: u32 = 0x4000_0000;
+
+#[cfg(target_os = "macos")]
+fn is_dataless_dir(path: &Path) -> bool {
+    use std::os::macos::fs::MetadataExt;
+    std::fs::symlink_metadata(path)
+        .map(|m| m.st_flags() & SF_DATALESS != 0)
+        .unwrap_or(false)
 }
 
 /// True for cloud-sync placeholders whose content is not on disk
@@ -280,7 +375,13 @@ fn is_cloud_placeholder(metadata: &std::fs::Metadata) -> bool {
         != 0
 }
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "macos")]
+fn is_cloud_placeholder(metadata: &std::fs::Metadata) -> bool {
+    use std::os::macos::fs::MetadataExt;
+    metadata.st_flags() & SF_DATALESS != 0
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
 fn is_cloud_placeholder(_metadata: &std::fs::Metadata) -> bool {
     false
 }
@@ -312,9 +413,128 @@ pub fn default_scan_roots() -> Vec<PathBuf> {
     roots
 }
 
-#[cfg(not(target_os = "windows"))]
+/// Default scan roots on macOS: the home folder, plus cloud folders that
+/// live inside ~/Library (which is otherwise skipped): File Provider
+/// folders in ~/Library/CloudStorage and iCloud Drive.
+#[cfg(target_os = "macos")]
 pub fn default_scan_roots() -> Vec<PathBuf> {
-    vec![std::env::var_os("HOME").map(PathBuf::from).unwrap_or_else(|| PathBuf::from("/"))]
+    match user_home_dir() {
+        Some(home) => mac_default_roots(&home),
+        None => vec![PathBuf::from("/")],
+    }
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+pub fn default_scan_roots() -> Vec<PathBuf> {
+    vec![user_home_dir().unwrap_or_else(|| PathBuf::from("/"))]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// macOS layout. Pure path logic, compiled everywhere so it is unit-tested on
+// every CI platform; only called on macOS.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// System locations directly on the boot volume. Never user documents.
+const MAC_SYSTEM_DIRS: &[&str] = &[
+    "/System", "/Applications", "/Library", "/private", "/usr", "/bin", "/sbin",
+    "/opt", "/cores", "/dev", "/etc", "/var", "/tmp", "/Network",
+];
+
+/// Folders directly in the home folder that hold app data, not documents.
+/// (~/Library also holds CloudStorage and iCloud Drive; those are scanned
+/// as their own roots.)
+const MAC_HOME_SKIP: &[&str] = &["Library", "Applications", ".Trash"];
+
+/// Package / bundle folders: apps, photo and music libraries, Xcode
+/// projects, VM images. Finder shows them as single files.
+const MAC_BUNDLE_SUFFIXES: &[&str] = &[
+    ".app", ".appex", ".bundle", ".framework", ".plugin", ".kext", ".prefpane",
+    ".photoslibrary", ".photolibrary", ".migratedphotolibrary", ".aplibrary",
+    ".musiclibrary", ".tvlibrary", ".imovielibrary", ".theater", ".fcpbundle",
+    ".logicx", ".band", ".xcodeproj", ".xcworkspace", ".xcarchive", ".xcassets",
+    ".lrdata", ".lrlibrary", ".vmwarevm", ".pvm", ".utm", ".sparsebundle",
+];
+
+/// Why a path is skipped on macOS, or None.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn mac_skip_reason(path: &Path, home: Option<&Path>) -> Option<&'static str> {
+    if MAC_SYSTEM_DIRS.iter().any(|d| path == Path::new(d)) {
+        return Some("systémová složka macOS");
+    }
+    if let (Some(home), Some(parent), Some(name)) = (home, path.parent(), path.file_name()) {
+        if parent == home && MAC_HOME_SKIP.iter().any(|s| name.to_string_lossy().eq_ignore_ascii_case(s)) {
+            return Some("data aplikací");
+        }
+    }
+    let name = path.file_name()?.to_string_lossy().to_lowercase();
+    if MAC_BUNDLE_SUFFIXES.iter().any(|s| name.ends_with(s)) {
+        return Some("balíček aplikace / knihovna");
+    }
+    None
+}
+
+/// Cloud folders inside ~/Library that macOS sync apps use, with a display
+/// name: ~/Library/CloudStorage/<Provider-Account> and iCloud Drive.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn mac_cloud_dirs(home: &Path) -> Vec<(String, PathBuf)> {
+    let mut out = Vec::new();
+    let storage = home.join("Library").join("CloudStorage");
+    if let Ok(rd) = std::fs::read_dir(&storage) {
+        let mut dirs: Vec<PathBuf> = rd
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_type().map(|t| t.is_dir()).unwrap_or(false))
+            .map(|e| e.path())
+            .collect();
+        dirs.sort();
+        for dir in dirs {
+            let name = dir.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+            if name.starts_with('.') {
+                continue;
+            }
+            out.push((mac_cloud_display_name(&name), dir));
+        }
+    }
+    let icloud = home.join("Library").join("Mobile Documents").join("com~apple~CloudDocs");
+    if icloud.is_dir() {
+        out.push(("iCloud Drive".to_string(), icloud));
+    }
+    out
+}
+
+/// "OneDrive-Personal" → "OneDrive", "OneDrive-Firma" → "OneDrive - Firma",
+/// "GoogleDrive-jana@x.cz" → "Google Drive (jana@x.cz)", "Dropbox" → "Dropbox".
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn mac_cloud_display_name(dir_name: &str) -> String {
+    let name = crate::norm::nfc(dir_name);
+    if let Some(rest) = name.strip_prefix("OneDrive") {
+        let rest = rest.trim_start_matches('-');
+        return if rest.is_empty() || rest.eq_ignore_ascii_case("Personal") {
+            "OneDrive".to_string()
+        } else {
+            format!("OneDrive - {}", rest)
+        };
+    }
+    if let Some(rest) = name.strip_prefix("GoogleDrive") {
+        let rest = rest.trim_start_matches('-');
+        return if rest.is_empty() { "Google Drive".to_string() } else { format!("Google Drive ({})", rest) };
+    }
+    if name.starts_with("Dropbox") {
+        return "Dropbox".to_string();
+    }
+    if let Some(rest) = name.strip_prefix("Box") {
+        if rest.is_empty() || rest.starts_with('-') {
+            return "Box".to_string();
+        }
+    }
+    name
+}
+
+/// Home + cloud folders, as scanned by default on macOS.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn mac_default_roots(home: &Path) -> Vec<PathBuf> {
+    let mut roots = vec![home.to_path_buf()];
+    roots.extend(mac_cloud_dirs(home).into_iter().map(|(_, p)| p));
+    roots
 }
 
 /// Compute SHA-256 of the first `max_bytes` of a file.
@@ -682,11 +902,29 @@ fn emit_progress(
 }
 
 /// Detect installed cloud sync clients by checking for their well-known
-/// local sync directories on Windows.
+/// local sync directories (Windows profile folders, macOS CloudStorage).
 pub fn detect_cloud_clients() -> Vec<crate::types::DetectedCloud> {
-    // Only Windows pushes entries; elsewhere the list stays empty.
-    #[cfg_attr(not(target_os = "windows"), allow(unused_mut))]
+    // Only Windows and macOS push entries; elsewhere the list stays empty.
+    #[cfg_attr(not(any(target_os = "windows", target_os = "macos")), allow(unused_mut))]
     let mut clouds = Vec::new();
+
+    #[cfg(target_os = "macos")]
+    if let Some(home) = user_home_dir() {
+        let mut found = mac_cloud_dirs(&home);
+        // Older Dropbox / Google Drive installs sync straight into the home
+        // folder (a symlink to CloudStorage is not a separate folder).
+        for (name, dir) in [("Dropbox", "Dropbox"), ("Google Drive", "Google Drive")] {
+            let p = home.join(dir);
+            let real_dir = std::fs::symlink_metadata(&p).map(|m| m.is_dir()).unwrap_or(false);
+            if real_dir {
+                found.push((name.to_string(), p));
+            }
+        }
+        for (name, root_path) in found {
+            let is_running = is_sync_client_running(&name);
+            clouds.push(crate::types::DetectedCloud { name, root_path, is_running });
+        }
+    }
 
     #[cfg(target_os = "windows")]
     {
@@ -738,6 +976,27 @@ fn is_sync_client_running(cloud_name: &str) -> bool {
         .args(["/FI", &format!("IMAGENAME eq {}", process_name), "/NH"])
         .output()
         .map(|o| String::from_utf8_lossy(&o.stdout).contains(process_name))
+        .unwrap_or(false)
+}
+
+/// macOS: `pgrep -x <process>` (exit status 0 = running).
+#[cfg(target_os = "macos")]
+fn is_sync_client_running(cloud_name: &str) -> bool {
+    let process_name = match cloud_name {
+        n if n.contains("OneDrive") => "OneDrive",
+        n if n.contains("Dropbox") => "Dropbox",
+        n if n.contains("Google Drive") => "Google Drive",
+        n if n.starts_with("Box") => "Box",
+        // iCloud Drive is synced by the system daemon "bird".
+        n if n.contains("iCloud") => "bird",
+        _ => return false,
+    };
+    std::process::Command::new("pgrep")
+        .args(["-x", process_name])
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .map(|s| s.success())
         .unwrap_or(false)
 }
 
@@ -844,6 +1103,72 @@ mod tests {
         assert!(is_app_check_level(Path::new("/Users/jaros/Documents/Zoom"), Some(me)));
         assert!(!is_app_check_level(Path::new("/Users/jaros/Documents/Klienti/2024"), Some(me)));
         assert!(!is_app_check_level(Path::new("/data/Klienti"), Some(me)));
+    }
+
+    #[test]
+    fn mac_skip_rules() {
+        use super::mac_skip_reason;
+        let home = Path::new("/Users/jana");
+        for p in [
+            "/System", "/Applications", "/private", "/Library",
+            "/Users/jana/Library", "/Users/jana/Applications",
+            "/Users/jana/Documents/Nástroje/Kalkulačka.app",
+            "/Users/jana/Pictures/Photos Library.photoslibrary",
+            "/Users/jana/Music/Music Library.musiclibrary",
+            "/Users/jana/Projects/App.xcodeproj",
+        ] {
+            assert!(mac_skip_reason(Path::new(p), Some(home)).is_some(), "{}", p);
+        }
+        for p in [
+            "/Users/jana/Documents", "/Users/jana/Desktop/Klienti",
+            "/Users/jana/Documents/Library",          // only ~/Library is app data
+            "/Users/jana/Library/CloudStorage/OneDrive-Personal/Smlouvy", // inside a cloud root
+            "/Users/jana/Documents/Smlouvy/Applications", // not the home folder
+            "/Volumes/USB/Klienti",
+            "/Users/jana/Documents/smlouva.pdf",
+        ] {
+            assert!(mac_skip_reason(Path::new(p), Some(home)).is_none(), "{}", p);
+        }
+    }
+
+    #[test]
+    fn mac_cloud_names() {
+        use super::mac_cloud_display_name as n;
+        assert_eq!(n("OneDrive-Personal"), "OneDrive");
+        assert_eq!(n("OneDrive-Firma s.r.o"), "OneDrive - Firma s.r.o");
+        assert_eq!(n("GoogleDrive-jana@example.cz"), "Google Drive (jana@example.cz)");
+        assert_eq!(n("Dropbox"), "Dropbox");
+        assert_eq!(n("Dropbox-Osobni"), "Dropbox");
+        assert_eq!(n("Box-Box"), "Box");
+        assert_eq!(n("pCloud"), "pCloud");
+    }
+
+    #[test]
+    fn mac_default_roots_include_cloud_folders() {
+        let home = std::env::temp_dir().join(format!("fileit-home-{}", uuid::Uuid::new_v4()));
+        let storage = home.join("Library/CloudStorage");
+        for d in ["OneDrive-Personal", "GoogleDrive-jana@example.cz", ".hidden"] {
+            std::fs::create_dir_all(storage.join(d)).unwrap();
+        }
+        let icloud = home.join("Library/Mobile Documents/com~apple~CloudDocs");
+        std::fs::create_dir_all(&icloud).unwrap();
+        let roots = super::mac_default_roots(&home);
+        assert_eq!(roots[0], home);
+        assert!(roots.contains(&storage.join("OneDrive-Personal")));
+        assert!(roots.contains(&storage.join("GoogleDrive-jana@example.cz")));
+        assert!(roots.contains(&icloud));
+        assert!(!roots.iter().any(|r| r.ends_with(".hidden")));
+        assert_eq!(roots.len(), 4);
+        let _ = std::fs::remove_dir_all(&home);
+    }
+
+    #[test]
+    fn icloud_stub_names() {
+        use super::is_icloud_stub_name;
+        assert!(is_icloud_stub_name(".smlouva Dvořák.pdf.icloud"));
+        assert!(!is_icloud_stub_name("smlouva.icloud"));
+        assert!(!is_icloud_stub_name(".icloud"));
+        assert!(!is_icloud_stub_name("smlouva.pdf"));
     }
 
     #[test]

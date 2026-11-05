@@ -478,6 +478,13 @@ pub struct ScanResult {
     pub customers_found: usize,
     pub duplicates_found: usize,
     pub files: Vec<ClassifiedFile>,
+    /// Folders skipped because the OS denied access (macOS privacy
+    /// settings, external drives, NTFS permissions).
+    #[serde(default)]
+    pub denied_folders: Vec<String>,
+    /// Cloud-only (not downloaded) files and folders skipped.
+    #[serde(default)]
+    pub cloud_only_skipped: usize,
 }
 
 #[derive(Debug, Deserialize)]

@@ -162,16 +162,24 @@ pub async fn start_scan(
     let scan_roots: Vec<PathBuf> = if !request.roots.is_empty() {
         request.roots.clone()
     } else {
-        // Scan every local fixed drive so work folders like C:\Klienti are
-        // found. SKIP_DIRS keeps us out of Windows, Program Files, AppData…
+        // Windows: every local fixed drive, so work folders like C:\Klienti
+        // are found. SKIP_DIRS keeps us out of Windows, Program Files,
+        // AppData… macOS: the home folder plus cloud folders.
         let roots = scanner::default_scan_roots();
-        info!("No scan roots provided — scanning local drives: {:?}", roots);
+        info!("No scan roots provided — scanning default roots: {:?}", roots);
         roots
     };
 
-    let records = scanner::scan_directories(&app, scan_roots, &categories, &[])
+    let outcome = scanner::scan_directories(&app, scan_roots, &categories, &[])
         .await
         .map_err(|e| e.to_string())?;
+    let denied_folders: Vec<String> = outcome
+        .denied_folders
+        .iter()
+        .map(|p| p.to_string_lossy().into_owned())
+        .collect();
+    let cloud_only_skipped = outcome.cloud_only_skipped;
+    let records = outcome.records;
 
     // Load previous scan manifest for incremental classification
     let prev_manifest = scan_manifest::ScanManifest::load_latest(&state.app_data_dir);
@@ -486,6 +494,8 @@ pub async fn start_scan(
         customers_found,
         duplicates_found,
         files: classified.clone(),
+        denied_folders,
+        cloud_only_skipped,
     };
 
     {
