@@ -32,7 +32,7 @@ const SKIP_DIRS: &[&str] = &[
     "$WinREAgent", "PerfLogs", "Intel", "AMD",
     "Windows.old", "$Windows.~BT", "$Windows.~WS", "$GetCurrent",
     "Config.Msi", "OneDriveTemp", "msys64", "cygwin64",
-    "XboxGames", "WindowsApps",
+    "XboxGames", "WindowsApps", "boot",
     // User profile noise
     "AppData", ".cache", ".local", ".config",
     // Dev tooling & package managers
@@ -105,7 +105,7 @@ pub async fn scan_directories(
                         debug!("Skip (other user's profile): {:?}", e.path());
                         return false;
                     }
-                    if let Some(reason) = top_level_software_reason(e.path()) {
+                    if let Some(reason) = app_folder_reason(e.path(), user_profile.as_deref()) {
                         skipped_software.push((e.path().to_path_buf(), reason));
                         return false;
                     }
@@ -376,33 +376,77 @@ fn is_other_user_profile(path: &Path, current_profile: Option<&Path>) -> bool {
     }
 }
 
-/// Why a folder directly on a drive root (C:\\xampp, C:\\ffmpeg, …) is
-/// treated as system or installed software, or None if it is scanned.
-/// `Users` is never skipped here (it is handled per profile).
-fn top_level_software_reason(path: &Path) -> Option<&'static str> {
-    let at_drive_root = path.parent().map(|p| p.parent().is_none()).unwrap_or(false);
-    if !at_drive_root {
+/// Profile folders that are always walked (only their subfolders are
+/// judged): judging e.g. Documents as a whole could skip all of it because
+/// of a few code projects inside.
+const USER_CONTAINERS: &[&str] = &[
+    "Documents", "Desktop", "Downloads", "Pictures", "Music", "Videos",
+    "OneDrive", "Dropbox", "Google Drive", "iCloudDrive", "Box",
+];
+
+/// Antivirus / security vendors: their folders hold quarantine, sandboxes
+/// and logs, never user documents. Matched as words in the folder name.
+const AV_VENDORS: &[&str] = &[
+    "avg", "avast", "eset", "norton", "symantec", "mcafee", "kaspersky",
+    "bitdefender", "avira", "sophos", "malwarebytes", "webroot", "comodo",
+    "drweb", "gdata", "fsecure", "trendmicro", "emsisoft", "zonealarm",
+    "quickheal", "bullguard", "totalav", "panda", "defender",
+];
+
+fn is_av_vendor_name(name: &str) -> bool {
+    let lower = name.to_lowercase();
+    let squashed: String = lower.chars().filter(|c| c.is_alphanumeric()).collect();
+    // "F-Secure" → "fsecure", "Trend Micro" → "trendmicro"
+    if ["fsecure", "trendmicro", "gdata", "drweb"].iter().any(|v| squashed.contains(v)) {
+        return true;
+    }
+    lower
+        .split(|c: char| !c.is_alphanumeric())
+        .any(|tok| AV_VENDORS.contains(&tok))
+}
+
+/// Is `path` at a level where applications are usually installed or
+/// unpacked: directly on a drive, directly in the user profile, or one
+/// level inside a profile folder (Documents\\Zoom, C:\\Users\\x\\anaconda3, …)?
+fn is_app_check_level(path: &Path, user_profile: Option<&Path>) -> bool {
+    let parent = match path.parent() {
+        Some(p) => p,
+        None => return false,
+    };
+    if parent.parent().is_none() {
+        // Directly on a drive root; Users is handled per profile.
+        let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+        return !name.eq_ignore_ascii_case("Users");
+    }
+    let Some(profile) = user_profile else { return false };
+    let same = |a: &Path, b: &Path| a.to_string_lossy().eq_ignore_ascii_case(&b.to_string_lossy());
+    if same(parent, profile) {
+        // C:\\Users\\x\\<name>: well-known user folders are always walked.
+        let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+        return !USER_CONTAINERS.iter().any(|c| name.eq_ignore_ascii_case(c) || name.starts_with("OneDrive"));
+    }
+    // C:\\Users\\x\\Documents\\<name>
+    parent.parent().map(|g| same(g, profile)).unwrap_or(false)
+}
+
+/// Why a folder is treated as system, antivirus or application content and
+/// skipped, or None if it is scanned. Only applied at app-check levels.
+fn app_folder_reason(path: &Path, user_profile: Option<&Path>) -> Option<&'static str> {
+    if !is_app_check_level(path, user_profile) {
         return None;
     }
     let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
-    if name.eq_ignore_ascii_case("Users") {
-        return None;
-    }
-    if name.starts_with('$') {
+    let at_drive_root = path.parent().map(|p| p.parent().is_none()).unwrap_or(false);
+    if at_drive_root && name.starts_with('$') {
         return Some("systémová složka");
     }
-    software_reason(path)
-}
-
-/// Owner / content checks shared by top-level folders and link targets.
-fn software_reason(path: &Path) -> Option<&'static str> {
-    if folder_owner_sid(path).map(|sid| is_system_sid(&sid)).unwrap_or(false) {
+    if is_av_vendor_name(&name) {
+        return Some("antivirus");
+    }
+    if at_drive_root && folder_owner_sid(path).map(|sid| is_system_sid(&sid)).unwrap_or(false) {
         return Some("vlastník systém");
     }
-    if looks_like_program_folder(path) {
-        return Some("nainstalovaný program");
-    }
-    None
+    sample_folder(path).verdict()
 }
 
 /// SYSTEM, LocalService, NetworkService and NT SERVICE\\* (TrustedInstaller).
@@ -412,40 +456,90 @@ fn is_system_sid(sid: &str) -> bool {
     matches!(sid, "S-1-5-18" | "S-1-5-19" | "S-1-5-20") || sid.starts_with("S-1-5-80-")
 }
 
-/// A program folder: .exe/.dll directly inside it or in its `bin`
-/// subfolder, and no documents (PDF, Office, e-mail) at its top level.
-/// Images and .txt are ignored: programs ship icons and readme files.
-fn looks_like_program_folder(path: &Path) -> bool {
-    fn scan(dir: &Path) -> (bool, bool) {
-        let (mut exe, mut doc) = (false, false);
-        if let Ok(entries) = std::fs::read_dir(dir) {
-            for e in entries.flatten().take(2000) {
-                let p = e.path();
-                if !p.is_file() {
-                    continue;
-                }
-                let ext = p.extension().map(|x| x.to_string_lossy().to_lowercase()).unwrap_or_default();
-                match ext.as_str() {
-                    "exe" | "dll" => exe = true,
-                    _ => {
-                        if matches!(
-                            FileCategory::from_extension(&ext),
-                            FileCategory::Pdf | FileCategory::Word | FileCategory::Excel
-                                | FileCategory::PowerPoint | FileCategory::Email
-                        ) {
-                            doc = true;
-                        }
-                    }
-                }
-            }
+/// Extensions that belong to programs, code and configuration.
+const APP_EXTENSIONS: &[&str] = &[
+    // binaries / installers
+    "exe", "dll", "sys", "msi", "msix", "appx", "cab", "ocx", "drv", "jar", "class",
+    "pyc", "pyd", "so", "dylib", "lib", "o", "obj", "pdb", "node", "wasm", "pak", "asar",
+    // config / metadata
+    "json", "md", "yml", "yaml", "toml", "ini", "cfg", "conf", "config", "lock",
+    "xaml", "manifest", "plist", "properties",
+    // source code / web assets
+    "js", "mjs", "cjs", "ts", "tsx", "jsx", "css", "scss", "less", "map", "html", "htm",
+    "vue", "svelte", "py", "rs", "go", "java", "kt", "cs", "cpp", "cc", "c", "h", "hpp",
+    "swift", "rb", "php", "sh", "ps1", "psm1", "bat", "cmd", "lua", "sql",
+];
+
+/// Files or folders that mark a code project.
+const PROJECT_MARKERS: &[&str] = &[
+    ".git", "node_modules", "package.json", "Cargo.toml", "pyproject.toml",
+    "requirements.txt", "go.mod", "pom.xml", "build.gradle",
+]; // plus any *.sln (Visual Studio solution)
+
+/// Sample of a folder's contents (a few levels, capped) used to tell
+/// applications and code apart from document folders.
+#[derive(Debug, Default)]
+struct FolderSample {
+    app_files: usize,
+    binaries: usize,
+    documents: usize,
+    project_marker: bool,
+}
+
+impl FolderSample {
+    fn verdict(&self) -> Option<&'static str> {
+        if self.project_marker {
+            return Some("vývojový projekt");
         }
-        (exe, doc)
+        if self.binaries > 0 && self.documents == 0 {
+            return Some("nainstalovaný program");
+        }
+        if self.app_files >= 10 && self.app_files >= 5 * self.documents.max(1) {
+            return Some("aplikace / konfigurace");
+        }
+        None
     }
-    let (exe_top, doc_top) = scan(path);
-    if doc_top {
-        return false;
+}
+
+const SAMPLE_DEPTH: usize = 3;
+const SAMPLE_MAX_ENTRIES: usize = 3000;
+
+fn sample_folder(path: &Path) -> FolderSample {
+    let mut s = FolderSample::default();
+    for e in WalkDir::new(path)
+        .min_depth(1)
+        .max_depth(SAMPLE_DEPTH)
+        .follow_links(false)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .take(SAMPLE_MAX_ENTRIES)
+    {
+        let name = e.file_name().to_string_lossy();
+        let is_marker = PROJECT_MARKERS.iter().any(|m| name.eq_ignore_ascii_case(m))
+            || name.to_lowercase().ends_with(".sln");
+        if is_marker {
+            s.project_marker = true;
+            break;
+        }
+        if !e.file_type().is_file() {
+            continue;
+        }
+        let ext = e.path().extension().map(|x| x.to_string_lossy().to_lowercase()).unwrap_or_default();
+        if matches!(ext.as_str(), "exe" | "dll" | "msi" | "sys") {
+            s.binaries += 1;
+        }
+        if APP_EXTENSIONS.contains(&ext.as_str()) {
+            s.app_files += 1;
+        } else if matches!(
+            FileCategory::from_extension(&ext),
+            FileCategory::Pdf | FileCategory::Word | FileCategory::Excel
+                | FileCategory::PowerPoint | FileCategory::Email | FileCategory::Csv
+        ) || ext == "rtf"
+        {
+            s.documents += 1;
+        }
     }
-    exe_top || scan(&path.join("bin")).0
+    s
 }
 
 
@@ -678,33 +772,58 @@ mod tests {
         assert!(!is_system_sid("S-1-5-21-1004336348-1177238915-682003330-1001"));
     }
 
+    fn sample(dir: &Path, files: &[&str]) -> &'static str {
+        for f in files {
+            let p = dir.join(f);
+            std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+            std::fs::write(&p, b"x").unwrap();
+        }
+        super::sample_folder(dir).verdict().unwrap_or("scan")
+    }
+
     #[test]
-    fn program_folder_detection() {
-        use super::looks_like_program_folder;
-        let base = std::env::temp_dir().join(format!("fileit-prog-{}", uuid::Uuid::new_v4()));
-        let ffmpeg = base.join("ffmpeg");
-        std::fs::create_dir_all(ffmpeg.join("bin")).unwrap();
-        std::fs::write(ffmpeg.join("bin").join("ffmpeg.exe"), b"MZ").unwrap();
-        std::fs::write(ffmpeg.join("README.txt"), b"readme").unwrap();
-        assert!(looks_like_program_folder(&ffmpeg), "exe in bin, only readme");
-
-        let tool = base.join("MP4Box");
-        std::fs::create_dir_all(&tool).unwrap();
-        std::fs::write(tool.join("mp4box.exe"), b"MZ").unwrap();
-        std::fs::write(tool.join("icon.png"), b"png").unwrap();
-        assert!(looks_like_program_folder(&tool), "exe at top, icons ignored");
-
-        let work = base.join("temp");
-        std::fs::create_dir_all(&work).unwrap();
-        std::fs::write(work.join("setup.exe"), b"MZ").unwrap();
-        std::fs::write(work.join("smlouva.pdf"), b"%PDF").unwrap();
-        assert!(!looks_like_program_folder(&work), "documents present → data folder");
-
-        let music = base.join("dnb-jungle");
-        std::fs::create_dir_all(&music).unwrap();
-        std::fs::write(music.join("track.mp3"), b"x").unwrap();
-        assert!(!looks_like_program_folder(&music));
+    fn app_folder_detection() {
+        let base = std::env::temp_dir().join(format!("fileit-app-{}", uuid::Uuid::new_v4()));
+        // Program nested two levels deep (C:\\ffmpeg\\ffmpeg-8.1.2-full_build\\bin)
+        assert_eq!(sample(&base.join("ffmpeg"), &["ffmpeg-8.1.2-full_build/bin/ffmpeg.exe", "ffmpeg-8.1.2-full_build/README.txt"]), "nainstalovaný program");
+        // Code project
+        assert_eq!(sample(&base.join("_dev"), &["fileIT/package.json", "fileIT/src/a.ts"]), "vývojový projekt");
+        // Config-heavy app data
+        let many: Vec<String> = (0..12).map(|i| format!("models/m{}.json", i)).collect();
+        let refs: Vec<&str> = many.iter().map(|s| s.as_str()).collect();
+        assert_eq!(sample(&base.join("pinokio"), &refs), "aplikace / konfigurace");
+        // Work folder with a stray installer and documents → scanned
+        assert_eq!(sample(&base.join("temp"), &["setup.exe", "smlouva.pdf", "Klient/faktura.pdf"]), "scan");
+        // Documents with a few json exports → scanned
+        assert_eq!(sample(&base.join("data"), &["a.json", "b.json", "x.pdf", "y.docx", "z.xlsx"]), "scan");
+        // Music only → scanned (nothing to read, harmless)
+        assert_eq!(sample(&base.join("music"), &["t.mp3"]), "scan");
         let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn antivirus_names() {
+        use super::is_av_vendor_name;
+        for n in ["AVG sandbox", "$AV_AVG", "ESET", "Norton Security", "F-Secure", "Trend Micro", "Kaspersky Lab"] {
+            assert!(is_av_vendor_name(n), "{}", n);
+        }
+        for n in ["Klienti", "Avgust", "data", "Pandora smlouvy"] {
+            assert!(!is_av_vendor_name(n), "{}", n);
+        }
+    }
+
+    #[test]
+    fn app_check_levels() {
+        use super::is_app_check_level;
+        let me = Path::new("/Users/jaros");
+        assert!(is_app_check_level(Path::new("/ffmpeg"), Some(me)));
+        assert!(!is_app_check_level(Path::new("/Users"), Some(me)));
+        assert!(!is_app_check_level(Path::new("/Users/jaros/Documents"), Some(me)));
+        assert!(!is_app_check_level(Path::new("/Users/jaros/OneDrive - Firma"), Some(me)));
+        assert!(is_app_check_level(Path::new("/Users/jaros/anaconda3"), Some(me)));
+        assert!(is_app_check_level(Path::new("/Users/jaros/Documents/Zoom"), Some(me)));
+        assert!(!is_app_check_level(Path::new("/Users/jaros/Documents/Klienti/2024"), Some(me)));
+        assert!(!is_app_check_level(Path::new("/data/Klienti"), Some(me)));
     }
 
     #[test]
