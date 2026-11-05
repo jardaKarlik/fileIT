@@ -19,6 +19,13 @@
 //   INDRA_OCR_COMMAND  sidecar binary, default "indra-ocr"
 //   INDRA_OCR_MODELS   model directory, passed through as --model-dir
 //   INDRA_OCR_CORES    worker count, default 4
+// Each can also be set in the FileIT settings file (settings.rs:
+// indra_ocr_command / indra_ocr_models / indra_ocr_cores). Order:
+// environment → settings file → (Windows) HKCU\Environment → default.
+//
+// Packaged sidecar names (later phase): indra-ocr-x86_64-pc-windows-msvc,
+// indra-ocr-aarch64-apple-darwin, indra-ocr-x86_64-apple-darwin. For now the
+// command is resolved from PATH or the settings file.
 
 use crate::ocr_store;
 use crate::types::{OcrAvailability, OcrBatchResult, OcrBlock, OcrProgress, OcrResult};
@@ -47,6 +54,11 @@ fn env_non_empty(key: &str) -> Option<String> {
             return Some(v);
         }
     }
+    // FileIT settings file — the cross-platform way (macOS has no registry,
+    // and Finder-launched apps never see ~/.zshrc exports).
+    if let Some(v) = crate::settings::value(key) {
+        return Some(v);
+    }
     // Registry fallback (HKCU\Environment): covers processes launched from
     // shells with a stale environment — `setx` writes here, but running
     // shells and their children never see the update.
@@ -70,7 +82,56 @@ fn env_non_empty_from_registry(_key: &str) -> Option<String> {
 }
 
 fn ocr_command() -> String {
-    env_non_empty("INDRA_OCR_COMMAND").unwrap_or_else(|| DEFAULT_COMMAND.to_string())
+    let configured = env_non_empty("INDRA_OCR_COMMAND").unwrap_or_else(|| DEFAULT_COMMAND.to_string());
+    // macOS apps started from Finder get a minimal PATH (/usr/bin:/bin:...),
+    // so `pip install indra-ocr` / Homebrew locations are not on it. Look
+    // there too and run the full path.
+    #[cfg(target_os = "macos")]
+    if !command_exists(&configured) {
+        let home = std::env::var_os("HOME").map(PathBuf::from);
+        if let Some(found) = find_in_dirs(&configured, &mac_extra_bin_dirs(home.as_deref())) {
+            return found.to_string_lossy().into_owned();
+        }
+    }
+    configured
+}
+
+/// Usual install locations of command-line tools on macOS that a GUI app's
+/// PATH does not include.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn mac_extra_bin_dirs(home: Option<&Path>) -> Vec<PathBuf> {
+    let mut dirs: Vec<PathBuf> = vec![
+        PathBuf::from("/opt/homebrew/bin"),
+        PathBuf::from("/usr/local/bin"),
+    ];
+    // python.org installers: /Library/Frameworks/Python.framework/Versions/3.x/bin
+    dirs.extend(sorted_subdirs(Path::new("/Library/Frameworks/Python.framework/Versions"), "bin"));
+    if let Some(home) = home {
+        dirs.push(home.join(".local/bin"));
+        // `pip install --user`: ~/Library/Python/3.x/bin
+        dirs.extend(sorted_subdirs(&home.join("Library/Python"), "bin"));
+        dirs.push(home.join(".pyenv/shims"));
+    }
+    dirs
+}
+
+/// `<parent>/<each subdir, newest name first>/<leaf>`.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn sorted_subdirs(parent: &Path, leaf: &str) -> Vec<PathBuf> {
+    let mut v: Vec<PathBuf> = std::fs::read_dir(parent)
+        .map(|rd| rd.filter_map(|e| e.ok()).map(|e| e.path().join(leaf)).collect())
+        .unwrap_or_default();
+    v.sort();
+    v.reverse();
+    v
+}
+
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn find_in_dirs(command: &str, dirs: &[PathBuf]) -> Option<PathBuf> {
+    if command.contains('/') || command.contains('\\') {
+        return None;
+    }
+    dirs.iter().map(|d| d.join(command)).find(|p| p.is_file())
 }
 
 fn worker_count() -> usize {
@@ -114,9 +175,16 @@ pub fn check(app_data_dir: &Path) -> OcrAvailability {
     let message = if installed {
         None
     } else {
+        #[cfg(target_os = "windows")]
+        let example = "C:\\Users\\jaros\\AppData\\Local\\Python\\pythoncore-3.14-64\\Scripts\\indra-ocr.exe";
+        #[cfg(not(target_os = "windows"))]
+        let example = "/Users/jana/Library/Python/3.12/bin/indra-ocr";
+        let settings_hint = crate::settings::path()
+            .map(|p| format!(" Cestu lze zadat také v souboru nastavení {} (\"indra_ocr_command\").", p.display()))
+            .unwrap_or_default();
         Some(format!(
-            "Příkaz „{}“ nebyl nalezen v PATH. Nainstalujte Indra OCR sidecar (např. `pip install indra-ocr`), nebo nastavte INDRA_OCR_COMMAND na plnou cestu k binárce, např. C:\\Users\\jaros\\AppData\\Local\\Python\\pythoncore-3.14-64\\Scripts\\indra-ocr.exe.",
-            command
+            "Příkaz „{}“ nebyl nalezen v PATH. Nainstalujte Indra OCR sidecar (např. `pip install indra-ocr`), nebo nastavte INDRA_OCR_COMMAND na plnou cestu k binárce, např. {}.{}",
+            command, example, settings_hint
         ))
     };
 
@@ -1072,6 +1140,20 @@ pub async fn get_ocr(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn finds_command_in_extra_dirs() {
+        let base = std::env::temp_dir().join(format!("fileit-bin-{}", uuid::Uuid::new_v4()));
+        let py = base.join("home/Library/Python/3.12/bin");
+        std::fs::create_dir_all(&py).unwrap();
+        std::fs::write(py.join("indra-ocr"), b"#!/bin/sh\n").unwrap();
+        let dirs = super::mac_extra_bin_dirs(Some(&base.join("home")));
+        assert!(dirs.contains(&py), "{:?}", dirs);
+        assert_eq!(super::find_in_dirs("indra-ocr", &dirs), Some(py.join("indra-ocr")));
+        assert_eq!(super::find_in_dirs("/abs/indra-ocr", &dirs), None);
+        assert_eq!(super::find_in_dirs("missing-tool", &dirs), None);
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
     use super::*;
     use serde_json::json;
 

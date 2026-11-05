@@ -13,9 +13,11 @@ mod metadata_reader;
 mod norm;
 mod ocr;
 mod ocr_store;
+mod platform;
 mod restructure;
 mod scan_manifest;
 mod scanner;
+mod settings;
 mod types;
 
 use commands::AppState;
@@ -56,6 +58,9 @@ pub fn run() {
 
             std::fs::create_dir_all(&app_data_dir)
                 .expect("Could not create AppData directory");
+
+            // Settings file (Indra OCR path etc.) — cross-platform config.
+            settings::init(&app_data_dir);
 
             // Run startup cleanup (expired backups, auto-confirm checks)
             let _ = backup::cleanup_expired_backups(&app_data_dir);
@@ -111,6 +116,7 @@ pub fn run() {
             commands::restore_restructure,
             commands::pick_folder,
             commands::open_in_explorer,
+            commands::platform_info,
             commands::get_onedrive_path,
             commands::check_cm_update,
             commands::group_unclassified_patterns,

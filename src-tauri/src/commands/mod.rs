@@ -816,7 +816,27 @@ pub fn get_onedrive_path() -> Option<String> {
         }
     }
 
-    #[cfg(not(target_os = "windows"))]
+    // macOS: OneDrive syncs into ~/Library/CloudStorage/OneDrive-<account>.
+    #[cfg(target_os = "macos")]
+    {
+        let home = crate::platform::home_dir()?;
+        let mut dirs: Vec<PathBuf> = std::fs::read_dir(home.join("Library").join("CloudStorage"))
+            .ok()?
+            .filter_map(|e| e.ok())
+            .map(|e| e.path())
+            .filter(|p| {
+                p.is_dir()
+                    && p.file_name().map(|n| n.to_string_lossy().starts_with("OneDrive")).unwrap_or(false)
+            })
+            .collect();
+        dirs.sort();
+        let base = dirs.into_iter().next()?;
+        let docs = base.join("Documents");
+        let root = if docs.is_dir() { docs } else { base };
+        Some(root.join("reOrganized").to_string_lossy().into_owned())
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
     {
         None
     }
@@ -831,18 +851,17 @@ pub async fn pick_folder(app: AppHandle) -> Option<String> {
         .map(|p| p.to_string())
 }
 
+/// Show a path in the system file manager (Explorer / Finder).
+/// The command name is kept for compatibility with the frontend.
 #[tauri::command]
 pub async fn open_in_explorer(path: String) -> Result<(), String> {
-    #[cfg(target_os = "windows")]
-    {
-        std::process::Command::new("explorer")
-            .arg(&path)
-            .spawn()
-            .map_err(|e| e.to_string())?;
-    }
-    #[cfg(not(target_os = "windows"))]
-    let _ = path; // Explorer exists only on Windows
-    Ok(())
+    crate::platform::reveal_in_file_manager(&path).map_err(|e| e.to_string())
+}
+
+/// OS, path separator, default target folder and file-manager name for the UI.
+#[tauri::command]
+pub fn platform_info() -> crate::platform::PlatformInfo {
+    crate::platform::info()
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
