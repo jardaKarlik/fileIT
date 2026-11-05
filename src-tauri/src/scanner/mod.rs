@@ -67,6 +67,10 @@ pub async fn scan_directories(
     let mut hash_map: HashMap<String, PathBuf> = HashMap::new(); // sha256 → first_path
     let mut files_seen = 0usize;
     let mut cloud_only_skipped = 0usize;
+    // Only the logged-in user's profile is scanned under <drive>\Users.
+    let user_profile: Option<PathBuf> = std::env::var_os("USERPROFILE").map(PathBuf::from);
+    // Top-level drive folders owned by the system (program installs).
+    let mut skipped_software: Vec<PathBuf> = Vec::new();
 
     info!("Scanner: {} roots, {} allowed categories ({:?})",
         roots.len(), allowed_categories.len(), allowed_categories);
@@ -84,7 +88,25 @@ pub async fn scan_directories(
         for entry in WalkDir::new(root)
             .follow_links(false)
             .into_iter()
-            .filter_entry(|e| e.depth() == 0 || !should_skip(e.path(), extra_skip_dirs))
+            .filter_entry(|e| {
+                if e.depth() == 0 {
+                    return true;
+                }
+                if should_skip(e.path(), extra_skip_dirs) {
+                    return false;
+                }
+                if e.file_type().is_dir() {
+                    if is_other_user_profile(e.path(), user_profile.as_deref()) {
+                        debug!("Skip (other user's profile): {:?}", e.path());
+                        return false;
+                    }
+                    if is_installed_software_folder(e.path()) {
+                        skipped_software.push(e.path().to_path_buf());
+                        return false;
+                    }
+                }
+                true
+            })
         {
             let entry = match entry {
                 Ok(e) => e,
@@ -193,6 +215,19 @@ pub async fn scan_directories(
     // Mark duplicates in the records
     mark_duplicates(&mut records);
 
+    // Tell the user which top-level folders were treated as installed
+    // software, so a work folder skipped by mistake is visible.
+    for folder in &skipped_software {
+        info!("Skipped as installed software (system-owned): {:?}", folder);
+        emit_progress(
+            app,
+            files_seen,
+            &format!("Přeskočeno (nainstalovaný program): {}", folder.display()),
+            None,
+            false,
+        );
+    }
+
     emit_progress(
         app,
         files_seen,
@@ -290,6 +325,126 @@ fn mark_duplicates(records: &mut Vec<FileRecord>) {
     // This function is a no-op for now but kept as an extension point.
     let _ = seen;
     let _ = hashes;
+}
+
+/// `<drive>\\Users\\<name>` that is not the logged-in user's profile
+/// (other accounts, Public, Default). Case-insensitive.
+fn is_other_user_profile(path: &Path, current_profile: Option<&Path>) -> bool {
+    let parent = match path.parent() {
+        Some(p) => p,
+        None => return false,
+    };
+    let parent_is_users = parent
+        .file_name()
+        .map(|n| n.to_string_lossy().eq_ignore_ascii_case("Users"))
+        .unwrap_or(false);
+    // "Users" must sit directly on the drive root.
+    let users_on_drive_root = parent.parent().map(|g| g.parent().is_none()).unwrap_or(false);
+    if !(parent_is_users && users_on_drive_root) {
+        return false;
+    }
+    match current_profile {
+        Some(profile) => {
+            path.to_string_lossy().to_lowercase() != profile.to_string_lossy().to_lowercase()
+        }
+        // Unknown profile: do not guess, scan everything.
+        None => false,
+    }
+}
+
+/// A folder directly on a drive root (C:\\xampp, D:\\Games, …) whose owner is
+/// SYSTEM, Administrators or a service (TrustedInstaller). Program
+/// installers run elevated, so their folders get such an owner; folders a
+/// person creates in Explorer (C:\\Klienti) are owned by that person.
+/// `Users` is never treated as software (it is handled per profile).
+fn is_installed_software_folder(path: &Path) -> bool {
+    let at_drive_root = path.parent().map(|p| p.parent().is_none()).unwrap_or(false);
+    if !at_drive_root {
+        return false;
+    }
+    let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+    if name.eq_ignore_ascii_case("Users") {
+        return false;
+    }
+    folder_owner_sid(path).map(|sid| is_system_sid(&sid)).unwrap_or(false)
+}
+
+/// Well-known non-person owners: SYSTEM, LocalService, NetworkService,
+/// BUILTIN\\Administrators, and NT SERVICE\\* (incl. TrustedInstaller).
+fn is_system_sid(sid: &str) -> bool {
+    matches!(sid, "S-1-5-18" | "S-1-5-19" | "S-1-5-20" | "S-1-5-32-544") || sid.starts_with("S-1-5-80-")
+}
+
+/// Owner SID of a file or folder as a string ("S-1-5-21-…").
+#[cfg(target_os = "windows")]
+fn folder_owner_sid(path: &Path) -> Option<String> {
+    use std::ffi::c_void;
+    use std::os::windows::ffi::OsStrExt;
+
+    #[link(name = "advapi32")]
+    extern "system" {
+        fn GetNamedSecurityInfoW(
+            object_name: *const u16,
+            object_type: u32,
+            security_info: u32,
+            owner: *mut *mut c_void,
+            group: *mut *mut c_void,
+            dacl: *mut *mut c_void,
+            sacl: *mut *mut c_void,
+            descriptor: *mut *mut c_void,
+        ) -> u32;
+        fn ConvertSidToStringSidW(sid: *mut c_void, string_sid: *mut *mut u16) -> i32;
+    }
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn LocalFree(mem: *mut c_void) -> *mut c_void;
+    }
+    const SE_FILE_OBJECT: u32 = 1;
+    const OWNER_SECURITY_INFORMATION: u32 = 1;
+
+    let wide: Vec<u16> = path.as_os_str().encode_wide().chain(std::iter::once(0)).collect();
+    let mut owner: *mut c_void = std::ptr::null_mut();
+    let mut descriptor: *mut c_void = std::ptr::null_mut();
+    // SAFETY: valid NUL-terminated path; out-pointers are valid; the
+    // descriptor (which owns `owner`) is freed with LocalFree below.
+    unsafe {
+        let rc = GetNamedSecurityInfoW(
+            wide.as_ptr(),
+            SE_FILE_OBJECT,
+            OWNER_SECURITY_INFORMATION,
+            &mut owner,
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+            &mut descriptor,
+        );
+        if rc != 0 || owner.is_null() {
+            if !descriptor.is_null() {
+                LocalFree(descriptor);
+            }
+            return None;
+        }
+        let mut sid_str: *mut u16 = std::ptr::null_mut();
+        let ok = ConvertSidToStringSidW(owner, &mut sid_str) != 0 && !sid_str.is_null();
+        let result = if ok {
+            let mut len = 0usize;
+            while *sid_str.add(len) != 0 {
+                len += 1;
+            }
+            let s = String::from_utf16_lossy(std::slice::from_raw_parts(sid_str, len));
+            LocalFree(sid_str as *mut c_void);
+            Some(s)
+        } else {
+            None
+        };
+        LocalFree(descriptor);
+        result
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn folder_owner_sid(_path: &Path) -> Option<String> {
+    None
 }
 
 /// Returns true if this path should be skipped during scanning.
@@ -421,6 +576,29 @@ mod tests {
             Path::new(r"C:\Users\jaros\Documents\League of Legends"),
             &[]
         ));
+    }
+
+    #[test]
+    fn only_current_user_profile_is_scanned() {
+        use super::is_other_user_profile;
+        let me = Path::new("/Users/jaros");
+        assert!(!is_other_user_profile(Path::new("/Users/jaros"), Some(me)));
+        assert!(!is_other_user_profile(Path::new("/Users/JAROS"), Some(me)));
+        assert!(is_other_user_profile(Path::new("/Users/Public"), Some(me)));
+        assert!(is_other_user_profile(Path::new("/Users/Default"), Some(me)));
+        // Not directly on the drive root → unaffected
+        assert!(!is_other_user_profile(Path::new("/Data/Users/Klient"), Some(me)));
+        // Unknown profile → scan everything
+        assert!(!is_other_user_profile(Path::new("/Users/Public"), None));
+    }
+
+    #[test]
+    fn system_owner_sids() {
+        use super::is_system_sid;
+        assert!(is_system_sid("S-1-5-18"));
+        assert!(is_system_sid("S-1-5-32-544"));
+        assert!(is_system_sid("S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464"));
+        assert!(!is_system_sid("S-1-5-21-1004336348-1177238915-682003330-1001"));
     }
 
     #[test]

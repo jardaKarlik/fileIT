@@ -114,8 +114,9 @@ export function Home() {
                 <div className="home-cta-scope-note">Všechny místní disky</div>
               )}
               <div className="home-cta-scope-note">
-                Celé disky včetně všech složek (např. C:\Klienti). Přeskakují se systémové
-                a programové složky, skryté soubory a soubory dostupné jen v cloudu.
+                Celé disky včetně vašich vlastních složek (např. C:\Klienti). Ve složce Users
+                jen váš profil. Přeskakují se Windows, nainstalované programy, skryté soubory
+                a soubory dostupné jen v cloudu. Čtou se jen dokumenty, ne konfigurační soubory.
               </div>
             </div>
             <div className="home-cta-actions">
