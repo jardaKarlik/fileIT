@@ -801,7 +801,7 @@ pub fn get_onedrive_path() -> Option<String> {
         // Priority 3: ~/OneDrive
         let home_path: Option<String> = std::env::var("USERPROFILE")
             .ok()
-            .map(|p| format!("{}\\OneDrive", p))
+            .map(|p| Path::new(&p).join("OneDrive").to_string_lossy().into_owned())
             .filter(|p| Path::new(p).exists());
 
         let base = registry_path.or(env_path).or(home_path)?;
@@ -809,11 +809,8 @@ pub fn get_onedrive_path() -> Option<String> {
 
         // Prefer a \Documents subfolder if it exists
         let docs = base_path.join("Documents");
-        if docs.is_dir() {
-            Some(format!("{}\\reOrganized", docs.display()))
-        } else {
-            Some(format!("{}\\reOrganized", base_path.display()))
-        }
+        let root = if docs.is_dir() { docs } else { base_path.to_path_buf() };
+        Some(root.join("reOrganized").to_string_lossy().into_owned())
     }
 
     // macOS: OneDrive syncs into ~/Library/CloudStorage/OneDrive-<account>.

@@ -930,21 +930,19 @@ pub fn detect_cloud_clients() -> Vec<crate::types::DetectedCloud> {
     {
         use std::path::PathBuf;
 
-        let user_profile = std::env::var("USERPROFILE")
-            .unwrap_or_else(|_| "C:\\Users\\User".to_string());
+        let user_profile = user_home_dir().unwrap_or_else(|| PathBuf::from(r"C:\Users\User"));
 
-        let candidates = vec![
-            ("OneDrive", format!("{}\\OneDrive", user_profile)),
-            ("OneDrive - Business", format!("{}\\OneDrive - Business", user_profile)),
-            ("Dropbox", format!("{}\\Dropbox", user_profile)),
-            ("Google Drive", format!("{}\\Google Drive", user_profile)),
-            ("Google Drive (G:)", "G:\\My Drive".to_string()),
-            ("Box", format!("{}\\Box", user_profile)),
-            ("Box Sync", format!("{}\\Box Sync", user_profile)),
+        let candidates: Vec<(&str, PathBuf)> = vec![
+            ("OneDrive", user_profile.join("OneDrive")),
+            ("OneDrive - Business", user_profile.join("OneDrive - Business")),
+            ("Dropbox", user_profile.join("Dropbox")),
+            ("Google Drive", user_profile.join("Google Drive")),
+            ("Google Drive (G:)", PathBuf::from(r"G:\My Drive")),
+            ("Box", user_profile.join("Box")),
+            ("Box Sync", user_profile.join("Box Sync")),
         ];
 
-        for (name, path_str) in candidates {
-            let path = PathBuf::from(&path_str);
+        for (name, path) in candidates {
             if path.exists() && path.is_dir() {
                 // Check if the sync client process is running (heuristic)
                 let is_running = is_sync_client_running(name);
