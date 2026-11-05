@@ -124,7 +124,7 @@ impl CnbRegistry {
 
     /// Look up an institution by exact name (case-insensitive).
     pub fn lookup_by_name(&self, name: &str) -> Option<&Institution> {
-        self.by_name_lower.get(&name.to_lowercase())
+        self.by_name_lower.get(&crate::norm::nfc(name).to_lowercase())
     }
 
     /// Detect an institution from file path components.
@@ -135,12 +135,12 @@ impl CnbRegistry {
             .unwrap_or(path)
             .components()
             .filter_map(|c| c.as_os_str().to_str())
-            .map(|s| s.to_lowercase())
+            .map(|s| crate::norm::nfc(s).to_lowercase())
             .collect();
 
         // Strategy 1: 8-digit ICO embedded in the filename → very high confidence.
-        if let Some(filename) = path.file_stem().and_then(|s| s.to_str()) {
-            if let Some(ico) = find_ico_in_filename(filename) {
+        if let Some(filename) = path.file_stem().and_then(|s| s.to_str()).map(crate::norm::nfc) {
+            if let Some(ico) = find_ico_in_filename(&filename) {
                 if let Some(inst) = self.lookup_by_ico(&ico) {
                     return Some((inst.clone(), 0.95));
                 }
@@ -225,6 +225,18 @@ mod tests {
             inst.name
         );
         assert!(conf >= 0.6);
+    }
+
+    #[test]
+    fn detects_exact_name_from_nfd_folder() {
+        // macOS stores the folder name "A-Z pojištění s.r.o." decomposed.
+        let reg = CnbRegistry::new().expect("registry loads");
+        let nfd = "A-Z pojis\u{030C}te\u{030C}ni\u{0301} s.r.o.";
+        assert_ne!(nfd, "A-Z pojištění s.r.o.");
+        let p = Path::new("/Users/jana/Documents").join(nfd).join("smlouva.pdf");
+        let (inst, conf) = reg.detect_from_path(&p).expect("NFD exact-name match");
+        assert_eq!(inst.name, "A-Z pojištění s.r.o.");
+        assert_eq!(conf, 0.90);
     }
 
     #[test]

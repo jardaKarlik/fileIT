@@ -49,6 +49,9 @@ regex = "1"
 encoding_rs = "0.8"
 once_cell = "1"
 
+# NFC normalisation: macOS stores accented file names decomposed (NFD)
+unicode-normalization = "0.1"
+
 # String similarity (fuzzy customer name matching)
 strsim = "0.11"
 

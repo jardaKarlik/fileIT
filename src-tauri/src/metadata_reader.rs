@@ -291,6 +291,7 @@ pub fn path_institution_tokens(path: &Path) -> String {
     path.components()
         .filter_map(|c| c.as_os_str().to_str())
         .filter(|s| s.len() >= 3 && !SKIP.contains(s))
+        .map(crate::norm::nfc)
         .collect::<Vec<_>>()
         .join(" ")
 }

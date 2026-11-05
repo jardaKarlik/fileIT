@@ -370,6 +370,9 @@ impl NerEngine {
     /// Extract doc type, institution, and customer name signals from the filename.
     /// Separators (_, -) are normalised to spaces before matching.
     pub fn signals_from_filename(&self, name: &str) -> FilenameSignals {
+        // NFC: macOS file names are often decomposed (NFD).
+        let name = crate::norm::nfc(name);
+        let name = name.as_str();
         let stem = std::path::Path::new(name)
             .file_stem()
             .and_then(|s| s.to_str())

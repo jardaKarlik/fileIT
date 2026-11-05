@@ -138,6 +138,9 @@ impl Classifier {
             }
         };
 
+        // NFC: text from macOS-made PDFs / files can be decomposed (NFD),
+        // which would defeat every Czech keyword and name match below.
+        let raw_text = crate::norm::nfc(&raw_text);
         let text_lower = raw_text.to_lowercase();
 
         // NER pass on content
@@ -268,6 +271,38 @@ pub struct OcrExtractContext {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// macOS file names arrive decomposed (NFD). Filename and content
+    /// signals must still match the NFC dictionary and rules.
+    #[tokio::test]
+    async fn nfd_filename_and_text_still_match() {
+        let dict = include_str!("../../resources/institution_dictionary.json");
+        let classifier = Classifier::new(dict).expect("dictionary loads");
+
+        // "Výpis ČSOB 2024.txt" decomposed
+        let nfd_name = "Vy\u{0301}pis C\u{030C}SOB 2024.txt";
+        let sig = classifier.ner.signals_from_filename(nfd_name);
+        let direct = sig.institution_direct.expect("ČSOB from NFD filename");
+        assert_eq!(direct.canonical_name, "ČSOB");
+
+        let dir = std::env::temp_dir().join(format!("fileit-nfd-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join(nfd_name);
+        // Content in NFD too (text exported on a Mac)
+        let nfd_text = "Pojistna\u{0301} smlouva\nKooperativa pojis\u{030C}t\u{030C}ovna, a.s.\n";
+        std::fs::write(&path, nfd_text).unwrap();
+        let record = FileRecord {
+            path: path.clone(),
+            name: crate::norm::nfc(nfd_name),
+            extension: "txt".into(),
+            size_bytes: std::fs::metadata(&path).unwrap().len(),
+            modified: chrono::Utc::now(),
+            sha256: None,
+        };
+        let cf = classifier.classify(record).await;
+        assert!(cf.institution.is_some(), "institution from NFD content/filename");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     /// A plain-text document goes through the full classifier and its Czech
     /// identifiers end up on the ClassifiedFile.

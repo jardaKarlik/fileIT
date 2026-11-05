@@ -165,6 +165,37 @@ pub struct ClassifiedFile {
 }
 
 impl ClassifiedFile {
+    /// Minimal unclassified file for unit tests.
+    #[cfg(test)]
+    pub fn test_stub(path: PathBuf, name: &str) -> Self {
+        ClassifiedFile {
+            record: FileRecord {
+                path,
+                name: name.to_string(),
+                extension: "pdf".into(),
+                size_bytes: 1,
+                modified: Utc::now(),
+                sha256: None,
+            },
+            category: FileCategory::Pdf,
+            customer: None,
+            all_customers: vec![],
+            institution: None,
+            document_type: DocumentType::Unknown,
+            document_date: None,
+            confidence: 0.0,
+            ocr_used: false,
+            text_preview: None,
+            is_duplicate: false,
+            duplicate_of: None,
+            pdf_producer: None,
+            pdf_creator: None,
+            ocr: None,
+            ocr_skipped: false,
+            metadata: None,
+        }
+    }
+
     /// Returns true if confidence is in the "review required" band (0.40–0.84).
     #[allow(dead_code)]
     pub fn needs_review(&self) -> bool {

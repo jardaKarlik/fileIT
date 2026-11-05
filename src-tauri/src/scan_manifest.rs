@@ -52,7 +52,7 @@ impl ScanManifest {
             .map(|cf| {
                 let classification_json = serde_json::to_string(cf).ok();
                 ManifestEntry {
-                    path: cf.record.path.to_string_lossy().to_string(),
+                    path: crate::norm::path_key(&cf.record.path),
                     sha256: cf.record.sha256.clone().unwrap_or_default(),
                     modified: cf.record.modified.timestamp(),
                     size_bytes: cf.record.size_bytes,
@@ -128,12 +128,13 @@ impl ScanManifest {
     pub fn diff(&self, current_files: &[FileRecord]) -> ScanDiff {
         let mut previous_map: HashMap<String, &ManifestEntry> = HashMap::new();
         for entry in &self.files {
-            previous_map.insert(entry.path.clone(), entry);
+            // Older manifests may hold NFD keys written on macOS.
+            previous_map.insert(crate::norm::nfc(&entry.path), entry);
         }
 
         let mut current_map: HashMap<String, &FileRecord> = HashMap::new();
         for file in current_files {
-            current_map.insert(file.path.to_string_lossy().to_string(), file);
+            current_map.insert(crate::norm::path_key(&file.path), file);
         }
 
         let mut unchanged = Vec::new();
@@ -175,6 +176,51 @@ impl ScanManifest {
             modified_files: modified,
             new_files,
             deleted_files: deleted,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::{TimeZone, Utc};
+
+    fn record(path: &str) -> FileRecord {
+        FileRecord {
+            path: PathBuf::from(path),
+            name: String::new(),
+            extension: "pdf".into(),
+            size_bytes: 10,
+            modified: Utc.timestamp_opt(1_700_000_000, 0).unwrap(),
+            sha256: Some("abc".into()),
+        }
+    }
+
+    #[test]
+    fn nfd_and_nfc_paths_are_the_same_manifest_key() {
+        // Manifest written with the NFC spelling, file now reported NFD
+        // (macOS) — and the reverse: an old manifest holding an NFD key.
+        for (stored, current) in [
+            ("/Users/jana/Klienti/Dvořák/smlouva.pdf", "/Users/jana/Klienti/Dvor\u{030C}a\u{0301}k/smlouva.pdf"),
+            ("/Users/jana/Klienti/Dvor\u{030C}a\u{0301}k/smlouva.pdf", "/Users/jana/Klienti/Dvořák/smlouva.pdf"),
+        ] {
+            let manifest = ScanManifest {
+                scan_id: "s".into(),
+                scanned_at: String::new(),
+                total_files: 1,
+                total_size_bytes: 10,
+                files: vec![ManifestEntry {
+                    path: stored.into(),
+                    sha256: "abc".into(),
+                    modified: 1_700_000_000,
+                    size_bytes: 10,
+                    classification: None,
+                }],
+            };
+            let diff = manifest.diff(&[record(current)]);
+            assert_eq!(diff.unchanged_files.len(), 1, "{stored} vs {current}");
+            assert!(diff.new_files.is_empty());
+            assert!(diff.deleted_files.is_empty());
         }
     }
 }

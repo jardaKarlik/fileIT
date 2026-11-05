@@ -10,6 +10,7 @@ mod cm_registry;
 mod cnb_registry;
 mod commands;
 mod metadata_reader;
+mod norm;
 mod ocr;
 mod ocr_store;
 mod restructure;

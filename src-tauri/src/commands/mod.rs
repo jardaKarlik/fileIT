@@ -184,7 +184,7 @@ pub async fn start_scan(
         let diff = manifest.diff(&records);
         let reused_count = diff.unchanged_files.len();
         for entry in diff.unchanged_files {
-            unchanged_lookup.insert(entry.path.clone(), entry);
+            unchanged_lookup.insert(crate::norm::nfc(&entry.path), entry);
         }
         info!(
             "Re-scan diff: {} unchanged, {} modified, {} new, {} deleted",
@@ -236,7 +236,7 @@ pub async fn start_scan(
         );
 
         // Reuse classification from previous scan if file is unchanged
-        let path_key = record.path.to_string_lossy().to_string();
+        let path_key = crate::norm::path_key(&record.path);
         if let Some(prev_entry) = unchanged_lookup.get(&path_key) {
             if let Some(ref clf_json) = prev_entry.classification {
                 if let Ok(prev_cf) = serde_json::from_str::<ClassifiedFile>(clf_json) {

@@ -191,11 +191,11 @@ pub async fn scan_directories(
                 false
             };
 
-            let name = path
-                .file_name()
-                .unwrap_or_default()
-                .to_string_lossy()
-                .to_string();
+                // NFC: macOS stores accented names decomposed (NFD); everything
+            // downstream (NER, registries, folder names) expects NFC.
+            let name = crate::norm::nfc(
+                &path.file_name().unwrap_or_default().to_string_lossy(),
+            );
 
             debug!("Found: {:?}", name);
             files_seen += 1;

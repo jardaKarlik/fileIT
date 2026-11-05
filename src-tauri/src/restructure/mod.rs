@@ -35,8 +35,10 @@ pub fn preview(
     let mut duplicate_count = 0usize;
     // Destinations already claimed by earlier files in this plan. Without
     // this, two "faktura.pdf" from different folders get the same target and
-    // the second move overwrites the first. Lower-cased: NTFS is
-    // case-insensitive.
+    // the second move overwrites the first. Keys are NFC + lower-cased
+    // (norm::collision_key) on every platform: NTFS and default APFS/HFS+
+    // volumes are case-insensitive, and APFS/HFS+ also treat NFC and NFD
+    // spellings of "Dvořák.pdf" as the same name.
     let mut claimed: HashSet<String> = HashSet::new();
 
     for file in files {
@@ -79,7 +81,7 @@ pub fn preview(
         // keeps its name instead of being renamed to _2.
         let natural = folder_path.join(&file.record.name);
         let dest_file = if same_path(&natural, &file.record.path)
-            && claimed.insert(natural.to_string_lossy().to_lowercase())
+            && claimed.insert(crate::norm::collision_key(&natural))
         {
             natural
         } else {
@@ -364,7 +366,9 @@ fn move_file(src: &Path, dst: &Path) -> Result<String> {
 /// Removes characters forbidden in NTFS paths and control characters (\n, \r, \t, etc.).
 fn sanitise_folder_name(name: &str) -> String {
     let forbidden: &[char] = &['<', '>', ':', '"', '/', '\\', '|', '?', '*'];
-    let sanitised: String = name
+    // NFC first: a client name taken from an NFD folder name on macOS must
+    // map to the same folder as the NFC spelling from document text.
+    let sanitised: String = crate::norm::nfc(name)
         .chars()
         .filter(|c| !c.is_control())  // Strip control characters (\n, \r, \t, etc.)
         .map(|c| if forbidden.contains(&c) { '_' } else { c })
@@ -395,7 +399,7 @@ fn sanitise_folder_name(name: &str) -> String {
 
 /// Case-insensitive path equality (NTFS semantics).
 fn same_path(a: &Path, b: &Path) -> bool {
-    a.to_string_lossy().to_lowercase() == b.to_string_lossy().to_lowercase()
+    crate::norm::collision_key(a) == crate::norm::collision_key(b)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -464,7 +468,7 @@ pub fn delete_journal(app_data_dir: &Path) {
 /// file in the same plan); the chosen name is added to `claimed`.
 fn unique_filename(folder: &Path, filename: &str, claimed: &mut HashSet<String>) -> PathBuf {
     let mut is_free = |p: &Path| {
-        let key = p.to_string_lossy().to_lowercase();
+        let key = crate::norm::collision_key(p);
         if p.exists() || claimed.contains(&key) {
             false
         } else {
@@ -593,6 +597,44 @@ mod tests {
         assert_eq!(a, dir.join("faktura.pdf"));
         assert_eq!(b, dir.join("Faktura_2.pdf"));
         assert_eq!(c, dir.join("faktura_3.pdf"));
+    }
+
+    #[test]
+    fn nfd_and_case_variants_collide() {
+        // macOS: "Faktura Dvořák.pdf" decomposed (NFD) and lower-cased must
+        // be treated as the same name as the NFC spelling.
+        let dir = std::env::temp_dir().join(format!("fileit-nfd-{}", Uuid::new_v4()));
+        let mut claimed = HashSet::new();
+        let a = unique_filename(&dir, "Faktura Dvořák.pdf", &mut claimed);
+        let b = unique_filename(&dir, "faktura dvor\u{030C}a\u{0301}k.pdf", &mut claimed);
+        assert_eq!(a, dir.join("Faktura Dvořák.pdf"));
+        assert_ne!(crate::norm::collision_key(&a), crate::norm::collision_key(&b));
+        assert!(b.to_string_lossy().contains("_2"));
+        assert!(same_path(
+            &dir.join("Smlouva Řehoř.pdf"),
+            &dir.join("smlouva R\u{030C}ehor\u{030C}.pdf")
+        ));
+    }
+
+    #[test]
+    fn nfd_folder_names_become_nfc() {
+        assert_eq!(sanitise_folder_name("Dvor\u{030C}a\u{0301}k Jan"), "Dvořák Jan");
+        assert_eq!(sanitise_folder_name("C\u{030C}eska\u{0301} spor\u{030C}itelna"), "Česká spořitelna");
+    }
+
+    #[test]
+    fn preview_nfd_file_already_in_place_keeps_name() {
+        // A file whose on-disk name is NFD (macOS) and that already sits at
+        // its target must not be renamed to _2 on a re-run.
+        let root = std::env::temp_dir().join(format!("fileit-inplace-nfd-{}", Uuid::new_v4()));
+        let nfd = "Faktura Dvor\u{030C}a\u{0301}k.pdf";
+        let path = root.join("Neroztříděné").join(nfd);
+        let file = ClassifiedFile::test_stub(path.clone(), &crate::norm::nfc(nfd));
+        let p = preview(&[file], &[], &root).unwrap();
+        assert_eq!(p.planned_moves.len(), 1);
+        let dest = &p.planned_moves[0].destination;
+        assert!(same_path(dest, &path), "{:?}", dest);
+        assert!(!dest.to_string_lossy().contains("_2"));
     }
 
     #[test]
