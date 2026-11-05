@@ -102,6 +102,7 @@ pub fn run() {
             commands::app_init,
             commands::detect_clouds,
             commands::start_scan,
+            commands::default_scan_roots,
             commands::build_preview,
             commands::run_restructure,
             commands::create_standalone_backup,

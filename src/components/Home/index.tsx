@@ -98,7 +98,7 @@ export function Home() {
             </div>
             <div className="home-cta-title">Jen analyzovat<br />moje soubory</div>
             <p className="home-cta-desc">
-              FileIT prohlédne vaše dokumenty a ukáže vám přehled — co kde máte, kolik toho je, kdo jsou vaši klienti. Nic se neuspořádá ani nepřesune.
+              FileIT prohlédne vaše disky a ukáže vám přehled — co kde máte, kolik toho je, kdo jsou vaši klienti. Nic se neuspořádá ani nepřesune.
             </p>
             <div className="home-cta-scope">
               <div className="home-cta-scope-label">Co se prohledá</div>
@@ -106,22 +106,23 @@ export function Home() {
                 <ul className="home-cta-scope-list">
                   {scanRoots.map(r => (
                     <li key={r.label} title={r.path || undefined}>
-                      📁 {r.label}{r.path && <span className="home-cta-scope-path"> — {r.path}</span>}
+                      📁 {r.label}{r.path && !r.label.includes(r.path) && <span className="home-cta-scope-path"> — {r.path}</span>}
                     </li>
                   ))}
                 </ul>
               ) : (
-                <div className="home-cta-scope-note">Složky Dokumenty, Plocha a Stažené soubory</div>
+                <div className="home-cta-scope-note">Všechny místní disky</div>
               )}
               <div className="home-cta-scope-note">
-                Včetně všech podsložek. Systémové, programové a skryté složky se přeskakují.
+                Celé disky včetně všech složek (např. C:\Klienti). Přeskakují se systémové
+                a programové složky, skryté soubory a soubory dostupné jen v cloudu.
               </div>
             </div>
             <div className="home-cta-actions">
               <button className="btn-indigo" onClick={(e) => { e.stopPropagation(); goAnalyze(); }}>
                 Začít analýzu <span>→</span>
               </button>
-              <span className="home-cta-time">~2–5 min</span>
+              <span className="home-cta-time">~5–20 min</span>
             </div>
           </div>
         </div>

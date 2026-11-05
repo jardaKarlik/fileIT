@@ -52,6 +52,9 @@ export const api = {
   /** Detect the OneDrive sync root on Windows. Returns null when not found. */
   getOneDrivePath: () => invoke<string | null>('get_onedrive_path'),
 
+  /** Local fixed drives a default scan covers, e.g. ["C:\\", "D:\\"]. */
+  defaultScanRoots: () => invoke<string[]>('default_scan_roots'),
+
   /**
    * Start a scan. Progress events come via onScanProgress listener.
    * `ocrEnabled` (Home-screen switch): Indra OCRs scanned pages and images —
@@ -236,6 +239,9 @@ function devMock(cmd: string, _args?: Record<string, unknown>): unknown {
 
     case 'upload_to_cm':
       return { uploaded: 1, queued: 0 } satisfies UploadResult;
+
+    case 'default_scan_roots':
+      return ['C:\\', 'D:\\'];
 
     case 'check_ocr':
       return {

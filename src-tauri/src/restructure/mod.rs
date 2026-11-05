@@ -33,6 +33,11 @@ pub fn preview(
     let mut subfolder_set: HashSet<PathBuf> = HashSet::new();
     let mut unknown_count = 0usize;
     let mut duplicate_count = 0usize;
+    // Destinations already claimed by earlier files in this plan. Without
+    // this, two "faktura.pdf" from different folders get the same target and
+    // the second move overwrites the first. Lower-cased: NTFS is
+    // case-insensitive.
+    let mut claimed: HashSet<String> = HashSet::new();
 
     for file in files {
         if file.is_duplicate {
@@ -70,7 +75,16 @@ pub fn preview(
         }
 
         // Handle filename collisions — append _2, _3 etc.
-        let dest_file = unique_filename(&folder_path, &file.record.name);
+        // A file already at its target (re-running over an organised folder)
+        // keeps its name instead of being renamed to _2.
+        let natural = folder_path.join(&file.record.name);
+        let dest_file = if same_path(&natural, &file.record.path)
+            && claimed.insert(natural.to_string_lossy().to_lowercase())
+        {
+            natural
+        } else {
+            unique_filename(&folder_path, &file.record.name, &mut claimed)
+        };
 
         planned_moves.push(PlannedMove {
             source: file.record.path.clone(),
@@ -116,6 +130,7 @@ pub async fn execute(
     let mut errors: Vec<FileError> = Vec::new();
 
     info!("Starting restructure: {} files to move", total);
+    let mut journal = Journal::start(app_data_dir, session_id);
 
     for (idx, plan) in planned_moves.iter().enumerate() {
         let _pct = ((idx as f32 / total as f32) * 100.0) as u32;
@@ -128,24 +143,36 @@ pub async fn execute(
 
         emit_progress(app, moved, total, &plan.file_name, &log_line, false, None);
 
-        // Create destination directory if needed
+        // Create destination directory if needed. A failure here is a
+        // per-file error: aborting would lose the manifest of the files
+        // already moved, and with it the ability to restore them.
+        let mut dir_error: Option<String> = None;
         if let Some(parent) = plan.destination.parent() {
             if !parent.exists() {
-                std::fs::create_dir_all(parent)
-                    .with_context(|| format!("Creating directory: {:?}", parent))?;
-                folders_created += 1;
-                debug!("Created folder: {:?}", parent);
+                match std::fs::create_dir_all(parent) {
+                    Ok(()) => {
+                        folders_created += 1;
+                        debug!("Created folder: {:?}", parent);
+                    }
+                    Err(e) => dir_error = Some(format!("Creating directory {:?}: {}", parent, e)),
+                }
             }
         }
 
-        // Perform the move
-        match move_file(&plan.source, &plan.destination) {
-            Ok(sha256) => {
-                manifest_entries.push(ManifestEntry {
+        // Perform the move (never overwrites an existing file)
+        let outcome = match dir_error {
+            Some(e) => Err(anyhow::anyhow!(e)),
+            None => move_file_no_overwrite(&plan.source, &plan.destination),
+        };
+        match outcome {
+            Ok((sha256, actual_dest)) => {
+                let entry = ManifestEntry {
                     original_path: plan.source.clone(),
-                    new_path: plan.destination.clone(),
+                    new_path: actual_dest,
                     sha256,
-                });
+                };
+                journal.record(&entry);
+                manifest_entries.push(entry);
                 moved += 1;
                 debug!("Moved {}/{}: {:?}", moved, total, plan.file_name);
             }
@@ -226,14 +253,20 @@ pub async fn restore(
         // Re-create original directory if it no longer exists
         if let Some(parent) = entry.original_path.parent() {
             if !parent.exists() {
-                std::fs::create_dir_all(parent)
-                    .with_context(|| format!("Recreating directory: {:?}", parent))?;
+                if let Err(e) = std::fs::create_dir_all(parent) {
+                    warn!("Cannot recreate {:?} for restore: {}", parent, e);
+                    continue;
+                }
             }
         }
 
-        // Move back from new_path → original_path
-        match move_file(&entry.new_path, &entry.original_path) {
-            Ok(_) => {
+        // Move back from new_path → original_path. If a different file now
+        // sits at the original path, keep both (restored copy gets _2).
+        match move_file_no_overwrite(&entry.new_path, &entry.original_path) {
+            Ok((_, actual)) => {
+                if actual != entry.original_path {
+                    warn!("Original path occupied; restored {:?} as {:?}", entry.original_path, actual);
+                }
                 restored += 1;
             }
             Err(e) => {
@@ -257,9 +290,31 @@ pub async fn restore(
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Move `src` to `dst`, or to `dst_2`, `dst_3`… if `dst` already exists.
+/// std::fs::rename and fs::copy both silently replace an existing file on
+/// Windows, so the free name is chosen here first.
+/// Returns (hash_before, actual_destination).
+fn move_file_no_overwrite(src: &Path, dst: &Path) -> Result<(String, PathBuf)> {
+    if same_path(src, dst) {
+        // Already in place — nothing to move.
+        let hash = crate::scanner::compute_hash_for_manifest(src).unwrap_or_else(|| "unknown".to_string());
+        return Ok((hash, dst.to_path_buf()));
+    }
+    let actual = if dst.exists() {
+        let folder = dst.parent().unwrap_or_else(|| Path::new("."));
+        let name = dst.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+        unique_filename(folder, &name, &mut HashSet::new())
+    } else {
+        dst.to_path_buf()
+    };
+    let hash = move_file(src, &actual)?;
+    Ok((hash, actual))
+}
+
 /// Move a file, computing its SHA-256 digest before and after moving for verification.
 /// Uses fs::rename for same-filesystem moves (fast, atomic on most OSes).
 /// Falls back to copy+delete for cross-filesystem moves.
+/// Callers must ensure `dst` does not exist (see move_file_no_overwrite).
 fn move_file(src: &Path, dst: &Path) -> Result<String> {
     // Compute hash before moving (source is still readable here)
     let hash_before = crate::scanner::compute_hash_for_manifest(src)
@@ -288,8 +343,10 @@ fn move_file(src: &Path, dst: &Path) -> Result<String> {
     let src_meta = std::fs::metadata(src)?;
     let dst_meta = std::fs::metadata(dst)?;
     if src_meta.len() != dst_meta.len() {
-        warn!(
-            "File size mismatch after copy: {} → {} bytes for {:?}",
+        // Never delete the original when the copy is incomplete.
+        let _ = std::fs::remove_file(dst);
+        anyhow::bail!(
+            "File size mismatch after copy: {} → {} bytes for {:?}; original kept",
             src_meta.len(),
             dst_meta.len(),
             dst
@@ -313,21 +370,111 @@ fn sanitise_folder_name(name: &str) -> String {
         .map(|c| if forbidden.contains(&c) { '_' } else { c })
         .collect();
 
-    // Trim trailing dots and spaces (Windows disallows them)
-    let trimmed = sanitised.trim_end_matches(|c| c == '.' || c == ' ');
+    // Limit to 80 characters. Count chars, not bytes: byte slicing panics
+    // in the middle of a Czech letter (č, ř, ů… are 2 bytes in UTF-8).
+    let limited: String = sanitised.trim().chars().take(80).collect();
 
-    // Limit folder name length to 80 chars
-    if trimmed.len() > 80 {
-        trimmed[..80].to_string()
-    } else {
-        trimmed.to_string()
+    // Trim trailing dots and spaces (Windows disallows them)
+    let trimmed = limited.trim_end_matches(|c| c == '.' || c == ' ').to_string();
+
+    if trimmed.is_empty() {
+        return "Neurčeno".to_string();
+    }
+    // Reserved device names cannot be folder names on Windows.
+    let upper = trimmed.to_ascii_uppercase();
+    let stem = upper.split('.').next().unwrap_or("");
+    let reserved = matches!(stem, "CON" | "PRN" | "AUX" | "NUL")
+        || ((stem.starts_with("COM") || stem.starts_with("LPT"))
+            && stem.len() == 4
+            && stem.as_bytes()[3].is_ascii_digit());
+    if reserved {
+        return format!("{}_", trimmed);
+    }
+    trimmed
+}
+
+/// Case-insensitive path equality (NTFS semantics).
+fn same_path(a: &Path, b: &Path) -> bool {
+    a.to_string_lossy().to_lowercase() == b.to_string_lossy().to_lowercase()
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Crash-safe journal: every completed move is appended immediately, so a
+// crash or power loss mid-run still leaves a record the app can restore from
+// (see recover_interrupted_run). Removed once the CompletedRun is saved.
+// ─────────────────────────────────────────────────────────────────────────────
+
+pub fn journal_path(app_data_dir: &Path) -> PathBuf {
+    app_data_dir.join("state").join("restructure_journal.jsonl")
+}
+
+struct Journal {
+    file: Option<std::fs::File>,
+}
+
+impl Journal {
+    fn start(app_data_dir: &Path, session_id: &str) -> Self {
+        use std::io::Write;
+        let path = journal_path(app_data_dir);
+        let file = path
+            .parent()
+            .map(std::fs::create_dir_all)
+            .transpose()
+            .ok()
+            .and_then(|_| std::fs::File::create(&path).ok())
+            .and_then(|mut f| {
+                let header = serde_json::json!({ "session_id": session_id });
+                writeln!(f, "{}", header).ok()?;
+                Some(f)
+            });
+        if file.is_none() {
+            warn!("[restructure] Cannot create journal {:?}; crash recovery unavailable", path);
+        }
+        Self { file }
+    }
+
+    fn record(&mut self, entry: &ManifestEntry) {
+        use std::io::Write;
+        if let Some(f) = self.file.as_mut() {
+            if let Ok(line) = serde_json::to_string(entry) {
+                let _ = writeln!(f, "{}", line);
+                let _ = f.sync_data();
+            }
+        }
     }
 }
 
+/// Read an interrupted run's journal: (session_id, completed moves).
+pub fn read_journal(app_data_dir: &Path) -> Option<(String, Vec<ManifestEntry>)> {
+    let raw = std::fs::read_to_string(journal_path(app_data_dir)).ok()?;
+    let mut lines = raw.lines();
+    let header: serde_json::Value = serde_json::from_str(lines.next()?).ok()?;
+    let session_id = header.get("session_id")?.as_str()?.to_string();
+    // A torn last line (crash during write) is simply ignored.
+    let moves: Vec<ManifestEntry> = lines.filter_map(|l| serde_json::from_str(l).ok()).collect();
+    Some((session_id, moves))
+}
+
+pub fn delete_journal(app_data_dir: &Path) {
+    let _ = std::fs::remove_file(journal_path(app_data_dir));
+}
+
 /// Generate a unique destination filename, appending _2, _3, ... if needed.
-fn unique_filename(folder: &Path, filename: &str) -> PathBuf {
+/// A name is taken if it exists on disk or is already in `claimed` (another
+/// file in the same plan); the chosen name is added to `claimed`.
+fn unique_filename(folder: &Path, filename: &str, claimed: &mut HashSet<String>) -> PathBuf {
+    let mut is_free = |p: &Path| {
+        let key = p.to_string_lossy().to_lowercase();
+        if p.exists() || claimed.contains(&key) {
+            false
+        } else {
+            claimed.insert(key);
+            true
+        }
+    };
+
     let path = folder.join(filename);
-    if !path.exists() {
+    if is_free(&path) {
         return path;
     }
 
@@ -343,7 +490,7 @@ fn unique_filename(folder: &Path, filename: &str) -> PathBuf {
     for i in 2..=999 {
         let new_name = format!("{}_{}{}", stem, i, ext);
         let new_path = folder.join(&new_name);
-        if !new_path.exists() {
+        if is_free(&new_path) {
             return new_path;
         }
     }
@@ -417,4 +564,84 @@ fn emit_restore_progress(
             "done": done
         }),
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn folder_names_are_safe() {
+        // Long Czech name: must not panic on a multi-byte boundary.
+        let long = "Česká spořitelna ".repeat(10);
+        let s = sanitise_folder_name(&long);
+        assert!(s.chars().count() <= 80);
+        assert_eq!(sanitise_folder_name("a:b/c"), "a_b_c");
+        assert_eq!(sanitise_folder_name("  ...  "), "Neurčeno");
+        assert_eq!(sanitise_folder_name("CON"), "CON_");
+        assert_eq!(sanitise_folder_name("com1"), "com1_");
+        assert_eq!(sanitise_folder_name("Composite"), "Composite");
+    }
+
+    #[test]
+    fn same_name_files_get_distinct_destinations() {
+        let dir = std::env::temp_dir().join(format!("fileit-restructure-{}", Uuid::new_v4()));
+        let mut claimed = HashSet::new();
+        let a = unique_filename(&dir, "faktura.pdf", &mut claimed);
+        let b = unique_filename(&dir, "Faktura.pdf", &mut claimed);
+        let c = unique_filename(&dir, "faktura.pdf", &mut claimed);
+        assert_eq!(a, dir.join("faktura.pdf"));
+        assert_eq!(b, dir.join("Faktura_2.pdf"));
+        assert_eq!(c, dir.join("faktura_3.pdf"));
+    }
+
+    #[test]
+    fn journal_roundtrip_ignores_torn_line() {
+        use std::io::Write;
+        let dir = std::env::temp_dir().join(format!("fileit-journal-{}", Uuid::new_v4()));
+        let mut j = Journal::start(&dir, "sess-1");
+        let e = ManifestEntry {
+            original_path: PathBuf::from(r"D:\Klienti\a.pdf"),
+            new_path: PathBuf::from(r"C:\ReOrganized\X\a.pdf"),
+            sha256: "abc".into(),
+        };
+        j.record(&e);
+        // Simulate a crash mid-write
+        j.file.as_mut().unwrap().write_all(b"{\"original_pa").unwrap();
+        drop(j);
+        let (sid, moves) = read_journal(&dir).unwrap();
+        assert_eq!(sid, "sess-1");
+        assert_eq!(moves.len(), 1);
+        assert_eq!(moves[0].original_path, e.original_path);
+        delete_journal(&dir);
+        assert!(read_journal(&dir).is_none());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn already_in_place_is_noop() {
+        let dir = std::env::temp_dir().join(format!("fileit-inplace-{}", Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let f = dir.join("a.pdf");
+        std::fs::write(&f, b"x").unwrap();
+        let (_, actual) = move_file_no_overwrite(&f, &f).unwrap();
+        assert_eq!(actual, f);
+        assert!(f.exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn move_never_overwrites() {
+        let dir = std::env::temp_dir().join(format!("fileit-move-{}", Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let src = dir.join("src.txt");
+        let dst = dir.join("dst.txt");
+        std::fs::write(&src, b"new").unwrap();
+        std::fs::write(&dst, b"existing").unwrap();
+        let (_, actual) = move_file_no_overwrite(&src, &dst).unwrap();
+        assert_eq!(actual, dir.join("dst_2.txt"));
+        assert_eq!(std::fs::read(&dst).unwrap(), b"existing");
+        assert_eq!(std::fs::read(&actual).unwrap(), b"new");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }

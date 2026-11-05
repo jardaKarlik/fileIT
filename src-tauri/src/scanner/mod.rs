@@ -30,6 +30,8 @@ const SKIP_DIRS: &[&str] = &[
     "ProgramData", "$Recycle.Bin", "System Volume Information",
     "Recovery", "RECOVERY", "$SysReset", "MSOCache",
     "$WinREAgent", "PerfLogs", "Intel", "AMD",
+    "Windows.old", "$Windows.~BT", "$Windows.~WS", "$GetCurrent",
+    "Config.Msi", "OneDriveTemp", "msys64", "cygwin64",
     // User profile noise
     "AppData", ".cache", ".local", ".config",
     // Dev tooling & package managers
@@ -64,6 +66,7 @@ pub async fn scan_directories(
     let mut records: Vec<FileRecord> = Vec::new();
     let mut hash_map: HashMap<String, PathBuf> = HashMap::new(); // sha256 → first_path
     let mut files_seen = 0usize;
+    let mut cloud_only_skipped = 0usize;
 
     info!("Scanner: {} roots, {} allowed categories ({:?})",
         roots.len(), allowed_categories.len(), allowed_categories);
@@ -77,10 +80,11 @@ pub async fn scan_directories(
 
         emit_progress(app, files_seen, &format!("Prohlížíme {:?}…", root), None, false);
 
+        // depth 0 is the root the user chose — never skip it by name.
         for entry in WalkDir::new(root)
             .follow_links(false)
             .into_iter()
-            .filter_entry(|e| !should_skip(e.path(), extra_skip_dirs))
+            .filter_entry(|e| e.depth() == 0 || !should_skip(e.path(), extra_skip_dirs))
         {
             let entry = match entry {
                 Ok(e) => e,
@@ -91,6 +95,11 @@ pub async fn scan_directories(
             };
 
             if !entry.file_type().is_file() {
+                continue;
+            }
+
+            // Office lock/owner files ("~$smlouva.docx") are not documents.
+            if entry.file_name().to_string_lossy().starts_with("~$") {
                 continue;
             }
 
@@ -116,6 +125,14 @@ pub async fn scan_directories(
                     continue;
                 }
             };
+
+            // OneDrive / cloud "online-only" placeholders: reading them would
+            // download the whole file. Skip them instead of hydrating.
+            if is_cloud_placeholder(&metadata) {
+                cloud_only_skipped += 1;
+                debug!("Skip (cloud-only placeholder): {:?}", path);
+                continue;
+            }
 
             let size_bytes = metadata.len();
             let modified = metadata
@@ -144,7 +161,7 @@ pub async fn scan_directories(
                 .to_string_lossy()
                 .to_string();
 
-            info!("Found: {:?}", name);
+            debug!("Found: {:?}", name);
             files_seen += 1;
 
             // Emit progress every 10 files to avoid flooding the IPC bridge
@@ -184,8 +201,61 @@ pub async fn scan_directories(
         true,
     );
 
-    info!("Scan complete: {} files found across {} roots", records.len(), roots.len());
+    info!(
+        "Scan complete: {} files found across {} roots ({} cloud-only placeholders skipped)",
+        records.len(), roots.len(), cloud_only_skipped
+    );
     Ok(records)
+}
+
+/// True for cloud-sync placeholders whose content is not on disk
+/// (OneDrive "Files On-Demand", etc.).
+#[cfg(target_os = "windows")]
+fn is_cloud_placeholder(metadata: &std::fs::Metadata) -> bool {
+    use std::os::windows::fs::MetadataExt;
+    const FILE_ATTRIBUTE_OFFLINE: u32 = 0x0000_1000;
+    const FILE_ATTRIBUTE_RECALL_ON_OPEN: u32 = 0x0004_0000;
+    const FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS: u32 = 0x0040_0000;
+    metadata.file_attributes()
+        & (FILE_ATTRIBUTE_OFFLINE | FILE_ATTRIBUTE_RECALL_ON_OPEN | FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS)
+        != 0
+}
+
+#[cfg(not(target_os = "windows"))]
+fn is_cloud_placeholder(_metadata: &std::fs::Metadata) -> bool {
+    false
+}
+
+/// Default scan roots: every local fixed drive (C:\, D:\, …). Removable,
+/// network and optical drives are left out. Falls back to the system drive.
+#[cfg(target_os = "windows")]
+pub fn default_scan_roots() -> Vec<PathBuf> {
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn GetDriveTypeW(root_path_name: *const u16) -> u32;
+    }
+    const DRIVE_FIXED: u32 = 3;
+
+    let mut roots = Vec::new();
+    for letter in b'A'..=b'Z' {
+        let root = format!("{}:\\", letter as char);
+        let wide: Vec<u16> = root.encode_utf16().chain(std::iter::once(0)).collect();
+        // SAFETY: `wide` is a valid NUL-terminated UTF-16 string that outlives the call.
+        let kind = unsafe { GetDriveTypeW(wide.as_ptr()) };
+        if kind == DRIVE_FIXED {
+            roots.push(PathBuf::from(root));
+        }
+    }
+    if roots.is_empty() {
+        let drive = std::env::var("SystemDrive").unwrap_or_else(|_| "C:".to_string());
+        roots.push(PathBuf::from(format!("{}\\", drive)));
+    }
+    roots
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn default_scan_roots() -> Vec<PathBuf> {
+    vec![std::env::var_os("HOME").map(PathBuf::from).unwrap_or_else(|| PathBuf::from("/"))]
 }
 
 /// Compute SHA-256 of the first `max_bytes` of a file.
@@ -339,6 +409,7 @@ mod tests {
     use std::path::Path;
 
     #[test]
+    #[cfg(target_os = "windows")] // uses C:\\ paths, which only Windows splits into components
     fn skips_software_folders_case_insensitively() {
         assert!(should_skip(
             Path::new(r"C:\Users\jaros\Documents\Native Instruments"),

@@ -214,6 +214,7 @@ mod tests {
     use std::path::Path;
 
     #[test]
+    #[cfg(target_os = "windows")] // uses C:\\ paths, which only Windows splits into components
     fn detects_kooperativa_from_folder_token() {
         let reg = CnbRegistry::new().expect("registry loads");
         let p = Path::new(r"C:\Users\jaros\Kooperativa\2024\pojistka.pdf");
@@ -263,6 +264,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(target_os = "windows")] // uses C:\\ paths, which only Windows splits into components
     fn keeps_real_institution_directory_signal() {
         let reg = CnbRegistry::new().expect("registry loads");
         let p = Path::new(r"C:\Users\jaros\Documents\Kooperativa\2024\pojistka.pdf");

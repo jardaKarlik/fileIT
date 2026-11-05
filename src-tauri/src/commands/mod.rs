@@ -40,7 +40,40 @@ pub struct AppState {
 pub async fn app_init(
     state: State<'_, AppState>,
 ) -> Result<Option<CompletedRun>, String> {
-    let run = backup::load_completed_run(&state.app_data_dir);
+    let mut run = backup::load_completed_run(&state.app_data_dir);
+
+    // A journal left behind means the app stopped mid-restructure (crash,
+    // power loss) before the CompletedRun was written. Turn the moves it
+    // recorded into a pending run so the Confirmation screen offers restore.
+    if let Some((session_id, moves)) = restructure::read_journal(&state.app_data_dir) {
+        if !moves.is_empty() {
+            warn!("[app_init] Interrupted restructure found: {} moves in journal", moves.len());
+            let target = moves[0].new_path.parent().map(|p| p.to_path_buf()).unwrap_or_default();
+            let recovered = CompletedRun {
+                session_id: session_id.clone(),
+                completed_at: Utc::now(),
+                duration_seconds: 0,
+                files_moved: moves.len(),
+                folders_created: 0,
+                unknown_count: 0,
+                target_path: target,
+                backup_manifest_path: PathBuf::new(),
+                manifest: BackupManifest::new(&session_id, moves),
+                confirmation_status: ConfirmationStatus::Pending,
+                auto_confirm_at: Utc::now() + chrono::Duration::days(30),
+                backup_delete_at: None,
+            };
+            match backup::save_completed_run(&recovered, &state.app_data_dir) {
+                Ok(()) => {
+                    restructure::delete_journal(&state.app_data_dir);
+                    run = Some(recovered);
+                }
+                Err(e) => warn!("[app_init] Cannot save recovered run: {}", e),
+            }
+        } else {
+            restructure::delete_journal(&state.app_data_dir);
+        }
+    }
 
     // Check if auto-confirm deadline has passed
     if let Some(ref r) = run {
@@ -59,6 +92,16 @@ pub async fn app_init(
 }
 
 /// Detect installed cloud sync clients.
+/// The folders a default scan covers (all local fixed drives). Shown on the
+/// Home screen and used when the user did not pick a folder.
+#[tauri::command]
+pub fn default_scan_roots() -> Vec<String> {
+    scanner::default_scan_roots()
+        .into_iter()
+        .map(|p| p.to_string_lossy().into_owned())
+        .collect()
+}
+
 #[tauri::command]
 pub async fn detect_clouds() -> Vec<DetectedCloud> {
     scanner::detect_cloud_clients()
@@ -119,13 +162,11 @@ pub async fn start_scan(
     let scan_roots: Vec<PathBuf> = if !request.roots.is_empty() {
         request.roots.clone()
     } else {
-        // Scan the entire system drive so we catch documents everywhere —
-        // not just USERPROFILE. The scanner's SKIP_DIRS list keeps us out
-        // of Windows, Program Files, and other non-document directories.
-        let drive = std::env::var("SystemDrive").unwrap_or_else(|_| "C:".to_string());
-        let root = PathBuf::from(format!("{}\\", drive));
-        info!("No scan roots provided — scanning entire drive: {:?}", root);
-        vec![root]
+        // Scan every local fixed drive so work folders like C:\Klienti are
+        // found. SKIP_DIRS keeps us out of Windows, Program Files, AppData…
+        let roots = scanner::default_scan_roots();
+        info!("No scan roots provided — scanning local drives: {:?}", roots);
+        roots
     };
 
     let records = scanner::scan_directories(&app, scan_roots, &categories, &[])
@@ -619,8 +660,15 @@ pub async fn run_restructure(
         }
     };
 
-    let _ = backup::save_completed_run(&completed_run, &state.app_data_dir);
-    info!("[run_restructure] CompletedRun saved to last_run.json");
+    match backup::save_completed_run(&completed_run, &state.app_data_dir) {
+        Ok(()) => {
+            // The run record now holds every move; the crash journal is done.
+            restructure::delete_journal(&state.app_data_dir);
+            info!("[run_restructure] CompletedRun saved to last_run.json");
+        }
+        // Keep the journal: it is the only durable record of these moves.
+        Err(e) => warn!("[run_restructure] Cannot save CompletedRun ({}); journal kept for recovery", e),
+    }
 
     let target_path_str = completed_run.target_path.to_string_lossy().to_string();
 
