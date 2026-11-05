@@ -21,7 +21,6 @@ Thumbs.db
 
 # Tauri
 src-tauri/tauri.conf.json.bak
-src-tauri/Cargo.lock
 
 # Logs
 *.log

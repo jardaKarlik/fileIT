@@ -1,28 +1,52 @@
 # FileIT Changelog
 
-## [1.1.0] - Unreleased
+## [1.1.0] - 2026-11-05
 
 ### ✨ Features
 - **OCR switch on the Home screen** — "Číst skenované dokumenty (OCR)".
-  On (default): Indra OCR reads scanned PDFs and photos of documents — slower,
-  but more precise. Off: PDFs are read from their digital text layer only
-  (`indra-ocr --mode text`) and images are skipped. Remembered between launches.
-- **Each file is read / OCR'd once.** The content-hashed OCR cache now records
-  whether a result was text-only. A file scanned with OCR off is OCR'd once
-  when OCR is later switched on (only if its text layer is sparse); after that
-  it is never OCR'd again. Scan-manifest reuse redoes a classification only
-  when it was made without OCR and OCR is now on.
+  On (default): Indra OCR reads scanned PDFs and photos — slower, more precise.
+  Off: PDFs are read from their text layer only, images are skipped.
+- **Each file is read / OCR'd once.** OCR results are cached by content; a file
+  first scanned with OCR off is OCR'd once when OCR is switched on, never again.
+- **Whole-drive scan by default** — all local fixed drives. Skipped: Windows,
+  Program Files, ProgramData, AppData, other users' profiles, symlinks,
+  antivirus folders, installed programs and code projects (detected from
+  folder contents and owner), hidden files, OneDrive online-only files.
+  Home card lists what is scanned; `scripts/preview-scan-roots.ps1` previews it.
+- **Czech document metadata** collected per file: rodné číslo, IČO, DIČ, IBAN,
+  variable symbol, amounts, dates (fallback document date).
+- **New document types:** List vlastnictví (LV), Žádost, Souhlas, Plná moc,
+  Výpověď, Dodatek ke smlouvě, Úvěr a hypotéka.
+- **New file formats:** Datová schránka (.zfo, incl. attachments), ISDOC
+  e-invoices, XPS/OXPS, ZIP archives (classified and moved as one item),
+  LibreOffice (.odt/.ods/.odp), legacy .doc/.xls, Outlook .msg, RTF;
+  Czech windows-1250 / UTF-16 text files. XML removed from the scan scope.
+- **Help screen** "Jak to funguje": Citlivá data & GDPR, Režimy FileIT, and an
+  interactive folder-structure builder on 600 demo documents.
 
-### 🔧 Fixes
-- Dashboard "Spustit OCR" and the scan now share one cache key (scanner content
-  hash) — previously a file OCR'd during a scan was OCR'd again from the
-  Dashboard and vice versa.
-- No console window flashes on Windows for each Indra sidecar call.
+### 🐛 Fixes
+- Režim 2 could overwrite a file when two files with the same name were
+  planned into one folder; moves and restores never overwrite now.
+- Crash on long Czech folder names (cut inside a multi-byte letter).
+- Cross-drive move deleted the original even if the copy was incomplete.
+- A folder-creation error aborted the run and lost the record of moved files.
+- Re-running Režim 2 over an organised folder renamed files to `_2`.
+- Interrupted restructure (crash / power loss) is now recoverable on restart.
+- Document-type folders had English names (e.g. "InsuranceContract").
+- Režim 2 "Spustit skenování" used a hard-coded developer path.
+- Scan and Dashboard OCR re-OCR'd each other's files; console window flashed
+  for each OCR call.
 
-### 🔌 API
-- `start_scan` request: `ocr_enabled` (defaults to `true` when omitted).
-- `OcrResult.text_only`, `ClassifiedFile.ocr_skipped` (both default `false`,
-  so existing caches and scan manifests stay valid).
+### 🔧 Build
+- Tauri crates pinned to the npm package versions (`tauri build` refuses
+  mismatched versions); `Cargo.lock` committed for reproducible builds.
+
+### ⚠ Known limitations
+- Indra OCR is not bundled in the installer: install it separately
+  (`pip install indra-ocr`) or set `INDRA_OCR_COMMAND`; otherwise PDFs/images
+  are classified from names and folders only.
+- The installer is not code-signed yet (Windows SmartScreen warning).
+- HEIC (iPhone photos) not supported yet.
 
 ## [1.0.9] - 2026-06-09
 
