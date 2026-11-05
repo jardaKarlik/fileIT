@@ -144,7 +144,23 @@ impl Classifier {
         let mut customers = self.ner.find_customers(&raw_text);
         let content_institution = self.ner.find_institution(&text_lower);
         let content_doc_type = self.ner.find_document_type(&text_lower);
-        let document_date = self.ner.find_date(&raw_text);
+        // Structured Czech identifiers (IČO, DIČ, IBAN, VS, amounts, dates).
+        let metadata = if raw_text.trim().is_empty() {
+            None
+        } else {
+            Some(extract_metadata(&raw_text))
+        };
+
+        // Prefer the NER date; fall back to the first Czech date in the text
+        // ("15.03.2024" or "15. března 2024") so fewer files end up undated.
+        let document_date = self.ner.find_date(&raw_text).or_else(|| {
+            metadata
+                .as_ref()
+                .and_then(|m| m.czech_dates.first())
+                .and_then(|d| chrono::NaiveDate::parse_from_str(d, "%d.%m.%Y").ok())
+                .and_then(|d| d.and_hms_opt(12, 0, 0))
+                .map(|dt| dt.and_utc())
+        });
 
         // Merge: content wins → hint wins → filename dictionary → filename direct
         let institution = content_institution
@@ -229,6 +245,7 @@ impl Classifier {
             // whatever text layer it found. A later explicit OCR run fills this.
             ocr: None,
             ocr_skipped,
+            metadata,
         }
     }
 
@@ -246,4 +263,49 @@ pub struct OcrExtractContext {
     pub command: String,
     /// Home-screen OCR switch for this scan.
     pub ocr_enabled: bool,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A plain-text document goes through the full classifier and its Czech
+    /// identifiers end up on the ClassifiedFile.
+    #[tokio::test]
+    async fn classification_collects_czech_metadata() {
+        let dict = include_str!("../../resources/institution_dictionary.json");
+        let classifier = Classifier::new(dict).expect("dictionary loads");
+
+        let dir = std::env::temp_dir().join(format!("fileit-meta-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("faktura.txt");
+        std::fs::write(
+            &path,
+            "FAKTURA\nDodavatel: Firma s.r.o., IČO: 27082440, DIČ: CZ27082440\n\
+             Číslo účtu (IBAN): CZ65 0800 0000 1920 0014 5399\n\
+             Variabilní symbol: 2024001\nDatum vystavení: 15. března 2024\n\
+             Celkem k úhradě: 12 500,00 Kč\n",
+        )
+        .unwrap();
+
+        let record = FileRecord {
+            path: path.clone(),
+            name: "faktura.txt".into(),
+            extension: "txt".into(),
+            size_bytes: std::fs::metadata(&path).unwrap().len(),
+            modified: chrono::Utc::now(),
+            sha256: None,
+        };
+        let cf = classifier.classify(record).await;
+        let m = cf.metadata.expect("metadata collected");
+        assert_eq!(m.ico.as_deref(), Some("27082440"));
+        assert_eq!(m.dic.as_deref(), Some("CZ27082440"));
+        assert_eq!(m.iban.as_deref(), Some("CZ6508000000192000145399"));
+        assert_eq!(m.variable_symbol.as_deref(), Some("2024001"));
+        assert!(!m.amounts.is_empty(), "amounts: {:?}", m.amounts);
+        assert!(m.czech_dates.contains(&"15.03.2024".to_string()), "{:?}", m.czech_dates);
+        assert!(cf.document_date.is_some());
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }

@@ -158,6 +158,10 @@ pub struct ClassifiedFile {
     /// classification is redone once the user scans with OCR on.
     #[serde(default)]
     pub ocr_skipped: bool,
+    /// Czech identifiers found in the text: rodné číslo, IČO, DIČ, IBAN,
+    /// variable symbol, amounts, dates. None = no text was read.
+    #[serde(default)]
+    pub metadata: Option<crate::classifier::ExtractedMetadata>,
 }
 
 impl ClassifiedFile {

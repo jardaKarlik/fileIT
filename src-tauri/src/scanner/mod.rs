@@ -343,6 +343,8 @@ fn emit_progress(
 /// Detect installed cloud sync clients by checking for their well-known
 /// local sync directories on Windows.
 pub fn detect_cloud_clients() -> Vec<crate::types::DetectedCloud> {
+    // Only Windows pushes entries; elsewhere the list stays empty.
+    #[cfg_attr(not(target_os = "windows"), allow(unused_mut))]
     let mut clouds = Vec::new();
 
     #[cfg(target_os = "windows")]
@@ -398,10 +400,6 @@ fn is_sync_client_running(cloud_name: &str) -> bool {
         .unwrap_or(false)
 }
 
-#[cfg(not(target_os = "windows"))]
-fn is_sync_client_running(_cloud_name: &str) -> bool {
-    false
-}
 
 #[cfg(test)]
 mod tests {

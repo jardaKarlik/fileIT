@@ -251,8 +251,11 @@ pub async fn start_scan(
                     // redo it once so the scanned content is read. (The OCR
                     // itself still runs only once: see ocr::text_for_classification.)
                     let wants_ocr = request.ocr_enabled && prev_cf.ocr_skipped;
-                    if wants_ocr {
-                        log::debug!("Re-classifying with OCR: {}", record.name);
+                    // Classified before metadata extraction existed: redo once
+                    // (cheap — OCR results are cached) so IČO/IBAN/… get filled.
+                    let wants_metadata = prev_cf.metadata.is_none() && prev_cf.text_preview.is_some();
+                    if wants_ocr || wants_metadata {
+                        log::debug!("Re-classifying ({}): {}", if wants_ocr { "OCR" } else { "metadata" }, record.name);
                     } else if !usable {
                         log::debug!(
                             "Re-classifying (previous result empty): {}",
@@ -827,6 +830,8 @@ pub async fn open_in_explorer(path: String) -> Result<(), String> {
             .spawn()
             .map_err(|e| e.to_string())?;
     }
+    #[cfg(not(target_os = "windows"))]
+    let _ = path; // Explorer exists only on Windows
     Ok(())
 }
 

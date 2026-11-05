@@ -62,6 +62,20 @@ export interface ClassifiedFile {
   ocr?: OcrResult;
   /** Classified without OCR although OCR could read more (switch off / no sidecar). */
   ocr_skipped?: boolean;
+  /** Czech identifiers found in the text (null when no text was read). */
+  metadata?: ExtractedMetadata | null;
+}
+
+export interface ExtractedMetadata {
+  rodne_cislo: string | null;
+  ico: string | null;
+  dic: string | null;
+  iban: string | null;
+  variable_symbol: string | null;
+  /** e.g. "12 500,00 Kč", in order of appearance */
+  amounts: string[];
+  /** dd.mm.yyyy, in order of appearance */
+  czech_dates: string[];
 }
 
 /** One recognised region of a page — a heading, paragraph, table cell block, … */

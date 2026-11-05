@@ -15,7 +15,7 @@
 
 use once_cell::sync::Lazy;
 use regex::Regex;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 // ---------------------------------------------------------------------------
 // Czech month names
@@ -101,8 +101,8 @@ static DATE_WORD_RE: Lazy<Regex> =
 // Public API
 // ---------------------------------------------------------------------------
 
-/// Czech document metadata extracted from raw text.高效
-#[derive(Debug, Clone, Serialize)]
+/// Czech document metadata extracted from raw text.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ExtractedMetadata {
     pub rodne_cislo: Option<String>,
     pub ico: Option<String>,
