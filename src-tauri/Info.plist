@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Merged into the macOS app bundle by Tauri. Texts shown in the
+     privacy prompts when FileIT first reads these folders. -->
+<plist version="1.0">
+<dict>
+  <key>NSDesktopFolderUsageDescription</key>
+  <string>FileIT prohlíží dokumenty na Ploše, aby vám ukázal přehled vašich souborů. Nic se nepřesouvá bez vašeho potvrzení.</string>
+  <key>NSDocumentsFolderUsageDescription</key>
+  <string>FileIT prohlíží složku Dokumenty, aby vám ukázal přehled vašich souborů. Nic se nepřesouvá bez vašeho potvrzení.</string>
+  <key>NSDownloadsFolderUsageDescription</key>
+  <string>FileIT prohlíží Stažené soubory, aby vám ukázal přehled vašich souborů. Nic se nepřesouvá bez vašeho potvrzení.</string>
+  <key>NSRemovableVolumesUsageDescription</key>
+  <string>FileIT prohlíží dokumenty na externím disku, který jste vybrali.</string>
+  <key>NSNetworkVolumesUsageDescription</key>
+  <string>FileIT prohlíží dokumenty na síťovém disku, který jste vybrali.</string>
+  <key>NSFileProviderDomainUsageDescription</key>
+  <string>FileIT prohlíží dokumenty ve složkách OneDrive, Google Drive a Dropbox. Soubory dostupné jen v cloudu nestahuje.</string>
+</dict>
+</plist>
