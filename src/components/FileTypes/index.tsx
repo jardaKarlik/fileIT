@@ -6,8 +6,8 @@ import './FileTypes.css';
 
 const CORE_TYPES = [
   { key: 'pdf',   icon: '📄', name: 'PDF dokumenty',    desc: 'Smlouvy, úřední dopisy, skenované doklady', core: true  },
-  { key: 'word',  icon: '📝', name: 'Word dokumenty',   desc: 'Šablony, zprávy, korespondence, dohody',    core: true  },
-  { key: 'excel', icon: '📊', name: 'Excel a tabulky',  desc: 'Finanční údaje, seznamy klientů, faktury',  core: true  },
+  { key: 'word',  icon: '📝', name: 'Word dokumenty',   desc: 'Smlouvy, korespondence — .docx i starší .doc', core: true  },
+  { key: 'excel', icon: '📊', name: 'Excel a tabulky',  desc: 'Finanční údaje, faktury — .xlsx i starší .xls', core: true  },
   { key: 'image', icon: '🖼', name: 'Obrázky (JPG, BMP)', desc: 'Skenované doklady, fotky dokumentů',      core: true  },
   { key: 'email', icon: '📧', name: 'Uložené e-maily',  desc: 'Soubory .msg a .eml z pošty',               core: false },
   { key: 'text',  icon: '🗒', name: 'Text a poznámky',  desc: 'Textové soubory, poznámky',                 core: false },
@@ -16,6 +16,10 @@ const CORE_TYPES = [
 const EXTRA = [
   { key: 'powerpoint', label: 'PowerPoint (.pptx)' },
   { key: 'libreoffice', label: 'LibreOffice (.odt, .ods, .odp)' },
+  { key: 'zfo', label: 'Datová schránka (.zfo)' },
+  { key: 'isdoc', label: 'E-faktury ISDOC' },
+  { key: 'xps', label: 'XPS dokumenty' },
+  { key: 'zip', label: 'ZIP archivy' },
   { key: 'csv', label: 'CSV data' },
 ];
 

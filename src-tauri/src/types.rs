@@ -46,6 +46,18 @@ pub enum FileCategory {
     /// No longer offered in the UI (on whole drives it is mostly app config);
     /// kept so older scan results still load.
     Xml,
+    /// Datová schránka message (.zfo)
+    #[serde(rename = "zfo")]
+    DataBox,
+    /// ISDOC e-invoice (.isdoc, .isdocx)
+    #[serde(rename = "isdoc")]
+    Isdoc,
+    /// XPS / OXPS document
+    #[serde(rename = "xps")]
+    Xps,
+    /// ZIP archive — classified (and moved) as one item from the documents inside
+    #[serde(rename = "zip")]
+    Archive,
     Image,
     Email,
     Text,
@@ -60,6 +72,10 @@ impl FileCategory {
             "xls" | "xlsx" => Self::Excel,
             "pptx" => Self::PowerPoint,
             "odt" | "ods" | "odp" => Self::LibreOffice,
+            "zfo" => Self::DataBox,
+            "isdoc" | "isdocx" => Self::Isdoc,
+            "xps" | "oxps" => Self::Xps,
+            "zip" => Self::Archive,
             "csv" => Self::Csv,
             "xml" => Self::Xml,
             "jpg" | "jpeg" | "png" | "bmp" | "tif" | "tiff" => Self::Image,

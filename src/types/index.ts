@@ -3,6 +3,7 @@
 
 export type FileCategory =
   | 'pdf' | 'word' | 'excel' | 'powerpoint' | 'libreoffice' | 'csv'
+  | 'zfo' | 'isdoc' | 'xps' | 'zip'
   | 'xml' // legacy: older scan results only, no longer selectable
   | 'image' | 'email' | 'text' | 'other';
 

@@ -20,6 +20,7 @@ const MAX_TEXT_BYTES: usize = 16_384; // 16KB — enough for classification
 /// classification context; this function returns empty text for them.
 pub async fn extract_text(path: &Path, category: &FileCategory) -> Result<(String, bool)> {
     match category {
+        FileCategory::Word if has_ext(path, "doc") => super::formats::extract_legacy_office(path).map(|t| (truncate_text(t), false)),
         FileCategory::Word => extract_docx(path).map(|t| (t, false)),
         FileCategory::PowerPoint => extract_pptx(path).map(|t| (t, false)),
         FileCategory::LibreOffice => extract_odf(path).map(|t| (t, false)),
@@ -28,8 +29,15 @@ pub async fn extract_text(path: &Path, category: &FileCategory) -> Result<(Strin
             let is_rtf = path.extension().map(|e| e.eq_ignore_ascii_case("rtf")).unwrap_or(false);
             if is_rtf { extract_rtf(path) } else { extract_plain(path) }.map(|t| (t, false))
         }
+        FileCategory::Excel if has_ext(path, "xls") => super::formats::extract_legacy_office(path).map(|t| (truncate_text(t), false)),
         FileCategory::Excel => extract_xlsx(path).map(|t| (t, false)),
+        FileCategory::Email if has_ext(path, "msg") => super::formats::extract_msg(path).map(|t| (truncate_text(t), false)),
         FileCategory::Email => extract_plain(path).map(|t| (t, false)),
+        FileCategory::Isdoc => super::formats::extract_isdoc(path).map(|t| (truncate_text(t), false)),
+        FileCategory::Xps => super::formats::extract_xps(path).map(|t| (truncate_text(t), false)),
+        // .zfo and .zip contain other files; the classifier unpacks them
+        // (it has the OCR context for PDFs and images inside).
+        FileCategory::DataBox | FileCategory::Archive => Ok((String::new(), false)),
         // PDFs and images: extraction happens through the Indra sidecar
         // (crate::ocr::text_for_classification), never in-process.
         FileCategory::Pdf | FileCategory::Image | FileCategory::Other => {
@@ -119,6 +127,14 @@ fn extract_pptx(path: &Path) -> Result<String> {
     }
 
     Ok(truncate_text(text))
+}
+
+fn has_ext(path: &Path, ext: &str) -> bool {
+    path.extension().map(|e| e.eq_ignore_ascii_case(ext)).unwrap_or(false)
+}
+
+pub(crate) fn truncate_for_classification(text: String) -> String {
+    truncate_text(text)
 }
 
 fn read_head(path: &Path, max: usize) -> Result<Vec<u8>> {
