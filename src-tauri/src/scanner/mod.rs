@@ -484,7 +484,14 @@ struct FolderSample {
     binaries: usize,
     documents: usize,
     project_marker: bool,
+    /// Direct subfolders named like an install layout (bin, lib, src, …).
+    layout_dirs: usize,
 }
+
+/// Subfolder names typical of installed or unpacked software.
+const APP_LAYOUT_DIRS: &[&str] = &[
+    "bin", "lib", "lib64", "include", "src", "sources", "share", "plugins", "runtime",
+];
 
 impl FolderSample {
     fn verdict(&self) -> Option<&'static str> {
@@ -493,6 +500,9 @@ impl FolderSample {
         }
         if self.binaries > 0 && self.documents == 0 {
             return Some("nainstalovaný program");
+        }
+        if self.layout_dirs >= 2 || (self.layout_dirs == 1 && self.documents == 0) {
+            return Some("struktura programu (bin/lib/src)");
         }
         if self.app_files >= 10 && self.app_files >= 5 * self.documents.max(1) {
             return Some("aplikace / konfigurace");
@@ -522,6 +532,12 @@ fn sample_folder(path: &Path) -> FolderSample {
             break;
         }
         if !e.file_type().is_file() {
+            if e.depth() == 1
+                && e.file_type().is_dir()
+                && APP_LAYOUT_DIRS.iter().any(|d| name.eq_ignore_ascii_case(d))
+            {
+                s.layout_dirs += 1;
+            }
             continue;
         }
         let ext = e.path().extension().map(|x| x.to_string_lossy().to_lowercase()).unwrap_or_default();
@@ -796,6 +812,10 @@ mod tests {
         assert_eq!(sample(&base.join("temp"), &["setup.exe", "smlouva.pdf", "Klient/faktura.pdf"]), "scan");
         // Documents with a few json exports → scanned
         assert_eq!(sample(&base.join("data"), &["a.json", "b.json", "x.pdf", "y.docx", "z.xlsx"]), "scan");
+        // Install layout without binaries in the sample
+        assert_eq!(sample(&base.join("tool"), &["bin/readme.txt", "lib/x.txt", "share/y.txt"]), "struktura programu (bin/lib/src)");
+        // One "lib" folder next to client documents → scanned
+        assert_eq!(sample(&base.join("klient"), &["lib/notes.txt", "smlouva.pdf"]), "scan");
         // Music only → scanned (nothing to read, harmless)
         assert_eq!(sample(&base.join("music"), &["t.mp3"]), "scan");
         let _ = std::fs::remove_dir_all(&base);
