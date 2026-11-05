@@ -115,7 +115,7 @@ export function Home() {
               )}
               <div className="home-cta-scope-note">
                 Celé disky včetně vašich vlastních složek (např. C:\Klienti). Ve složce Users
-                jen váš profil. Přeskakují se Windows, nainstalované programy, skryté soubory
+                jen váš profil. Přeskakují se Windows, nainstalované programy, odkazy (symlinky), skryté soubory
                 a soubory dostupné jen v cloudu. Čtou se jen dokumenty, ne konfigurační soubory.
               </div>
             </div>

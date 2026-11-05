@@ -32,6 +32,7 @@ const SKIP_DIRS: &[&str] = &[
     "$WinREAgent", "PerfLogs", "Intel", "AMD",
     "Windows.old", "$Windows.~BT", "$Windows.~WS", "$GetCurrent",
     "Config.Msi", "OneDriveTemp", "msys64", "cygwin64",
+    "XboxGames", "WindowsApps",
     // User profile noise
     "AppData", ".cache", ".local", ".config",
     // Dev tooling & package managers
@@ -69,11 +70,15 @@ pub async fn scan_directories(
     let mut cloud_only_skipped = 0usize;
     // Only the logged-in user's profile is scanned under <drive>\Users.
     let user_profile: Option<PathBuf> = std::env::var_os("USERPROFILE").map(PathBuf::from);
-    // Top-level drive folders owned by the system (program installs).
-    let mut skipped_software: Vec<PathBuf> = Vec::new();
+    // Top-level drive folders recognised as installed software, with reason.
+    let mut skipped_software: Vec<(PathBuf, &'static str)> = Vec::new();
 
     info!("Scanner: {} roots, {} allowed categories ({:?})",
         roots.len(), allowed_categories.len(), allowed_categories);
+
+    // Symlinks and junctions are never followed (they point at folders that
+    // are scanned at their real location, or at places we must not enter).
+    let mut links_skipped: Vec<PathBuf> = Vec::new();
 
     for root in &roots {
         info!("Scanning root: {:?} (exists={})", root, root.exists());
@@ -100,8 +105,8 @@ pub async fn scan_directories(
                         debug!("Skip (other user's profile): {:?}", e.path());
                         return false;
                     }
-                    if is_installed_software_folder(e.path()) {
-                        skipped_software.push(e.path().to_path_buf());
+                    if let Some(reason) = top_level_software_reason(e.path()) {
+                        skipped_software.push((e.path().to_path_buf(), reason));
                         return false;
                     }
                 }
@@ -115,6 +120,15 @@ pub async fn scan_directories(
                     continue;
                 }
             };
+
+            // Symlink / junction: skipped, never followed.
+            if entry.path_is_symlink() {
+                if entry.depth() == 1 {
+                    links_skipped.push(entry.path().to_path_buf());
+                }
+                debug!("Skip (symlink/junction): {:?}", entry.path());
+                continue;
+            }
 
             if !entry.file_type().is_file() {
                 continue;
@@ -217,12 +231,22 @@ pub async fn scan_directories(
 
     // Tell the user which top-level folders were treated as installed
     // software, so a work folder skipped by mistake is visible.
-    for folder in &skipped_software {
-        info!("Skipped as installed software (system-owned): {:?}", folder);
+    for link in &links_skipped {
+        info!("Skipped symlink/junction: {:?}", link);
         emit_progress(
             app,
             files_seen,
-            &format!("Přeskočeno (nainstalovaný program): {}", folder.display()),
+            &format!("Přeskočeno (odkaz / symlink): {}", link.display()),
+            None,
+            false,
+        );
+    }
+    for (folder, reason) in &skipped_software {
+        info!("Skipped top-level folder {:?}: {}", folder, reason);
+        emit_progress(
+            app,
+            files_seen,
+            &format!("Přeskočeno ({}): {}", reason, folder.display()),
             None,
             false,
         );
@@ -352,28 +376,80 @@ fn is_other_user_profile(path: &Path, current_profile: Option<&Path>) -> bool {
     }
 }
 
-/// A folder directly on a drive root (C:\\xampp, D:\\Games, …) whose owner is
-/// SYSTEM, Administrators or a service (TrustedInstaller). Program
-/// installers run elevated, so their folders get such an owner; folders a
-/// person creates in Explorer (C:\\Klienti) are owned by that person.
-/// `Users` is never treated as software (it is handled per profile).
-fn is_installed_software_folder(path: &Path) -> bool {
+/// Why a folder directly on a drive root (C:\\xampp, C:\\ffmpeg, …) is
+/// treated as system or installed software, or None if it is scanned.
+/// `Users` is never skipped here (it is handled per profile).
+fn top_level_software_reason(path: &Path) -> Option<&'static str> {
     let at_drive_root = path.parent().map(|p| p.parent().is_none()).unwrap_or(false);
     if !at_drive_root {
-        return false;
+        return None;
     }
     let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
     if name.eq_ignore_ascii_case("Users") {
-        return false;
+        return None;
     }
-    folder_owner_sid(path).map(|sid| is_system_sid(&sid)).unwrap_or(false)
+    if name.starts_with('$') {
+        return Some("systémová složka");
+    }
+    software_reason(path)
 }
 
-/// Well-known non-person owners: SYSTEM, LocalService, NetworkService,
-/// BUILTIN\\Administrators, and NT SERVICE\\* (incl. TrustedInstaller).
-fn is_system_sid(sid: &str) -> bool {
-    matches!(sid, "S-1-5-18" | "S-1-5-19" | "S-1-5-20" | "S-1-5-32-544") || sid.starts_with("S-1-5-80-")
+/// Owner / content checks shared by top-level folders and link targets.
+fn software_reason(path: &Path) -> Option<&'static str> {
+    if folder_owner_sid(path).map(|sid| is_system_sid(&sid)).unwrap_or(false) {
+        return Some("vlastník systém");
+    }
+    if looks_like_program_folder(path) {
+        return Some("nainstalovaný program");
+    }
+    None
 }
+
+/// SYSTEM, LocalService, NetworkService and NT SERVICE\\* (TrustedInstaller).
+/// BUILTIN\\Administrators is deliberately NOT included: folders a person
+/// creates with an elevated tool or `mklink` get that owner too.
+fn is_system_sid(sid: &str) -> bool {
+    matches!(sid, "S-1-5-18" | "S-1-5-19" | "S-1-5-20") || sid.starts_with("S-1-5-80-")
+}
+
+/// A program folder: .exe/.dll directly inside it or in its `bin`
+/// subfolder, and no documents (PDF, Office, e-mail) at its top level.
+/// Images and .txt are ignored: programs ship icons and readme files.
+fn looks_like_program_folder(path: &Path) -> bool {
+    fn scan(dir: &Path) -> (bool, bool) {
+        let (mut exe, mut doc) = (false, false);
+        if let Ok(entries) = std::fs::read_dir(dir) {
+            for e in entries.flatten().take(2000) {
+                let p = e.path();
+                if !p.is_file() {
+                    continue;
+                }
+                let ext = p.extension().map(|x| x.to_string_lossy().to_lowercase()).unwrap_or_default();
+                match ext.as_str() {
+                    "exe" | "dll" => exe = true,
+                    _ => {
+                        if matches!(
+                            FileCategory::from_extension(&ext),
+                            FileCategory::Pdf | FileCategory::Word | FileCategory::Excel
+                                | FileCategory::PowerPoint | FileCategory::Email
+                        ) {
+                            doc = true;
+                        }
+                    }
+                }
+            }
+        }
+        (exe, doc)
+    }
+    let (exe_top, doc_top) = scan(path);
+    if doc_top {
+        return false;
+    }
+    exe_top || scan(&path.join("bin")).0
+}
+
+
+
 
 /// Owner SID of a file or folder as a string ("S-1-5-21-…").
 #[cfg(target_os = "windows")]
@@ -596,9 +672,39 @@ mod tests {
     fn system_owner_sids() {
         use super::is_system_sid;
         assert!(is_system_sid("S-1-5-18"));
-        assert!(is_system_sid("S-1-5-32-544"));
+        // Administrators: also the owner of folders made with mklink / elevated tools
+        assert!(!is_system_sid("S-1-5-32-544"));
         assert!(is_system_sid("S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464"));
         assert!(!is_system_sid("S-1-5-21-1004336348-1177238915-682003330-1001"));
+    }
+
+    #[test]
+    fn program_folder_detection() {
+        use super::looks_like_program_folder;
+        let base = std::env::temp_dir().join(format!("fileit-prog-{}", uuid::Uuid::new_v4()));
+        let ffmpeg = base.join("ffmpeg");
+        std::fs::create_dir_all(ffmpeg.join("bin")).unwrap();
+        std::fs::write(ffmpeg.join("bin").join("ffmpeg.exe"), b"MZ").unwrap();
+        std::fs::write(ffmpeg.join("README.txt"), b"readme").unwrap();
+        assert!(looks_like_program_folder(&ffmpeg), "exe in bin, only readme");
+
+        let tool = base.join("MP4Box");
+        std::fs::create_dir_all(&tool).unwrap();
+        std::fs::write(tool.join("mp4box.exe"), b"MZ").unwrap();
+        std::fs::write(tool.join("icon.png"), b"png").unwrap();
+        assert!(looks_like_program_folder(&tool), "exe at top, icons ignored");
+
+        let work = base.join("temp");
+        std::fs::create_dir_all(&work).unwrap();
+        std::fs::write(work.join("setup.exe"), b"MZ").unwrap();
+        std::fs::write(work.join("smlouva.pdf"), b"%PDF").unwrap();
+        assert!(!looks_like_program_folder(&work), "documents present → data folder");
+
+        let music = base.join("dnb-jungle");
+        std::fs::create_dir_all(&music).unwrap();
+        std::fs::write(music.join("track.mp3"), b"x").unwrap();
+        assert!(!looks_like_program_folder(&music));
+        let _ = std::fs::remove_dir_all(&base);
     }
 
     #[test]

@@ -3,10 +3,12 @@
 # READ-ONLY preview of which top-level folders FileIT v1.1 would scan.
 # It mirrors the scanner rules in src-tauri/src/scanner/mod.rs:
 #   - every local fixed drive (C:\, D:\, ...)
-#   - folders on a drive root owned by SYSTEM / Administrators / a service
-#     (TrustedInstaller) are treated as installed software -> SKIP
-#   - known system / tool folder names -> SKIP
-#   - hidden names starting with "." -> SKIP
+#   - folders on a drive root owned by SYSTEM / a service (TrustedInstaller)
+#     -> SKIP (Administrators does NOT count: mklink / elevated tools give it)
+#   - folders that look like a program (.exe/.dll at top or in bin\, and no
+#     PDF/Office/e-mail documents at top) -> SKIP
+#   - known system / tool folder names, names starting with "." or "$" -> SKIP
+#   - symlinks / junctions -> SKIP (never followed)
 #   - under <drive>\Users only the current user's profile -> SCAN
 #
 # Nothing is changed. Run from PowerShell:
@@ -22,13 +24,28 @@ $skipNames = @(
     'Windows','Program Files','Program Files (x86)','ProgramData','$Recycle.Bin',
     'System Volume Information','Recovery','$SysReset','MSOCache','$WinREAgent',
     'PerfLogs','Intel','AMD','Windows.old','$Windows.~BT','$Windows.~WS','$GetCurrent',
-    'Config.Msi','OneDriveTemp','msys64','cygwin64','AppData','node_modules','target',
+    'Config.Msi','OneDriveTemp','msys64','cygwin64','XboxGames','WindowsApps','AppData','node_modules','target',
     'dist','build','__pycache__','venv','Native Instruments','Samples','Claude',
     'iZotope','Lexicon','League of Legends','Magda','Madga','McAfee','src-tauri'
 )
 
 function Test-SystemSid([string]$sid) {
-    return ($sid -in @('S-1-5-18','S-1-5-19','S-1-5-20','S-1-5-32-544')) -or $sid.StartsWith('S-1-5-80-')
+    return ($sid -in @('S-1-5-18','S-1-5-19','S-1-5-20')) -or $sid.StartsWith('S-1-5-80-')
+}
+
+$docExt = @('.pdf','.doc','.docx','.xls','.xlsx','.pptx','.msg','.eml')
+
+function Test-ProgramFolder([string]$path) {
+    $files = Get-ChildItem -LiteralPath $path -File -Force -ErrorAction SilentlyContinue | Select-Object -First 2000
+    if ($files | Where-Object { $docExt -contains $_.Extension.ToLower() }) { return $false }
+    if ($files | Where-Object { @('.exe','.dll') -contains $_.Extension.ToLower() }) { return $true }
+    $bin = Join-Path $path 'bin'
+    if (Test-Path -LiteralPath $bin -PathType Container) {
+        $binExe = Get-ChildItem -LiteralPath $bin -File -Force -ErrorAction SilentlyContinue |
+            Where-Object { @('.exe','.dll') -contains $_.Extension.ToLower() } | Select-Object -First 1
+        if ($binExe) { return $true }
+    }
+    return $false
 }
 
 function Get-OwnerInfo([string]$path) {
@@ -41,11 +58,12 @@ function Get-OwnerInfo([string]$path) {
     }
 }
 
-function Get-Verdict([string]$name, [string]$sid) {
-    if ($name.StartsWith('.'))                     { return @('SKIP', 'hidden (dot) folder') }
-    if ($skipNames -contains $name)                { return @('SKIP', 'system/tool folder name') }
-    if ($sid -and (Test-SystemSid $sid))           { return @('SKIP', 'installed software (system-owned)') }
-    return @('SCAN', 'owned by a person')
+function Get-Verdict([string]$path, [string]$name, [string]$sid) {
+    if ($name.StartsWith('.') -or $name.StartsWith('$')) { return @('SKIP', 'hidden / system folder') }
+    if ($skipNames -contains $name)                      { return @('SKIP', 'system/tool folder name') }
+    if ($sid -and (Test-SystemSid $sid))                 { return @('SKIP', 'owned by system') }
+    if (Test-ProgramFolder $path)                        { return @('SKIP', 'looks like a program (exe/dll)') }
+    return @('SCAN', 'user folder')
 }
 
 $userProfile = $env:USERPROFILE
@@ -74,7 +92,14 @@ foreach ($d in $drives) {
             return
         }
 
-        $v = Get-Verdict $_.Name $owner.Sid
+        if ($_.LinkType) {
+            # Symlinks / junctions are never followed by FileIT.
+            $target = @($_.Target)[0]
+            $rows += [pscustomobject]@{ Verdict='SKIP'; Folder="$($_.FullName) -> $target"; Reason="$($_.LinkType) (links are not followed)"; Owner=$owner.Name }
+            return
+        }
+
+        $v = Get-Verdict $_.FullName $_.Name $owner.Sid
         $rows += [pscustomobject]@{ Verdict=$v[0]; Folder=$_.FullName; Reason=$v[1]; Owner=$owner.Name }
     }
 }
