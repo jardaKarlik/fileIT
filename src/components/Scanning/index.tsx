@@ -166,7 +166,7 @@ export function Scanning() {
       <p className="scan-sub">
         {done
           ? 'Všechny soubory byly analyzovány. Klikněte níže a prohlédněte si výsledky.'
-          : 'FileIT prohlíží vybrané disky a nahlíží do dokumentů, aby rozuměl, o co se jedná. Může to trvat několik minut.'
+          : 'FileIT prohlíží vybrané složky a nahlíží do dokumentů, aby rozuměl, o co se jedná. Může to trvat několik minut.'
         }
       </p>
 

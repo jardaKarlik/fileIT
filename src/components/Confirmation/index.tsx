@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../utils/tauriApi';
+import { baseName, inFileManager } from '../../utils/platform';
 import './Confirmation.css';
 
 export function Confirmation() {
@@ -121,7 +122,7 @@ export function Confirmation() {
         </div>
         <div className="conf-steps">
           {[
-            <>Otevřete cílovou složku v Průzkumníku — <code className="conf-path">{run.target_path}</code></>,
+            <>Otevřete cílovou složku {inFileManager()} — <code className="conf-path">{run.target_path}</code></>,
             'Vyberte si pár klientů, které znáte, a projděte jejich složky — jsou dokumenty tam, kde by měly být?',
             <><span className="conf-amber">Mrkněte do složky Neznámý klient</span> — možná něco poznáte a bude třeba to ručně přesunout.</>,
             <><strong>Vraťte se sem a rozhodněte</strong> — Potvrdit, nebo Vrátit zpět.</>,
@@ -144,7 +145,7 @@ export function Confirmation() {
           <strong>Bezpečnostní záloha je stále aktivní.</strong>{' '}
           Manifest přesunů je uložen v{' '}
           <code className="conf-backup-filename">
-            {run.backup_manifest_path.split('\\').pop()}
+            {baseName(run.backup_manifest_path)}
           </code>
           . Po potvrzení ji automaticky smažeme za 7 dní.
         </div>

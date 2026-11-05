@@ -8,6 +8,7 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../utils/tauriApi';
+import { platform, joinPath } from '../../utils/platform';
 import { analyzeAnalysisState } from '../../utils/analysisUtils';
 import { GroupDimension, DetectedCloud, ClassifiedFile } from '../../types';
 import { AnalysisWarningModal } from './AnalysisWarningModal';
@@ -208,7 +209,7 @@ export function Restructure() {
     if (mode === 'local') {
       setDestinationMode({ type: 'local_only' });
       // Set default LOCAL-ONLY path when switching to local mode
-      setTargetPath('C:\\ReOrganized');
+      setTargetPath(platform().default_target_path);
     } else if (mode === 'cloud') {
       setShowCloudModal(true);
       setCloudModalVariant('default');
@@ -221,13 +222,13 @@ export function Restructure() {
     setDestinationMode({ type: 'local_plus_cloud', cloud_name: cloud.name });
 
     // For OneDrive: probe the actual sync root via registry/env first.
-    // For other clouds: fall back to <root>\reOrganized.
+    // For other clouds: fall back to <root>/reOrganized (platform separator).
     let path: string;
     if (cloud.name.toLowerCase().includes('onedrive')) {
       const detected = await api.getOneDrivePath().catch(() => null);
-      path = detected ?? `${cloud.root_path}\\reOrganized`;
+      path = detected ?? joinPath(cloud.root_path, 'reOrganized');
     } else {
-      path = `${cloud.root_path}\\reOrganized`;
+      path = joinPath(cloud.root_path, 'reOrganized');
     }
     setTargetPath(path);
     setShowCloudModal(false);
@@ -586,7 +587,7 @@ export function Restructure() {
                   <div className="modal-actions">
                     <button className="modal-btn-primary" onClick={() => primaryCloud && confirmCloud(primaryCloud)}>Ano, použít {primaryCloud?.name}</button>
                     <div className="modal-actions-row">
-                      <button className="modal-btn-secondary" onClick={() => { setShowCloudModal(false); setDestinationMode({ type: 'local_only' }); setTargetPath('C:\\ReOrganized'); }}>Ne, zrušit</button>
+                      <button className="modal-btn-secondary" onClick={() => { setShowCloudModal(false); setDestinationMode({ type: 'local_only' }); setTargetPath(platform().default_target_path); }}>Ne, zrušit</button>
                       <button className="modal-btn-alt" onClick={() => setCloudModalVariant('list')}>Zvolit jiný cloud</button>
                     </div>
                   </div>

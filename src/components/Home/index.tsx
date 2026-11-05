@@ -4,6 +4,8 @@ import { useStore } from '../../store';
 import { api } from '../../utils/tauriApi';
 import type { OcrAvailability } from '../../types';
 import { resolveDefaultScanRoots, type ScanRoot } from '../../utils/scanRoots';
+import { isMac } from '../../utils/platform';
+import { FullDiskAccessHint } from '../AccessNote';
 import './Home.css';
 
 export function Home() {
@@ -98,7 +100,7 @@ export function Home() {
             </div>
             <div className="home-cta-title">Jen analyzovat<br />moje soubory</div>
             <p className="home-cta-desc">
-              FileIT prohlédne vaše disky a ukáže vám přehled — co kde máte, kolik toho je, kdo jsou vaši klienti. Nic se neuspořádá ani nepřesune.
+              FileIT prohlédne váš počítač a ukáže vám přehled — co kde máte, kolik toho je, kdo jsou vaši klienti. Nic se neuspořádá ani nepřesune.
             </p>
             <div className="home-cta-scope">
               <div className="home-cta-scope-label">Co se prohledá</div>
@@ -111,13 +113,28 @@ export function Home() {
                   ))}
                 </ul>
               ) : (
-                <div className="home-cta-scope-note">Všechny místní disky</div>
+                <div className="home-cta-scope-note">{isMac() ? 'Vaše domovská složka a cloudové složky' : 'Všechny místní disky'}</div>
               )}
-              <div className="home-cta-scope-note">
-                Celé disky včetně vašich vlastních složek (např. C:\Klienti). Ve složce Users
-                jen váš profil. Přeskakují se Windows, programy a vývojové projekty, antiviry, odkazy (symlinky), skryté soubory
-                a soubory dostupné jen v cloudu. Čtou se jen dokumenty, ne konfigurační soubory.
-              </div>
+              {isMac() ? (
+                <div className="home-cta-scope-note">
+                  Celá domovská složka včetně Plochy, Dokumentů a Stažených souborů, plus složky OneDrive,
+                  Google Drive, Dropbox a iCloud Drive. Přeskakují se systémové složky, Knihovna (~/Library),
+                  aplikace, knihovny Fotek a Hudby, vývojové projekty, odkazy (symlinky), skryté soubory
+                  a soubory dostupné jen v cloudu (nic se nestahuje). Čtou se jen dokumenty, ne konfigurační soubory.
+                </div>
+              ) : (
+                <div className="home-cta-scope-note">
+                  Celé disky včetně vašich vlastních složek (např. C:\Klienti). Ve složce Users
+                  jen váš profil. Přeskakují se Windows, programy a vývojové projekty, antiviry, odkazy (symlinky), skryté soubory
+                  a soubory dostupné jen v cloudu. Čtou se jen dokumenty, ne konfigurační soubory.
+                </div>
+              )}
+              {isMac() && (
+                <div className="home-cta-scope-note">
+                  🔒 macOS se při skenování zeptá na přístup k Ploše, Dokumentům a Staženým souborům — povolte ho.
+                  Pro externí disky a cloudové složky: <FullDiskAccessHint />
+                </div>
+              )}
             </div>
             <div className="home-cta-actions">
               <button className="btn-indigo" onClick={(e) => { e.stopPropagation(); goAnalyze(); }}>
@@ -194,7 +211,7 @@ export function Home() {
             FileIT běží
           </span>
           <span>·</span>
-          <span>Disky připravené</span>
+          <span>Připraveno ke skenování</span>
         </div>
         <div className="home-status-right">
           <span className="home-status-link" onClick={() => setScreen('how_it_works')}>Nápověda</span>

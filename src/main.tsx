@@ -14,9 +14,19 @@ import '@fontsource-variable/jetbrains-mono';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { platformReady, WINDOWS_DEFAULTS } from './utils/platform';
+import { useStore } from './store';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+// Platform facts (default target folder, separators) are needed
+// synchronously by several screens: load them before the first render.
+platformReady.then((info) => {
+  const { targetPath, setTargetPath } = useStore.getState();
+  if (targetPath === WINDOWS_DEFAULTS.default_target_path && info.default_target_path !== targetPath) {
+    setTargetPath(info.default_target_path);
+  }
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+});

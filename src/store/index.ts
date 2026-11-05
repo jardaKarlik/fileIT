@@ -90,10 +90,6 @@ interface FileITState {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Default scan roots — Windows user folders
-// ─────────────────────────────────────────────────────────────────────────────
-
-// ─────────────────────────────────────────────────────────────────────────────
 // OCR switch persistence — on by default (Indra was always on before v1.1)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -172,6 +168,7 @@ export const useStore = create<FileITState>((set) => ({
 
   destinationMode: { type: 'local_only' },
   setDestinationMode: (destinationMode) => set({ destinationMode }),
+  // Windows default; replaced by platform_info's default at start (main.tsx).
   targetPath: 'C:\\ReOrganized',
   setTargetPath: (targetPath) => set({ targetPath }),
   backupEnabled: true,

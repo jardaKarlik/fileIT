@@ -1,5 +1,6 @@
 // src/components/Dashboard/index.tsx
 
+import { DeniedFoldersNote } from '../AccessNote';
 import { useEffect, useState } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../utils/tauriApi';
@@ -249,7 +250,7 @@ export function Dashboard() {
           </div>
           <div className="stats-row">
             {[
-              { label: 'Celkem souborů', val: totalFiles, sub: 'ze 3 disků' },
+              { label: 'Celkem souborů', val: totalFiles, sub: 'z prohlédnutých složek' },
               { label: 'Celková velikost', val: `${totalGB} GB`, sub: '~180 MB měsíčně' },
               { label: 'Nalezeno klientů', val: customers, sub: 'z obsahu souborů' },
               { label: 'Duplikáty', val: dupes, sub: 'jen informativně', warn: true },
@@ -263,6 +264,9 @@ export function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Folders the OS would not let us open (macOS privacy settings…) */}
+      <DeniedFoldersNote folders={scanResult?.denied_folders ?? []} />
 
       {/* OCR status — read-only status plus one explicit action */}
       <div className="dash-ocr-row">

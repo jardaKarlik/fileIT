@@ -5,7 +5,7 @@
 
 import {
   CmPayload, CmUpdateResult, CompletedRun, DetectedCloud,
-  OcrAvailability, OcrBatchResult,
+  OcrAvailability, OcrBatchResult, PlatformInfo,
   RestructurePreview, RestructureResult, ScanResult,
   TeachingResult, UnclassifiedPattern, UploadResult,
 } from '../types';
@@ -46,13 +46,19 @@ export const api = {
   /** Open native folder picker. Returns chosen path or null. */
   pickFolder: () => invoke<string | null>('pick_folder'),
 
-  /** Open a path in Windows Explorer. */
+  /** Show a path in the system file manager (Explorer on Windows, Finder on macOS). */
   openInExplorer: (path: string) => invoke<void>('open_in_explorer', { path }),
 
-  /** Detect the OneDrive sync root on Windows. Returns null when not found. */
+  /** OS, path separator, default target folder, file-manager name. */
+  platformInfo: () => invoke<PlatformInfo>('platform_info'),
+
+  /** Detect the OneDrive sync folder (Windows registry / macOS CloudStorage). Null when not found. */
   getOneDrivePath: () => invoke<string | null>('get_onedrive_path'),
 
-  /** Local fixed drives a default scan covers, e.g. ["C:\\", "D:\\"]. */
+  /**
+   * Folders a default scan covers: Windows — local fixed drives
+   * (["C:\\", "D:\\"]); macOS — the home folder plus cloud folders.
+   */
   defaultScanRoots: () => invoke<string[]>('default_scan_roots'),
 
   /**
@@ -242,6 +248,15 @@ function devMock(cmd: string, _args?: Record<string, unknown>): unknown {
 
     case 'default_scan_roots':
       return ['C:\\', 'D:\\'];
+
+    case 'platform_info':
+      return {
+        os: 'windows',
+        path_separator: '\\',
+        default_target_path: 'C:\\ReOrganized',
+        file_manager: 'Průzkumník',
+        home_dir: null,
+      } satisfies PlatformInfo;
 
     case 'check_ocr':
       return {

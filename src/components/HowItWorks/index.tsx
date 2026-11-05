@@ -1,6 +1,7 @@
 // src/components/HowItWorks/index.tsx
 import React, { useState } from 'react';
 import { useStore } from '../../store';
+import { illustrativePath } from '../../utils/platform';
 import './HowItWorks.css';
 
 type TabKey = 'local' | 'cloud' | 'c2c';
@@ -128,7 +129,7 @@ export function HowItWorks() {
               <div className="flow-step-text">
                 <div className="flow-step-title">{step.title}</div>
                 <div className="flow-step-body">{step.body}</div>
-                {step.path && <div className="flow-step-path">{step.path}</div>}
+                {step.path && <div className="flow-step-path">{illustrativePath(step.path)}</div>}
               </div>
             </div>
           ))}

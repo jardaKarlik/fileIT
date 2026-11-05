@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../store';
 import { api } from '../../utils/tauriApi';
+import { baseName } from '../../utils/platform';
 import { CompletedRun, FileError } from '../../types';
 import './Progress.css';
 
@@ -200,7 +201,7 @@ export function Progress() {
             <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
               {moveErrors.map((err, i) => (
                 <div key={i} style={{ fontSize: 11, opacity: 0.85 }}>
-                  <div style={{ fontWeight: 600, wordBreak: 'break-all' }}>{err.source.split('\\').pop()}</div>
+                  <div style={{ fontWeight: 600, wordBreak: 'break-all' }}>{baseName(err.source)}</div>
                   <div style={{ opacity: 0.7 }}>{err.error_message}</div>
                 </div>
               ))}

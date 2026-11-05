@@ -152,6 +152,19 @@ export interface ScanResult {
   customers_found: number;
   duplicates_found: number;
   files: ClassifiedFile[];
+  /** Folders skipped because the OS denied access (macOS privacy settings…). */
+  denied_folders?: string[];
+  /** Cloud-only (not downloaded) files and folders that were skipped. */
+  cloud_only_skipped?: number;
+}
+
+/** Platform facts from the Rust side (platform_info command). */
+export interface PlatformInfo {
+  os: 'windows' | 'macos' | 'linux';
+  path_separator: string;
+  default_target_path: string;
+  file_manager: string;
+  home_dir: string | null;
 }
 
 export interface FileError {
