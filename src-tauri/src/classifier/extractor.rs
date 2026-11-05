@@ -22,6 +22,7 @@ pub async fn extract_text(path: &Path, category: &FileCategory) -> Result<(Strin
     match category {
         FileCategory::Word => extract_docx(path).map(|t| (t, false)),
         FileCategory::PowerPoint => extract_pptx(path).map(|t| (t, false)),
+        FileCategory::LibreOffice => extract_odf(path).map(|t| (t, false)),
         FileCategory::Csv | FileCategory::Xml => extract_plain(path).map(|t| (t, false)),
         FileCategory::Text => {
             let is_rtf = path.extension().map(|e| e.eq_ignore_ascii_case("rtf")).unwrap_or(false);
@@ -77,6 +78,23 @@ fn extract_xlsx(path: &Path) -> Result<String> {
     }
 
     Ok(truncate_text(text))
+}
+
+/// LibreOffice / OpenDocument (.odt, .ods, .odp): a ZIP whose text is in
+/// content.xml, for all three kinds.
+fn extract_odf(path: &Path) -> Result<String> {
+    let file = std::fs::File::open(path)
+        .with_context(|| format!("Opening OpenDocument: {:?}", path))?;
+    let mut zip = zip::ZipArchive::new(file)
+        .with_context(|| "Parsing OpenDocument as ZIP")?;
+    let mut xml = String::new();
+    match zip.by_name("content.xml") {
+        Ok(mut entry) => {
+            entry.read_to_string(&mut xml).with_context(|| "Reading content.xml")?;
+        }
+        Err(_) => return Ok(String::new()),
+    }
+    Ok(truncate_text(strip_xml_tags(&xml)))
 }
 
 fn extract_pptx(path: &Path) -> Result<String> {
@@ -304,6 +322,26 @@ mod tests {
         // UTF-8 cut mid-character keeps the valid prefix
         let cut = &"ář".as_bytes()[..3];
         assert_eq!(decode_text(cut), "á");
+    }
+
+    #[test]
+    fn reads_libreoffice_documents() {
+        use std::io::Write;
+        let dir = std::env::temp_dir().join(format!("fileit-odf-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("smlouva.odt");
+        let mut zip = zip::ZipWriter::new(std::fs::File::create(&path).unwrap());
+        let opts: zip::write::SimpleFileOptions = Default::default();
+        zip.start_file("mimetype", opts).unwrap();
+        zip.write_all(b"application/vnd.oasis.opendocument.text").unwrap();
+        zip.start_file("content.xml", opts).unwrap();
+        zip.write_all("<office:document-content><office:body><office:text><text:p>Smlouva pro Jan Dvořák</text:p><text:p>IČO 27082440</text:p></office:text></office:body></office:document-content>".as_bytes()).unwrap();
+        zip.finish().unwrap();
+        let text = extract_odf(&path).unwrap();
+        assert!(text.contains("Smlouva pro Jan Dvořák"), "{}", text);
+        assert!(text.contains("IČO 27082440"), "{}", text);
+        assert_eq!(FileCategory::from_extension("ods"), FileCategory::LibreOffice);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

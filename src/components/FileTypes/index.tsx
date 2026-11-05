@@ -15,7 +15,7 @@ const CORE_TYPES = [
 
 const EXTRA = [
   { key: 'powerpoint', label: 'PowerPoint (.pptx)' },
-  { key: 'xml', label: 'XML data' },
+  { key: 'libreoffice', label: 'LibreOffice (.odt, .ods, .odp)' },
   { key: 'csv', label: 'CSV data' },
 ];
 

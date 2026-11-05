@@ -549,7 +549,8 @@ fn sample_folder(path: &Path) -> FolderSample {
         } else if matches!(
             FileCategory::from_extension(&ext),
             FileCategory::Pdf | FileCategory::Word | FileCategory::Excel
-                | FileCategory::PowerPoint | FileCategory::Email | FileCategory::Csv
+                | FileCategory::PowerPoint | FileCategory::LibreOffice
+                | FileCategory::Email | FileCategory::Csv
         ) || ext == "rtf"
         {
             s.documents += 1;

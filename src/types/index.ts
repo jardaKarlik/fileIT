@@ -1,7 +1,10 @@
 // src/types/index.ts
 // Mirror of the Rust types that cross the IPC bridge.
 
-export type FileCategory = 'pdf' | 'word' | 'excel' | 'powerpoint' | 'csv' | 'xml' | 'image' | 'email' | 'text' | 'other';
+export type FileCategory =
+  | 'pdf' | 'word' | 'excel' | 'powerpoint' | 'libreoffice' | 'csv'
+  | 'xml' // legacy: older scan results only, no longer selectable
+  | 'image' | 'email' | 'text' | 'other';
 
 export type DocumentType =
   | 'Contract' | 'BankLetter' | 'Invoice' | 'PaymentDemand'

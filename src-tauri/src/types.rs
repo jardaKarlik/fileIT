@@ -36,8 +36,15 @@ pub enum FileCategory {
     Pdf,
     Word,
     Excel,
+    // Matches the UI key; the old snake_case spelling stays readable.
+    #[serde(rename = "powerpoint", alias = "power_point")]
     PowerPoint,
+    /// LibreOffice / OpenDocument: .odt, .ods, .odp
+    #[serde(rename = "libreoffice")]
+    LibreOffice,
     Csv,
+    /// No longer offered in the UI (on whole drives it is mostly app config);
+    /// kept so older scan results still load.
     Xml,
     Image,
     Email,
@@ -52,6 +59,7 @@ impl FileCategory {
             "doc" | "docx" => Self::Word,
             "xls" | "xlsx" => Self::Excel,
             "pptx" => Self::PowerPoint,
+            "odt" | "ods" | "odp" => Self::LibreOffice,
             "csv" => Self::Csv,
             "xml" => Self::Xml,
             "jpg" | "jpeg" | "png" | "bmp" | "tif" | "tiff" => Self::Image,
