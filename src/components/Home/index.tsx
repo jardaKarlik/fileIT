@@ -179,7 +179,10 @@ export function Home() {
             se znovu nezpracovávají.
           </p>
           {ocrAvail && !ocrAvail.installed && (
-            <div className="home-ocr-engine">Indra OCR není nainstalováno — skenované dokumenty se zatím nepřečtou.</div>
+            <div className="home-ocr-engine">
+              Indra OCR není nainstalováno — skenované dokumenty se zatím nepřečtou.
+              Nainstalujete ho znovu spuštěním instalátoru FileIT (krok „Indra OCR“).
+            </div>
           )}
         </div>
         <button

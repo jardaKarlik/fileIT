@@ -20,15 +20,24 @@ const MAX_TEXT_BYTES: usize = 16_384; // 16KB — enough for classification
 /// classification context; this function returns empty text for them.
 pub async fn extract_text(path: &Path, category: &FileCategory) -> Result<(String, bool)> {
     match category {
+        FileCategory::Word if has_ext(path, "doc") => super::formats::extract_legacy_office(path).map(|t| (truncate_text(t), false)),
         FileCategory::Word => extract_docx(path).map(|t| (t, false)),
         FileCategory::PowerPoint => extract_pptx(path).map(|t| (t, false)),
+        FileCategory::LibreOffice => extract_odf(path).map(|t| (t, false)),
         FileCategory::Csv | FileCategory::Xml => extract_plain(path).map(|t| (t, false)),
         FileCategory::Text => {
             let is_rtf = path.extension().map(|e| e.eq_ignore_ascii_case("rtf")).unwrap_or(false);
             if is_rtf { extract_rtf(path) } else { extract_plain(path) }.map(|t| (t, false))
         }
+        FileCategory::Excel if has_ext(path, "xls") => super::formats::extract_legacy_office(path).map(|t| (truncate_text(t), false)),
         FileCategory::Excel => extract_xlsx(path).map(|t| (t, false)),
+        FileCategory::Email if has_ext(path, "msg") => super::formats::extract_msg(path).map(|t| (truncate_text(t), false)),
         FileCategory::Email => extract_plain(path).map(|t| (t, false)),
+        FileCategory::Isdoc => super::formats::extract_isdoc(path).map(|t| (truncate_text(t), false)),
+        FileCategory::Xps => super::formats::extract_xps(path).map(|t| (truncate_text(t), false)),
+        // .zfo and .zip contain other files; the classifier unpacks them
+        // (it has the OCR context for PDFs and images inside).
+        FileCategory::DataBox | FileCategory::Archive => Ok((String::new(), false)),
         // PDFs and images: extraction happens through the Indra sidecar
         // (crate::ocr::text_for_classification), never in-process.
         FileCategory::Pdf | FileCategory::Image | FileCategory::Other => {
@@ -79,6 +88,23 @@ fn extract_xlsx(path: &Path) -> Result<String> {
     Ok(truncate_text(text))
 }
 
+/// LibreOffice / OpenDocument (.odt, .ods, .odp): a ZIP whose text is in
+/// content.xml, for all three kinds.
+fn extract_odf(path: &Path) -> Result<String> {
+    let file = std::fs::File::open(path)
+        .with_context(|| format!("Opening OpenDocument: {:?}", path))?;
+    let mut zip = zip::ZipArchive::new(file)
+        .with_context(|| "Parsing OpenDocument as ZIP")?;
+    let mut xml = String::new();
+    match zip.by_name("content.xml") {
+        Ok(mut entry) => {
+            entry.read_to_string(&mut xml).with_context(|| "Reading content.xml")?;
+        }
+        Err(_) => return Ok(String::new()),
+    }
+    Ok(truncate_text(strip_xml_tags(&xml)))
+}
+
 fn extract_pptx(path: &Path) -> Result<String> {
     let file = std::fs::File::open(path)
         .with_context(|| format!("Opening PPTX: {:?}", path))?;
@@ -101,6 +127,14 @@ fn extract_pptx(path: &Path) -> Result<String> {
     }
 
     Ok(truncate_text(text))
+}
+
+fn has_ext(path: &Path, ext: &str) -> bool {
+    path.extension().map(|e| e.eq_ignore_ascii_case(ext)).unwrap_or(false)
+}
+
+pub(crate) fn truncate_for_classification(text: String) -> String {
+    truncate_text(text)
 }
 
 fn read_head(path: &Path, max: usize) -> Result<Vec<u8>> {
@@ -304,6 +338,26 @@ mod tests {
         // UTF-8 cut mid-character keeps the valid prefix
         let cut = &"ář".as_bytes()[..3];
         assert_eq!(decode_text(cut), "á");
+    }
+
+    #[test]
+    fn reads_libreoffice_documents() {
+        use std::io::Write;
+        let dir = std::env::temp_dir().join(format!("fileit-odf-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("smlouva.odt");
+        let mut zip = zip::ZipWriter::new(std::fs::File::create(&path).unwrap());
+        let opts: zip::write::SimpleFileOptions = Default::default();
+        zip.start_file("mimetype", opts).unwrap();
+        zip.write_all(b"application/vnd.oasis.opendocument.text").unwrap();
+        zip.start_file("content.xml", opts).unwrap();
+        zip.write_all("<office:document-content><office:body><office:text><text:p>Smlouva pro Jan Dvořák</text:p><text:p>IČO 27082440</text:p></office:text></office:body></office:document-content>".as_bytes()).unwrap();
+        zip.finish().unwrap();
+        let text = extract_odf(&path).unwrap();
+        assert!(text.contains("Smlouva pro Jan Dvořák"), "{}", text);
+        assert!(text.contains("IČO 27082440"), "{}", text);
+        assert_eq!(FileCategory::from_extension("ods"), FileCategory::LibreOffice);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

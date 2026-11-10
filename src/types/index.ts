@@ -1,12 +1,19 @@
 // src/types/index.ts
 // Mirror of the Rust types that cross the IPC bridge.
 
-export type FileCategory = 'pdf' | 'word' | 'excel' | 'powerpoint' | 'csv' | 'xml' | 'image' | 'email' | 'text' | 'other';
+export type FileCategory =
+  | 'pdf' | 'word' | 'excel' | 'powerpoint' | 'libreoffice' | 'csv'
+  | 'zfo' | 'isdoc' | 'xps' | 'zip'
+  | 'xml' // legacy: older scan results only, no longer selectable
+  | 'image' | 'email' | 'text' | 'other';
 
+// Serialized by Rust as snake_case; Czech labels in utils/folderTree.ts.
 export type DocumentType =
-  | 'Contract' | 'BankLetter' | 'Invoice' | 'PaymentDemand'
-  | 'TaxReturn' | 'UtilityBill' | 'InsuranceContract' | 'BankStatement'
-  | 'AdminDecision' | 'Identity' | 'LegalLetter' | 'Unknown';
+  | 'contract' | 'bank_letter' | 'invoice' | 'payment_demand'
+  | 'tax_return' | 'utility_bill' | 'insurance_contract' | 'bank_statement'
+  | 'admin_decision' | 'identity' | 'legal_letter'
+  | 'property_record' | 'application' | 'consent' | 'power_of_attorney'
+  | 'termination' | 'amendment' | 'loan_contract' | 'unknown';
 
 export type InstitutionCategory =
   | 'bank' | 'insurance' | 'government' | 'utility' | 'telco' | 'legal' | 'other';

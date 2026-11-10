@@ -36,9 +36,28 @@ pub enum FileCategory {
     Pdf,
     Word,
     Excel,
+    // Matches the UI key; the old snake_case spelling stays readable.
+    #[serde(rename = "powerpoint", alias = "power_point")]
     PowerPoint,
+    /// LibreOffice / OpenDocument: .odt, .ods, .odp
+    #[serde(rename = "libreoffice")]
+    LibreOffice,
     Csv,
+    /// No longer offered in the UI (on whole drives it is mostly app config);
+    /// kept so older scan results still load.
     Xml,
+    /// Datová schránka message (.zfo)
+    #[serde(rename = "zfo")]
+    DataBox,
+    /// ISDOC e-invoice (.isdoc, .isdocx)
+    #[serde(rename = "isdoc")]
+    Isdoc,
+    /// XPS / OXPS document
+    #[serde(rename = "xps")]
+    Xps,
+    /// ZIP archive — classified (and moved) as one item from the documents inside
+    #[serde(rename = "zip")]
+    Archive,
     Image,
     Email,
     Text,
@@ -52,6 +71,11 @@ impl FileCategory {
             "doc" | "docx" => Self::Word,
             "xls" | "xlsx" => Self::Excel,
             "pptx" => Self::PowerPoint,
+            "odt" | "ods" | "odp" => Self::LibreOffice,
+            "zfo" => Self::DataBox,
+            "isdoc" | "isdocx" => Self::Isdoc,
+            "xps" | "oxps" => Self::Xps,
+            "zip" => Self::Archive,
             "csv" => Self::Csv,
             "xml" => Self::Xml,
             "jpg" | "jpeg" | "png" | "bmp" | "tif" | "tiff" => Self::Image,
@@ -120,7 +144,48 @@ pub enum DocumentType {
     AdminDecision,
     Identity,
     LegalLetter,
+    /// List vlastnictví / výpis z katastru nemovitostí
+    PropertyRecord,
+    /// Žádost
+    Application,
+    /// Souhlas (GDPR, zpracování údajů, …)
+    Consent,
+    /// Plná moc
+    PowerOfAttorney,
+    /// Výpověď / odstoupení od smlouvy
+    Termination,
+    /// Dodatek ke smlouvě
+    Amendment,
+    /// Úvěrová / hypoteční smlouva
+    LoanContract,
     Unknown,
+}
+
+impl DocumentType {
+    /// Czech folder name used by the restructure (and shown in the UI).
+    pub fn label_cs(&self) -> &'static str {
+        match self {
+            Self::Contract => "Smlouva",
+            Self::BankLetter => "Dopis z banky",
+            Self::Invoice => "Faktura",
+            Self::PaymentDemand => "Platba a upomínka",
+            Self::TaxReturn => "Daňové přiznání",
+            Self::UtilityBill => "Vyúčtování energií",
+            Self::InsuranceContract => "Pojistná smlouva",
+            Self::BankStatement => "Výpis z účtu",
+            Self::AdminDecision => "Rozhodnutí úřadu",
+            Self::Identity => "Osobní doklady",
+            Self::LegalLetter => "Právní dokument",
+            Self::PropertyRecord => "List vlastnictví (LV)",
+            Self::Application => "Žádost",
+            Self::Consent => "Souhlas",
+            Self::PowerOfAttorney => "Plná moc",
+            Self::Termination => "Výpověď",
+            Self::Amendment => "Dodatek ke smlouvě",
+            Self::LoanContract => "Úvěr a hypotéka",
+            Self::Unknown => "Neurčený typ",
+        }
+    }
 }
 
 /// A fully classified file — extends FileRecord with extracted metadata.
@@ -219,7 +284,8 @@ impl ClassifiedFile {
                 .as_ref()
                 .map(|i| i.canonical_name.clone())
                 .unwrap_or_else(|| "Bez instituce".to_string()),
-            GroupDimension::DocumentType => format!("{:?}", self.document_type),
+            // Czech folder names (was the English enum name, e.g. "InsuranceContract").
+            GroupDimension::DocumentType => self.document_type.label_cs().to_string(),
         }
     }
 }

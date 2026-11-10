@@ -10,95 +10,17 @@ import { useStore } from '../../store';
 import { api } from '../../utils/tauriApi';
 import { platform, joinPath } from '../../utils/platform';
 import { analyzeAnalysisState } from '../../utils/analysisUtils';
-import { GroupDimension, DetectedCloud, ClassifiedFile } from '../../types';
+import { GroupDimension, DetectedCloud } from '../../types';
 import { AnalysisWarningModal } from './AnalysisWarningModal';
+import { DIMENSIONS, groupBy, fromClassifiedFiles } from '../../utils/folderTree';
+import { DEMO_FILES } from '../../utils/demoDataset';
 import './Restructure.css';
 
-const DIMENSIONS: Record<GroupDimension, { name: string; icon: string; iconClass: string }> = {
-  customer: { name: 'Jméno klienta',       icon: '👤', iconClass: 'i-customer' },
-  date:     { name: 'Měsíc a rok',         icon: '📅', iconClass: 'i-date' },
-  inst:     { name: 'Instituce',            icon: '🏦', iconClass: 'i-inst' },
-  doc:      { name: 'Typ dokumentu',        icon: '📄', iconClass: 'i-doc' },
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Mock file dataset for fallback/demo (284 files)
-// ─────────────────────────────────────────────────────────────────────────────
-const CUSTOMERS = [
-  { name: 'Novák Pavel', n: 22 }, { name: 'Horáková Jana', n: 18 }, { name: 'Müller Thomas', n: 15 },
-  { name: 'Svoboda Lucie', n: 14 }, { name: 'Kratochvíl Petr', n: 12 }, { name: 'Dvořák Martin', n: 11 },
-  { name: 'Benešová Eva', n: 10 }, { name: 'Pokorný Jan', n: 9 }, { name: 'Veselá Hana', n: 9 },
-  { name: 'Hájek Tomáš', n: 8 }, { name: 'Procházka Josef', n: 8 },
-  ...Array.from({ length: 27 }, (_, i) => ({ name: `Klient ${i + 12}`, n: Math.max(2, 7 - i) })),
-];
-const MONTHS = ['2025-09','2025-10','2025-11','2026-01','2026-02','2026-03','2026-04'];
-const INSTS  = ['ČEZ','Česká spořitelna','Kooperativa','Finanční úřad','ČSOB','Allianz','ÚSTŠ'];
-const DOCS   = ['Smlouva','Faktura','Vyúčtování','Doklad','Dopis'];
-
-const MOCK_FILES = (() => {
-  const files: Array<{ customer: string | null; date: string; inst: string | null; doc: string | null }> = [];
-  CUSTOMERS.forEach(c => {
-    for (let i = 0; i < c.n; i++) {
-      files.push({
-        customer: c.name,
-        date: MONTHS[(i + c.name.length) % MONTHS.length],
-        inst: Math.random() < 0.85 ? INSTS[(i + c.name.length * 3) % INSTS.length] : null,
-        doc:  Math.random() < 0.70 ? DOCS[(i + c.name.length * 7) % DOCS.length] : null,
-      });
-    }
-  });
-  while (files.length < 284) {
-    const i = files.length;
-    files.push({ customer: null, date: MONTHS[i % MONTHS.length], inst: INSTS[i % INSTS.length], doc: null });
-  }
-  return files;
-})();
-
-type FileObj = typeof MOCK_FILES[0];
-type TreeNode = { count: number; children: Record<string, TreeNode> | null; isUnknown: boolean };
-
-function groupBy(files: FileObj[], dims: GroupDimension[]): Record<string, TreeNode> {
-  if (!dims.length) return {};
-  const [dim, ...rest] = dims;
-  const UNKNOWN: Record<GroupDimension, string> = {
-    customer: 'Neznámý klient', date: 'Neurčeno', inst: 'Bez instituce', doc: 'Neurčený typ',
-  };
-  const groups: Record<string, FileObj[]> = {};
-  files.forEach(f => {
-    const v = f[dim] ?? UNKNOWN[dim];
-    if (!groups[v]) groups[v] = [];
-    groups[v].push(f);
-  });
-  const result: Record<string, TreeNode> = {};
-  Object.keys(groups)
-    .sort((a, b) => a === UNKNOWN[dim] ? 1 : b === UNKNOWN[dim] ? -1 : groups[b].length - groups[a].length)
-    .forEach(k => {
-      result[k] = {
-        count: groups[k].length,
-        children: rest.length ? groupBy(groups[k], rest) : null,
-        isUnknown: k === UNKNOWN[dim],
-      };
-    });
-  return result;
-}
-
-/**
- * Convert ClassifiedFile[] from scanResult into FileObj[] format
- * compatible with groupBy() logic.
- */
-function convertScanResultToFileObjects(files: ClassifiedFile[]): FileObj[] {
-  return files.map(f => ({
-    customer: f.customer?.name ?? null,
-    date: f.document_date
-      ? new Date(f.document_date).toISOString().slice(0, 7)
-      : 'Neurčeno',
-    inst: f.institution?.canonical_name ?? null,
-    // Rust serializes DocumentType as snake_case ("unknown"), not "Unknown"
-    doc: f.document_type && f.document_type.toLowerCase() !== 'unknown'
-      ? (f.document_type as string)
-      : null,
-  }));
-}
+// Folder dimensions, tree grouping and the 600-item sample dataset are
+// shared with the "Jak to funguje" demo builder.
+type FileObj = import('../../utils/folderTree').FileObj;
+const MOCK_FILES = DEMO_FILES;
+const convertScanResultToFileObjects = fromClassifiedFiles;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Component

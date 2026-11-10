@@ -2,7 +2,19 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store';
 import { illustrativePath } from '../../utils/platform';
+import { SectionBanner, PrivacyArt, ModesArt, RestructureArt } from './Banners';
+import { FolderBuilderDemo } from './FolderBuilderDemo';
 import './HowItWorks.css';
+
+const SECTIONS = [
+  { id: 'how-privacy', label: 'Citlivá data & GDPR' },
+  { id: 'how-modes', label: 'Režimy FileIT' },
+  { id: 'how-restructure', label: 'Jak funguje uspořádání' },
+];
+
+function scrollToSection(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 type TabKey = 'local' | 'cloud' | 'c2c';
 
@@ -38,7 +50,7 @@ const FACTS: Record<TabKey, { label: string; title: string; sub: string }[]> = {
   local: [
     { label:'Stačí',      title:'Aplikace FileIT',          sub:'A volná cílová složka' },
     { label:'Bezpečnost', title:'Nic neopouští počítač',    sub:'Včetně analýzy obsahu' },
-    { label:'Záloha',     title:'Safe-side ZIP',            sub:'Obnova jedním klikem' },
+    { label:'Záloha',     title:'Záznam všech přesunů',     sub:'Obnova jedním klikem' },
   ],
   cloud: [
     { label:'Potřebujete', title:'Běžící cloud klient',      sub:'OneDrive, Google Drive, Dropbox, Box' },
@@ -84,12 +96,53 @@ export function HowItWorks() {
   return (
     <div className="how-wrap">
       <button className="how-back" onClick={() => setScreen('home')}>← Zpět na domů</button>
-      <span className="corner-tr">FILEIT · V1.0 · HOW</span>
+      <span className="corner-tr">FILEIT · V1.1 · HOW</span>
       <span className="corner-bl">N°06 · jak to funguje</span>
 
       <div className="how-eyebrow">Nápověda</div>
       <h2 className="how-title">Jak to funguje</h2>
-      <p className="how-sub">FileIT umí uspořádat vaše soubory třemi způsoby. Který se hodí vám, záleží na tom, kde jsou dnes a kam je chcete dostat.</p>
+      <p className="how-sub">Co FileIT dělá s vašimi daty, jakými způsoby umí soubory uspořádat a jak si poskládáte vlastní strukturu složek.</p>
+
+      <nav className="how-toc" aria-label="Sekce nápovědy">
+        {SECTIONS.map(sec => (
+          <button key={sec.id} type="button" className="how-toc-link" onClick={() => scrollToSection(sec.id)}>
+            {sec.label} <span aria-hidden="true">↓</span>
+          </button>
+        ))}
+      </nav>
+
+      {/* ── 1. Sensitive data & GDPR ─────────────────────────────────────── */}
+      <SectionBanner
+        id="how-privacy"
+        tone="privacy"
+        eyebrow="Sekce 1"
+        title="Citlivá data & GDPR"
+        art={<PrivacyArt />}
+        lead={<>Pracujete s rodnými čísly, smlouvami a výpisy klientů. FileIT je proto navržený tak, aby tato data <strong>nikdy neopustila váš počítač</strong>.</>}
+      >
+        <ul className="how-privacy-list">
+          <li><span className="how-check" aria-hidden="true">✓</span><span><strong>Analýza běží jen lokálně.</strong> Čtení obsahu, OCR i rozpoznání klientů a institucí probíhá na vašem počítači.</span></li>
+          <li><span className="how-check" aria-hidden="true">✓</span><span><strong>Nic se neodesílá ke zpracování.</strong> Dokumenty, jejich obsah ani jména klientů tato aplikace neposílá na žádný server ani do cloudu.</span></li>
+          <li><span className="how-check" aria-hidden="true">✓</span><span><strong>Žádné statistiky používání.</strong> FileIT nesbírá telemetrii ani údaje o tom, jak aplikaci používáte.</span></li>
+        </ul>
+        <p className="how-privacy-fineprint">
+          Po síti jde jen: stažení aktualizace seznamu institucí (pouze stahování) a jednorázové stažení modelů pro OCR.
+          V Učebně můžete <em>dobrovolně a po potvrzení</em> sdílet vzor dokumentu — jen název instituce, typ dokumentu
+          a technické údaje o PDF, nikdy obsah ani osobní údaje. Cloudovou synchronizaci uspořádaných složek provádí
+          váš vlastní cloud klient (OneDrive, Google Drive…), ne FileIT.
+        </p>
+        <p className="how-privacy-more">Podrobnosti o ochraně osobních údajů brzy najdete na našem webu.</p>
+      </SectionBanner>
+
+      {/* ── 2. FileIT modes (existing content) ───────────────────────────── */}
+      <SectionBanner
+        id="how-modes"
+        tone="modes"
+        eyebrow="Sekce 2"
+        title="Režimy FileIT"
+        art={<ModesArt />}
+        lead="FileIT umí uspořádat vaše soubory třemi způsoby. Který se hodí vám, záleží na tom, kde jsou dnes a kam je chcete dostat."
+      />
 
       {/* Tabs */}
       <div className="how-tabs">
@@ -152,6 +205,25 @@ export function HowItWorks() {
         <span className="did-icon">💡</span>
         <div><span className="did-title">Víte, že…</span> {dyk}</div>
       </div>
+
+      {/* ── 3. How restructuring works ───────────────────────────────────── */}
+      <SectionBanner
+        id="how-restructure"
+        tone="restructure"
+        eyebrow="Sekce 3"
+        title="Jak funguje uspořádání"
+        art={<RestructureArt />}
+        lead="Z každého dokumentu FileIT zjistí klienta, datum, instituci a typ dokumentu. Z těchto čtyř údajů si poskládáte strukturu složek až o třech úrovních."
+      >
+        <ol className="how-steps">
+          <li><strong>Analýza</strong> — FileIT přečte dokumenty a zjistí čtyři údaje.</li>
+          <li><strong>Struktura</strong> — vyberete pořadí úrovní, např. Klient → Instituce → Typ.</li>
+          <li><strong>Náhled</strong> — uvidíte všechny složky dřív, než se cokoli přesune.</li>
+          <li><strong>Přesun a záloha</strong> — soubory se přesunou; vše jde jedním klikem vrátit.</li>
+        </ol>
+      </SectionBanner>
+
+      <FolderBuilderDemo />
     </div>
   );
 }

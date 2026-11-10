@@ -9,6 +9,7 @@
 
 mod extractor;
 mod extract_metadata;
+mod formats;
 mod ner;
 mod scorer;
 
@@ -88,6 +89,10 @@ impl Classifier {
         let mut ocr_skipped = false;
         let (raw_text, ocr_used) = if skip_extraction {
             (String::new(), false)
+        } else if matches!(category, FileCategory::DataBox | FileCategory::Archive) {
+            let (text, used, skipped) = extract_container(&record, &category, ocr).await;
+            ocr_skipped = skipped;
+            (text, used)
         } else if matches!(category, FileCategory::Pdf | FileCategory::Image) {
             match ocr {
                 Some(ctx) => {
@@ -259,6 +264,93 @@ impl Classifier {
     }
 }
 
+/// Text of a container file: a Datová schránka message (.zfo: envelope +
+/// attachments) or a ZIP archive (documents inside, within limits). Inner
+/// files are written to a temporary folder and read with the normal
+/// extractors; PDFs and images go through Indra like any other file (and
+/// its content-hash cache). Returns (text, ocr_used, ocr_skipped).
+async fn extract_container(
+    record: &FileRecord,
+    category: &FileCategory,
+    ocr: Option<&OcrExtractContext>,
+) -> (String, bool, bool) {
+    let path = record.path.clone();
+    let is_zfo = *category == FileCategory::DataBox;
+    let unpacked = tokio::task::spawn_blocking(move || -> anyhow::Result<(String, Vec<formats::InnerFile>)> {
+        if is_zfo {
+            formats::extract_zfo(&path)
+        } else {
+            let files = formats::zip_document_entries(&path)?;
+            let names: Vec<String> = files.iter().map(|f| f.name.clone()).collect();
+            Ok((format!("Archiv ZIP: {}\n", names.join(", ")), files))
+        }
+    })
+    .await;
+    let (mut text, files) = match unpacked {
+        Ok(Ok(v)) => v,
+        Ok(Err(e)) => {
+            warn!("Cannot unpack {:?}: {}", record.name, e);
+            return (String::new(), false, false);
+        }
+        Err(e) => {
+            warn!("Unpack task failed for {:?}: {}", record.name, e);
+            return (String::new(), false, false);
+        }
+    };
+
+    let tmp = std::env::temp_dir().join(format!("fileit-unpack-{}", uuid::Uuid::new_v4()));
+    if std::fs::create_dir_all(&tmp).is_err() {
+        return (extractor::truncate_for_classification(text), false, false);
+    }
+    let (mut ocr_used, mut ocr_skipped) = (false, false);
+    for (i, f) in files.into_iter().enumerate() {
+        if text.len() >= 16_384 {
+            break;
+        }
+        // Index prefix: two attachments may share a name.
+        let safe: String = f.name.chars().map(|c| if "\\/:*?\"<>|".contains(c) { '_' } else { c }).collect();
+        let inner = tmp.join(format!("{}_{}", i, safe));
+        if std::fs::write(&inner, &f.bytes).is_err() {
+            continue;
+        }
+        let ext = inner.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+        let cat = FileCategory::from_extension(&ext);
+        let inner_text = match cat {
+            FileCategory::DataBox | FileCategory::Archive | FileCategory::Other => continue, // no nesting
+            FileCategory::Pdf | FileCategory::Image => match ocr {
+                Some(ctx) => {
+                    let ctx = ctx.clone();
+                    let p = inner.clone();
+                    let sha = crate::scanner::compute_hash_for_manifest(&inner).unwrap_or_default();
+                    match tokio::task::spawn_blocking(move || {
+                        crate::ocr::text_for_classification(&ctx.app_data_dir, &ctx.command, &p, &sha, ctx.ocr_enabled)
+                    })
+                    .await
+                    {
+                        Ok(Ok(t)) => {
+                            ocr_used |= t.is_scan;
+                            ocr_skipped |= t.ocr_skipped;
+                            t.text
+                        }
+                        _ => String::new(),
+                    }
+                }
+                None => {
+                    ocr_skipped = true;
+                    String::new()
+                }
+            },
+            _ => extract_text(&inner, &cat).await.map(|(t, _)| t).unwrap_or_default(),
+        };
+        if !inner_text.trim().is_empty() {
+            text.push_str(&format!("\n--- {} ---\n", f.name));
+            text.push_str(&inner_text);
+        }
+    }
+    let _ = std::fs::remove_dir_all(&tmp);
+    (extractor::truncate_for_classification(text), ocr_used, ocr_skipped)
+}
+
 /// Indra sidecar context for in-classification text extraction.
 #[derive(Debug, Clone)]
 pub struct OcrExtractContext {
@@ -341,6 +433,89 @@ mod tests {
         assert!(m.czech_dates.contains(&"15.03.2024".to_string()), "{:?}", m.czech_dates);
         assert!(cf.document_date.is_some());
 
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}
+
+#[cfg(test)]
+mod doc_type_tests {
+    use super::*;
+
+    #[test]
+    fn recognises_new_czech_document_types() {
+        let dict = include_str!("../../resources/institution_dictionary.json");
+        let c = Classifier::new(dict).expect("dictionary loads");
+        let cases = [
+            ("výpis z katastru nemovitostí, list vlastnictví číslo lv 1234, katastrální území brno, parcela 12/3", DocumentType::PropertyRecord),
+            ("žádost o poskytnutí příspěvku. žadatel: jan novák. tímto žádám o", DocumentType::Application),
+            ("uděluji souhlas se zpracováním osobních údajů. odvolání souhlasu je možné", DocumentType::Consent),
+            ("plná moc. zmocnitel jan novák zmocňuji tímto zmocněnec", DocumentType::PowerOfAttorney),
+            ("výpověď smlouvy. tímto vypovídám smlouvu, výpovědní lhůta dva měsíce", DocumentType::Termination),
+            ("úvěrová smlouva, hypoteční úvěr, úroková sazba 4,9 %, splátkový kalendář, rpsn", DocumentType::LoanContract),
+        ];
+        for (text, expected) in cases {
+            assert_eq!(c.ner.find_document_type(text), expected, "{}", text);
+        }
+        let f = c.ner.signals_from_filename("LV_parcela_Brno.pdf");
+        assert_eq!(f.doc_type, Some(DocumentType::PropertyRecord));
+        let f = c.ner.signals_from_filename("zadost-o-hypoteku.pdf");
+        assert!(matches!(f.doc_type, Some(DocumentType::LoanContract) | Some(DocumentType::Application)));
+        assert_eq!(DocumentType::InsuranceContract.label_cs(), "Pojistná smlouva");
+    }
+}
+
+#[cfg(test)]
+mod container_tests {
+    use super::*;
+    use std::io::Write;
+
+    fn record(path: &std::path::Path, ext: &str) -> FileRecord {
+        FileRecord {
+            path: path.to_path_buf(),
+            name: path.file_name().unwrap().to_string_lossy().into_owned(),
+            extension: ext.into(),
+            size_bytes: std::fs::metadata(path).unwrap().len(),
+            modified: chrono::Utc::now(),
+            sha256: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn zip_is_classified_from_documents_inside() {
+        let c = Classifier::new(include_str!("../../resources/institution_dictionary.json")).unwrap();
+        let dir = std::env::temp_dir().join(format!("fileit-zipcls-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let p = dir.join("doklady.zip");
+        let mut z = zip::ZipWriter::new(std::fs::File::create(&p).unwrap());
+        let o: zip::write::SimpleFileOptions = Default::default();
+        z.start_file("faktura.txt", o).unwrap();
+        z.write_all("FAKTURA – daňový doklad. IČO: 27082440. Variabilní symbol 2024001. Celkem k úhradě 1 200,00 Kč. Datum splatnosti 15.03.2024".as_bytes()).unwrap();
+        z.finish().unwrap();
+        let cf = c.classify(record(&p, "zip")).await;
+        assert_eq!(cf.document_type, DocumentType::Invoice);
+        assert_eq!(cf.metadata.as_ref().and_then(|m| m.ico.clone()).as_deref(), Some("27082440"));
+        assert!(cf.text_preview.unwrap_or_default().contains("Archiv ZIP: faktura.txt"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[tokio::test]
+    async fn outlook_msg_subject_and_body_are_read() {
+        let c = Classifier::new(include_str!("../../resources/institution_dictionary.json")).unwrap();
+        let dir = std::env::temp_dir().join(format!("fileit-msg-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let p = dir.join("posta.msg");
+        {
+            let mut cf = cfb::create(&p).unwrap();
+            let utf16 = |s: &str| s.encode_utf16().flat_map(|u| u.to_le_bytes()).collect::<Vec<u8>>();
+            cf.create_stream("/__substg1.0_0037001F").unwrap().write_all(&utf16("Výpověď pojistné smlouvy")).unwrap();
+            cf.create_stream("/__substg1.0_1000001F").unwrap()
+                .write_all(&utf16("Dobrý den, tímto vypovídám smlouvu. Výpovědní lhůta je dva měsíce. Jan Dvořák")).unwrap();
+            cf.flush().unwrap();
+        }
+        let cf = c.classify(record(&p, "msg")).await;
+        let preview = cf.text_preview.clone().unwrap_or_default();
+        assert!(preview.contains("Předmět: Výpověď pojistné smlouvy"), "{}", preview);
+        assert_eq!(cf.document_type, DocumentType::Termination);
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

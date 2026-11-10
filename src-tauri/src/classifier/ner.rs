@@ -131,6 +131,13 @@ impl NerEngine {
                     "AdminDecision" => DocumentType::AdminDecision,
                     "Identity" => DocumentType::Identity,
                     "LegalLetter" => DocumentType::LegalLetter,
+                    "PropertyRecord" => DocumentType::PropertyRecord,
+                    "Application" => DocumentType::Application,
+                    "Consent" => DocumentType::Consent,
+                    "PowerOfAttorney" => DocumentType::PowerOfAttorney,
+                    "Termination" => DocumentType::Termination,
+                    "Amendment" => DocumentType::Amendment,
+                    "LoanContract" => DocumentType::LoanContract,
                     _ => return None,
                 };
                 Some((dt, v))
@@ -440,6 +447,30 @@ fn czech_month_to_number(name: &str) -> u32 {
 /// Map normalised (lowercase, separators→spaces) filename stem to a document type.
 /// More specific patterns are checked first.
 fn doc_type_from_filename(lower: &str) -> Option<DocumentType> {
+    let has_word = |w: &str| lower.split(|c: char| !c.is_alphanumeric()).any(|t| t == w);
+    if lower.contains("list vlastnictvi") || lower.contains("list vlastnictví") || has_word("lv")
+        || lower.contains("katastr")
+    {
+        return Some(DocumentType::PropertyRecord);
+    }
+    if lower.contains("plna moc") || lower.contains("plná moc") {
+        return Some(DocumentType::PowerOfAttorney);
+    }
+    if lower.contains("souhlas") {
+        return Some(DocumentType::Consent);
+    }
+    if lower.contains("vypoved") || lower.contains("výpověď") || lower.contains("odstoupeni") || lower.contains("odstoupení") {
+        return Some(DocumentType::Termination);
+    }
+    if lower.contains("dodatek") {
+        return Some(DocumentType::Amendment);
+    }
+    if lower.contains("uver") || lower.contains("úvěr") || lower.contains("hypotek") || lower.contains("hypoték") {
+        return Some(DocumentType::LoanContract);
+    }
+    if lower.contains("zadost") || lower.contains("žádost") {
+        return Some(DocumentType::Application);
+    }
     if lower.contains("zelena karta") || lower.contains("zelená karta") {
         Some(DocumentType::InsuranceContract)
     } else if lower.contains("pojistka") || lower.contains("pojisteni") || lower.contains("pojistění") {
@@ -462,8 +493,7 @@ fn doc_type_from_filename(lower: &str) -> Option<DocumentType> {
     } else if lower.contains("dorucenka") || lower.contains("doručenka")
            || lower.contains("rozhodnuti") || lower.contains("rozhodnutí") {
         Some(DocumentType::AdminDecision)
-    } else if lower.contains("priloha") || lower.contains("příloha")
-           || lower.contains("zadost") || lower.contains("žádost") {
+    } else if lower.contains("priloha") || lower.contains("příloha") {
         Some(DocumentType::AdminDecision)
     } else {
         None

@@ -55,7 +55,7 @@ $appExt = @('exe','dll','sys','msi','msix','appx','cab','ocx','drv','jar','class
     'rs','go','java','kt','cs','cpp','cc','c','h','hpp','swift','rb','php','sh','ps1','psm1',
     'bat','cmd','lua','sql')
 $binExt = @('exe','dll','msi','sys')
-$docExt = @('pdf','doc','docx','xls','xlsx','pptx','msg','eml','csv','rtf')
+$docExt = @('pdf','doc','docx','xls','xlsx','pptx','odt','ods','odp','msg','eml','csv','rtf','zfo','isdoc','isdocx','xps','oxps')
 $projectMarkers = @('.git','node_modules','package.json','Cargo.toml','pyproject.toml',
     'requirements.txt','go.mod','pom.xml','build.gradle')
 $layoutDirs = @('bin','lib','lib64','include','src','sources','share','plugins','runtime')

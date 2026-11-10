@@ -78,6 +78,8 @@ thiserror = "1"
 # HTTP client for CM version check and contribution upload
 # rustls-tls avoids OpenSSL dependency on Windows MSVC
 reqwest = { version = "0.11", features = ["json", "rustls-tls"], default-features = false }
+cfb = "0.14"
+base64 = "0.22"
 
 # Windows registry access — used for OneDrive path detection
 [target.'cfg(windows)'.dependencies]
