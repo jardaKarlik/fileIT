@@ -31,6 +31,54 @@ moves (APFS is case- and normalisation-insensitive by default).
 
 ---
 
+## 0. End-user install (one-click, no Xcode/Rust/Node needed)
+
+For a user who just wants to run FileIT — not build it — use
+`scripts/macos/install-fileit.sh`. It mirrors the Windows NSIS installer's
+behaviour (`src-tauri/windows/installer-hooks.nsh` +
+`src-tauri/resources/install-indra.ps1`): it is not a dev-environment setup,
+it is the distribution/installer story for macOS until a signed `.pkg`
+exists.
+
+What it does:
+1. Asks for the admin password once (`sudo -v`), needed to install into
+   `/Applications` and, if used, for Homebrew's own installer.
+2. Downloads the right `.dmg` for the Mac's architecture (Apple Silicon or
+   Intel) from a configured URL — Google Drive share links are accepted and
+   converted automatically (handles the "can't scan this file for viruses"
+   large-file confirmation page).
+3. Mounts it, copies `FileIT.app` into `/Applications`, then clears the
+   Gatekeeper quarantine flag (`xattr -dr com.apple.quarantine`) — required
+   because the app is ad-hoc signed, not notarized (see section 4).
+4. Asks whether to install Indra OCR (default no, same as Windows): finds or
+   installs Python 3.10+ (via Homebrew if needed), creates an isolated
+   virtualenv at `~/Library/Application Support/FileIT-Indra/indra-ocr` (kept
+   outside the app bundle, like Windows' `%LOCALAPPDATA%\FileIT-Indra`, so
+   app updates/uninstalls never touch it), `pip install`s `indra-ocr`, writes
+   `indra_ocr_command` into FileIT's `settings.json`, then pre-downloads the
+   OCR models with a probe image.
+5. Launches FileIT.
+
+Run it with `--uninstall` to reverse all of this (asks separately about
+removing Indra OCR and about removing FileIT's app data/logs), `--no-ocr` to
+skip the OCR step non-interactively, or `--with-ocr` to force it.
+
+Configure the download links before distributing it — either edit
+`FILEIT_URL_ARM64` / `FILEIT_URL_X86_64` near the top of the script, or set
+them as environment variables when running it:
+
+```bash
+FILEIT_URL_ARM64="https://drive.google.com/file/d/<id>/view" ./install-fileit.sh
+```
+
+Log: `~/Library/Logs/FileIT-Install/install.log`.
+
+This script only installs the *app*; it does not touch Xcode Command Line
+Tools, Rust or Node — those are build-time prerequisites covered in section 1
+below, for people building FileIT from source, not for end users running it.
+
+---
+
 ## 1. Set up a fresh Mac
 
 ```bash
